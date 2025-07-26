@@ -1,0 +1,6 @@
+@YazilimxyzWebAPI_HostAddress = http://localhost:5227
+
+GET {{YazilimxyzWebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
