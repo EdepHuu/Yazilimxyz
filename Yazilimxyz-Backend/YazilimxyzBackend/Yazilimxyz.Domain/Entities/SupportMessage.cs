@@ -15,5 +15,6 @@ namespace Yazilimxyz.Domain.Entities
         public string Message { get; set; }
 
         public bool IsFromSupport { get; set; }
+        public DateTime SentAt { get; set; }
     }
 }
