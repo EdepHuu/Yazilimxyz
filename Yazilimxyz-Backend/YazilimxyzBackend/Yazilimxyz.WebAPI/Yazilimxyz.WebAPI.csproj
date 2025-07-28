@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Yazilimxyz.Application\Yazilimxyz.Application.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.Application\Yazilimxyz.BusinessLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.Infrastructure\Yazilimxyz.Infrastructure.csproj" />
   </ItemGroup>
 

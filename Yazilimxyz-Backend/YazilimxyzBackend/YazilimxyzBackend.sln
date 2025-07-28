@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.WebAPI", "Yazili
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.Domain", "Yazilimxyz.Domain\Yazilimxyz.Domain.csproj", "{7990D499-7B56-4AA9-8BC4-949203E4B617}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.Application", "Yazilimxyz.Application\Yazilimxyz.Application.csproj", "{890D9254-7B18-4A92-B370-DCB22DF0192B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.BusinessLayer", "Yazilimxyz.Application\Yazilimxyz.BusinessLayer.csproj", "{890D9254-7B18-4A92-B370-DCB22DF0192B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.Infrastructure", "Yazilimxyz.Infrastructure\Yazilimxyz.Infrastructure.csproj", "{DEB5D1DB-6B39-4A3C-A7A8-9BA79F89F3EB}"
 EndProject
