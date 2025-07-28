@@ -7,13 +7,12 @@ using System.Threading.Tasks;
 
 namespace Yazilimxyz.Domain.Entities
 {
-    public class AppUser : IdentityUser
+    public class AppManager : IdentityUser
     {
         public string Name { get; set; }
         public string LastName { get; set; }
+        public ICollection<Product> Products { get; set; }
 
-        public ICollection<Product> Products { get; set; } // Store olarak eklediği ürünler
-        public ICollection<Order> Orders { get; set; }
-        public ICollection<SupportMessage> SupportMessages { get; set; }
+
     }
 }
