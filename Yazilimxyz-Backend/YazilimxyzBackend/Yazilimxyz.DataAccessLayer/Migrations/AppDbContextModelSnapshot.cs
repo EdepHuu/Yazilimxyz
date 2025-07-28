@@ -3,20 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Yazilimxyz.Infrastructure.Context;
+using Yazilimxyz.DataAccessLayer.Context;
 
 #nullable disable
 
-namespace Yazilimxyz.Infrastructure.Migrations
+namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250727120221_FirstMg")]
-    partial class FirstMg
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,7 +22,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.AppUser", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.AppManager", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -42,7 +39,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<string>("FullName")
+                    b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -51,6 +48,70 @@ namespace Yazilimxyz.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AppManagers");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.AppUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasColumnType("nvarchar(max)");
@@ -81,7 +142,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("AppUsers");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Category", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -96,12 +157,17 @@ namespace Yazilimxyz.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ParentCategoryId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentCategoryId");
 
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Order", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Customer", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -109,15 +175,112 @@ namespace Yazilimxyz.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AppUserId1")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppUserId")
+                        .IsUnique();
+
+                    b.HasIndex("AppUserId1")
+                        .IsUnique()
+                        .HasFilter("[AppUserId1] IS NOT NULL");
+
+                    b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Merchant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AppUserId1")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CompanyAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Iban")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppUserId")
+                        .IsUnique();
+
+                    b.HasIndex("AppUserId1")
+                        .IsUnique()
+                        .HasFilter("[AppUserId1] IS NOT NULL");
+
+                    b.ToTable("Merchants");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AddressTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("OrderDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
+                    b.Property<string>("District")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("ShippingFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -130,7 +293,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.OrderItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -167,13 +330,16 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Product", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AppManagerId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("decimal(18,2)");
@@ -217,6 +383,8 @@ namespace Yazilimxyz.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AppManagerId");
+
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("StoreId");
@@ -224,7 +392,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.ProductImage", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.ProductImage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -249,7 +417,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("ProductImages");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.ProductVariant", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.ProductVariant", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -281,7 +449,7 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("ProductVariants");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.SupportMessage", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportMessage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -307,6 +475,9 @@ namespace Yazilimxyz.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SenderId");
@@ -314,9 +485,48 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.ToTable("SupportMessages");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Order", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Category", b =>
                 {
-                    b.HasOne("Yazilimxyz.Domain.Entities.AppUser", "User")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Category", "ParentCategory")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("ParentCategoryId");
+
+                    b.Navigation("ParentCategory");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Customer", b =>
+                {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "AppUser")
+                        .WithOne()
+                        .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Customer", "AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", null)
+                        .WithOne("Customer")
+                        .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Customer", "AppUserId1");
+
+                    b.Navigation("AppUser");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Merchant", b =>
+                {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "AppUser")
+                        .WithOne()
+                        .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Merchant", "AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", null)
+                        .WithOne("Merchant")
+                        .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Merchant", "AppUserId1");
+
+                    b.Navigation("AppUser");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Order", b =>
+                {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -325,21 +535,21 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.OrderItem", b =>
                 {
-                    b.HasOne("Yazilimxyz.Domain.Entities.Order", "Order")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Yazilimxyz.Domain.Entities.Product", "Product")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Yazilimxyz.Domain.Entities.ProductVariant", "ProductVariant")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.ProductVariant", "ProductVariant")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -352,15 +562,19 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Navigation("ProductVariant");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Product", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Product", b =>
                 {
-                    b.HasOne("Yazilimxyz.Domain.Entities.Category", "Category")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppManager", null)
+                        .WithMany("Products")
+                        .HasForeignKey("AppManagerId");
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Category", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Yazilimxyz.Domain.Entities.AppUser", "Store")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "Store")
                         .WithMany("Products")
                         .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -371,9 +585,9 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Navigation("Store");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.ProductImage", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.ProductImage", b =>
                 {
-                    b.HasOne("Yazilimxyz.Domain.Entities.Product", "Product")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", "Product")
                         .WithMany("ProductImages")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -382,9 +596,9 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.ProductVariant", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.ProductVariant", b =>
                 {
-                    b.HasOne("Yazilimxyz.Domain.Entities.Product", "Product")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", "Product")
                         .WithMany("ProductVariants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -393,19 +607,30 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.SupportMessage", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportMessage", b =>
                 {
-                    b.HasOne("Yazilimxyz.Domain.Entities.AppUser", "Sender")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "Sender")
                         .WithMany("SupportMessages")
                         .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.AppUser", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.AppManager", b =>
                 {
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.AppUser", b =>
+                {
+                    b.Navigation("Customer")
+                        .IsRequired();
+
+                    b.Navigation("Merchant")
+                        .IsRequired();
+
                     b.Navigation("Orders");
 
                     b.Navigation("Products");
@@ -413,24 +638,26 @@ namespace Yazilimxyz.Infrastructure.Migrations
                     b.Navigation("SupportMessages");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Category", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Category", b =>
                 {
                     b.Navigation("Products");
+
+                    b.Navigation("SubCategories");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Order", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Order", b =>
                 {
                     b.Navigation("OrderItems");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.Product", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Product", b =>
                 {
                     b.Navigation("ProductImages");
 
                     b.Navigation("ProductVariants");
                 });
 
-            modelBuilder.Entity("Yazilimxyz.Domain.Entities.ProductVariant", b =>
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.ProductVariant", b =>
                 {
                     b.Navigation("OrderItems");
                 });

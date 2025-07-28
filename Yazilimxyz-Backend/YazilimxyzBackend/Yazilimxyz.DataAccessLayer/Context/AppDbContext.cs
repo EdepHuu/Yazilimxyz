@@ -2,11 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
-using Yazilimxyz.Domain.Entities;
+using Yazilimxyz.EntityLayer.Entities;
 
-namespace Yazilimxyz.Infrastructure.Context
+namespace Yazilimxyz.DataAccessLayer.Context
 {
 	public class AppDbContext : DbContext
 	{
@@ -23,7 +24,10 @@ namespace Yazilimxyz.Infrastructure.Context
 		public DbSet<Order> Orders { get; set; }
 		public DbSet<OrderItem> OrderItems { get; set; }
 		public DbSet<AppUser> AppUsers { get; set; }
+		public DbSet<AppManager> AppManagers { get; set; }
 		public DbSet<SupportMessage> SupportMessages { get; set; }
+		public DbSet<Merchant> Merchants { get; set; }
+		public DbSet<Customer> Customers { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -62,6 +66,27 @@ namespace Yazilimxyz.Infrastructure.Context
 				.HasOne(pi => pi.Product)
 				.WithMany(p => p.ProductImages)
 				.HasForeignKey(pi => pi.ProductId)
+				.OnDelete(DeleteBehavior.Restrict);
+
+			// SupportMessage → Sender (AppUser)
+			modelBuilder.Entity<SupportMessage>()
+				.HasOne(sm => sm.Sender)
+				.WithMany(u => u.SupportMessages)
+				.HasForeignKey(sm => sm.SenderId)
+				.OnDelete(DeleteBehavior.Restrict);
+
+			// Merchant → AppUser
+			modelBuilder.Entity<Merchant>()
+				.HasOne(m => m.AppUser)
+				.WithOne()
+				.HasForeignKey<Merchant>(m => m.AppUserId)
+				.OnDelete(DeleteBehavior.Restrict);
+
+			// Customer → AppUser
+			modelBuilder.Entity<Customer>()
+				.HasOne(c => c.AppUser)
+				.WithOne()
+				.HasForeignKey<Customer>(c => c.AppUserId)
 				.OnDelete(DeleteBehavior.Restrict);
 		}
 	}

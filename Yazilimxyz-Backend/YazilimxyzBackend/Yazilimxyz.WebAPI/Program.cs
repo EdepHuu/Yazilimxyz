@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Yazilimxyz.Infrastructure.Context;
+using Yazilimxyz.DataAccessLayer.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +9,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // DbContext servisini kaydet
 builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseSqlServer(connectionString));
+	options.UseSqlServer(connectionString,
+		b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer")));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
