@@ -13,7 +13,7 @@ namespace Yazilimxyz.Domain.Entities
 
         public string ReceiverId { get; set; }
         public string Message { get; set; }
-
+        
         public bool IsFromSupport { get; set; }
     }
 }
