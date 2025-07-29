@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Yazilimxyz.DataAccessLayer.Context;
+using Yazilimxyz.EntityLayer.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +25,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

@@ -6,14 +6,15 @@ using System.Threading.Tasks;
 
 namespace Yazilimxyz.EntityLayer.Entities
 {
-	public class Merchant
-	{
-		public int Id { get; set; }
-		public string AppUserId { get; set; } = null!;
-		public AppUser AppUser { get; set; } = null!;
-
-		public string Iban { get; set; } = null!;
-		public string TaxNumber { get; set; } = null!;
-		public string CompanyAddress { get; set; } = null!;
-	}
+    public class Merchant
+    {
+        public int Id { get; set; }
+        public string AppUserId { get; set; }
+        public AppUser AppUser { get; set; }
+        public string CompanyName { get; set; }
+        public string Iban { get; set; }
+        public string TaxNumber { get; set; }
+        public string CompanyAddress { get; set; }
+        public string Phone { get; set; }
+    }
 }

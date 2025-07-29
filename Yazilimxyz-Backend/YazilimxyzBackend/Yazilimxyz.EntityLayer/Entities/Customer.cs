@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace Yazilimxyz.EntityLayer.Entities
 {
-	public class Customer
-	{
-		public int Id { get; set; } // Anahtar
-		public string AppUserId { get; set; } = null!;  // Foreign Key
-		public AppUser AppUser { get; set; } = null!;
+    public class Customer
+    {
+        public int Id { get; set; }
+        public string AppUserId { get; set; }
+        public AppUser AppUser { get; set; }
 
-		public string Address { get; set; } = null!;
-	}
+        // Navigation Properties
+        public ICollection<CustomerAddress> Addresses { get; set; } = new List<CustomerAddress>();
+    }
 }
