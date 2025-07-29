@@ -12,7 +12,5 @@ namespace Yazilimxyz.Domain.Entities
         public string Name { get; set; }
         public string LastName { get; set; }
         public ICollection<Product> Products { get; set; }
-
-
     }
 }
