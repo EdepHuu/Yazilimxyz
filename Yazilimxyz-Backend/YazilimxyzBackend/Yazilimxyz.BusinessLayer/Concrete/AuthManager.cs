@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Context;
-using Yazilimxyz.EntityLayer.DTOs.Auth;
+using Yazilimxyz.BusinessLayer.DTOs.Auth;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
 

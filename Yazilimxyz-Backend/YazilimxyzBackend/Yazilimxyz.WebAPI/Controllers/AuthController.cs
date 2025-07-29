@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Yazilimxyz.BusinessLayer.Abstract;
-using Yazilimxyz.EntityLayer.DTOs.Auth;
+using Yazilimxyz.BusinessLayer.DTOs.Auth;
 
 namespace Yazilimxyz.WebAPI.Controllers
 {

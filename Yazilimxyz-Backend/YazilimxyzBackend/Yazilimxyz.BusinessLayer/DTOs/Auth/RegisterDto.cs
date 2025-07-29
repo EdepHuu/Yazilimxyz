@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Yazilimxyz.EntityLayer.DTOs.Auth
+namespace Yazilimxyz.BusinessLayer.DTOs.Auth
 {
 	public class RegisterDto
 	{
