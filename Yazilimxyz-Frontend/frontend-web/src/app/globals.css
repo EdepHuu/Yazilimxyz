@@ -68,7 +68,6 @@ body {
 }
 .heading-md-5 {
   font-size: 18px;
-  font-weight: 500;
 }
 .heading-sm-1 {
   font-size: 16px;
@@ -85,4 +84,24 @@ body {
 .heading-sm-4 {
   font-size: 14px;
   font-weight: 400;
+}
+.home-image{
+  width: 100%;
+  height: 556px;
+  object-fit:cover;
+
+}
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 556px;
+}
+.image-overlay {
+  position: absolute;
+  width: 100%;
+  height: 556px;
+  left: 0px;
+  top: 0px;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none; 
 }
