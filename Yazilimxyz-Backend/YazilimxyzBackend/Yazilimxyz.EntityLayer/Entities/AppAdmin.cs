@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace Yazilimxyz.EntityLayer.Entities
 {
-    public class AppManager : IdentityUser
+    public class AppAdmin : IdentityUser
     {
         public string Name { get; set; }
         public string LastName { get; set; }
+        public bool IsActive { get; set; } = true;
     }
 }

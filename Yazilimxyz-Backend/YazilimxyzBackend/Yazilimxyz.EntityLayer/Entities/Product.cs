@@ -3,28 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Yazilimxyz.EntityLayer.Entities;
+using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.EntityLayer.Entities
 {
     public class Product : BaseEntity
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = null;
-        public string Slug { get; set; } = null;
-        public string Description { get; set; } = null;
+        public string Name { get; set; }
+        public string Description { get; set; }
         public decimal BasePrice { get; set; }
-        public string FabricInfo { get; set; }
         public string ModelInfo { get; set; }
         public string ProductCode { get; set; }
+        public GenderType Gender { get; set; }
         public bool IsActive { get; set; } = true;
 
         public int CategoryId { get; set; }
         public Category Category { get; set; }
 
-        public string StoreId { get; set; }
-        public AppUser Store { get; set; }
+        public int MerchantId { get; set; } 
+        public Merchant Merchant { get; set; } 
 
-        public ICollection<ProductVariant> ProductVariants { get; set; }
-        public ICollection<ProductImage> ProductImages { get; set; }
+        public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
+        public ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }
