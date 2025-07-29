@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: "Raleway", "sans-serif";
+  --color-main-gray: #adb5bd;
+}
+body {
+  font-family: var(--font-display);
+}
+.text-main-gray {
+  color: var(--color-main-gray);
+}
+.bg-gray {
+  background-color: #f3f3f5;
+}
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.heading-3xl {
+  font-size: 80px;
+  font-weight: 500;
+}
+.heading-2xl {
+  font-size: 52px;
+  font-weight: 400;
+}
+.heading-xl {
+  font-size: 40px;
+  font-weight: 500;
+}
+.heading-lg-1 {
+  font-size: 30px;
+  font-weight: 500;
+}
+.heading-lg-2 {
+  font-size: 28px;
+  font-weight: 500;
+}
+.heading-lg-3 {
+  font-size: 28px;
+  font-weight: 400;
+}
+.heading-lg-4 {
+  font-size: 24px;
+  font-weight: 400;
+}
+.heading-md-1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.heading-md-2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+.heading-md-3 {
+  font-size: 20px;
+  font-weight: 500;
+}
+.heading-md-4 {
+  font-size: 20px;
+  font-weight: 400;
+}
+.heading-md-5 {
+  font-size: 18px;
+  font-weight: 500;
+}
+.heading-sm-1 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.heading-sm-2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+.heading-sm-3 {
+  font-size: 16px;
+  font-weight: 400;
+}
+.heading-sm-4 {
+  font-size: 14px;
+  font-weight: 400;
+}

@@ -19,14 +19,16 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Yazilimxyz.Application\Yazilimxyz.Application.csproj" />
-    <ProjectReference Include="..\Yazilimxyz.Infrastructure\Yazilimxyz.Infrastructure.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.BusinessLayer\Yazilimxyz.BusinessLayer.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.EntityLayer\Yazilimxyz.EntityLayer.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.InfrastructureLayer\Yazilimxyz.InfrastructureLayer.csproj" />
   </ItemGroup>
 
 </Project>
