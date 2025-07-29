@@ -29,7 +29,6 @@ namespace Yazilimxyz.BusinessLayer.Constans
         public static string ProductUpdated = "Ürün Güncellendi";
         public static string ProductNameInvalid = "Ürün ismi geçersiz";
         public static string ProductsListed = "Ürünler listelendi";
-        public static string ProductNameAlreadyExists = "Bu isimde zaten başka bir ürün var";
         public static string ProductCountOfCategoryError = "Bir kategoride en fazla 17 ürün olabilir";
 
         //User Messages
@@ -48,7 +47,7 @@ namespace Yazilimxyz.BusinessLayer.Constans
         public static string AccessTokenCreated = "Token oluşturuldu";
 
         //ProductImage Messages
-        public static string ProductImageLimit = "Bir ürüne yedi fazla resim eklenemez";
+        public static string ProductImageLimit = "Bir ürüne yediden fazla resim eklenemez";
         public static string ProductImageDeleted = "Resim silindi";
         public static string ProductImageUpdated = "Resim güncellendi";
         public static string ProductImageAdded = "Resim eklendi";
