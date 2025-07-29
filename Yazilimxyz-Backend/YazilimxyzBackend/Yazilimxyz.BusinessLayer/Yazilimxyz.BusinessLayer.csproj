@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Yazilimxyz.DataAccessLayer\Yazilimxyz.DataAccessLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.EntityLayer\Yazilimxyz.EntityLayer.csproj" />
+	<ProjectReference Include="..\Yazilimxyz.InfrastructureLayer\Yazilimxyz.InfrastructureLayer.csproj" />
   </ItemGroup>
 
 </Project>

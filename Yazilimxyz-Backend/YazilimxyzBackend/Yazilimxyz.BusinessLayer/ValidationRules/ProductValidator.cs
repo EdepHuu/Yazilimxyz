@@ -12,11 +12,11 @@ namespace Yazilimxyz.BusinessLayer.ValidationRules
     {
         public ProductValidator()
         {
-            RuleFor(p => p.ProductName).NotEmpty();
-            RuleFor(p => p.ProductName).MinimumLength(2);
-            RuleFor(p => p.ProductPrice).NotEmpty();
-            RuleFor(p => p.ProductPrice).GreaterThan(0);
-            RuleFor(p => p.ProductPrice).GreaterThanOrEqualTo(10);
+            RuleFor(p => p.Name).NotEmpty();
+            RuleFor(p => p.Name).MinimumLength(2);
+            RuleFor(p => p.BasePrice).NotEmpty();
+            RuleFor(p => p.BasePrice).GreaterThan(0);
+            RuleFor(p => p.BasePrice).GreaterThanOrEqualTo(10);
 
         }
 
