@@ -8,13 +8,13 @@ namespace Yazilimxyz.EntityLayer.Entities
 {
     public class Product : BaseEntity
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = null;
-        public string Slug { get; set; } = null;
-        public string Description { get; set; } = null;
-        public decimal BasePrice { get; set; }
-        public string FabricInfo { get; set; }
-        public string ModelInfo { get; set; }
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = null;
+        public string ProductSlug { get; set; } = null;
+        public string ProductDescription { get; set; } = null;
+        public decimal ProductPrice { get; set; }
+        public string ProductFabricInfo { get; set; }
+        public string ProductModelInfo { get; set; }
         public string ProductCode { get; set; }
         public bool IsActive { get; set; } = true;
 
