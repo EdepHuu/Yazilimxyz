@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Yazilimxyz.EntityLayer.DTOs.Auth;
+
+using Yazilimxyz.BusinessLayer.DTOs.Auth;
+
+
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
