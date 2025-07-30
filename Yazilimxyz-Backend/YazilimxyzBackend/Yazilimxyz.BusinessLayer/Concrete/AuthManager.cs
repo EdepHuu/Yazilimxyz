@@ -32,17 +32,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 		{
 			try
 			{
-				// 1. Email zaten kayıtlı mı kontrolü
 				if (await _userManager.FindByEmailAsync(dto.Email) is not null)
-				{
-					return new ResultUserDto
-					{
-						Success = false,
-						Message = $"'{dto.Email}' zaten kayıtlı."
-					};
-				}
+					return new ResultUserDto { Success = false, Message = $"'{dto.Email}' zaten kayıtlı." };
 
-				// 2. AppUser oluştur
 				var user = new AppUser
 				{
 					Name = dto.Name,
@@ -52,61 +44,45 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 					PhoneNumber = dto.Phone
 				};
 
-
 				var result = await _userManager.CreateAsync(user, dto.Password);
-
 				if (!result.Succeeded)
-				{
 					return new ResultUserDto
 					{
 						Success = false,
 						Message = string.Join(" | ", result.Errors.Select(e => e.Description))
 					};
-				}
 
-				// 3. Role göre ilgili tabloya kayıt
 				switch (dto.Role)
 				{
 					case "Customer":
-						var customer = new Customer
-						{
-							AppUserId = user.Id
-						};
-						_context.Customers.Add(customer);
+						_context.Customers.Add(new Customer { AppUserId = user.Id });
 						break;
 
 					case "Merchant":
-						var merchant = new Merchant
+						_context.Merchants.Add(new Merchant
 						{
 							AppUserId = user.Id,
-							CompanyName = dto.CompanyName ?? "", // opsiyonel
+							CompanyName = dto.CompanyName ?? "",
 							Iban = dto.Iban ?? "",
 							TaxNumber = dto.TaxNumber ?? "",
 							CompanyAddress = dto.CompanyAddress ?? "",
 							Phone = dto.Phone ?? ""
-						};
-						_context.Merchants.Add(merchant);
+						});
 						break;
 
 					case "AppAdmin":
-						var admin = new AppAdmin
+						_context.AppAdmins.Add(new AppAdmin
 						{
-							Id = user.Id, // IdentityUser'dan kalıtım aldıkları için ID aynı
+							Id = user.Id,
 							Name = user.Name,
 							LastName = user.LastName,
 							Email = user.Email,
-							UserName = user.Email,
-							IsActive = true
-						};
-						_context.AppAdmins.Add(admin);
+							UserName = user.Email
+						});
 						break;
 
 					default:
-						return new ResultUserDto
-						{
-							Success = false,
-							Message = "Geçersiz rol türü."
-						};
+						return new ResultUserDto { Success = false, Message = "Geçersiz rol türü." };
 				}
 
 				await _context.SaveChangesAsync();
@@ -114,16 +90,16 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				return new ResultUserDto
 				{
 					Success = true,
-					Message = "Kayıt başarılı."
+					Message = "Kayıt başarılı",
+					Name = user.Name,
+					LastName = user.LastName,
+					Email = user.Email,
+					Role = dto.Role
 				};
 			}
 			catch (Exception ex)
 			{
-				return new ResultUserDto
-				{
-					Success = false,
-					Message = ex.Message
-				};
+				return new ResultUserDto { Success = false, Message = ex.Message };
 			}
 		}
 
