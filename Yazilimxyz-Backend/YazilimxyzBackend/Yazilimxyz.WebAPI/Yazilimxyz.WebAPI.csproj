@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
@@ -21,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Yazilimxyz.BusinessLayer\Yazilimxyz.BusinessLayer.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.DataAccessLayer\Yazilimxyz.DataAccessLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.EntityLayer\Yazilimxyz.EntityLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.InfrastructureLayer\Yazilimxyz.InfrastructureLayer.csproj" />
   </ItemGroup>

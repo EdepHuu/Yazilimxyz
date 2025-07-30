@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Yazilimxyz.BusinessLayer.Abstract;
+
 
 using Yazilimxyz.BusinessLayer.DTOs.Auth;
 
