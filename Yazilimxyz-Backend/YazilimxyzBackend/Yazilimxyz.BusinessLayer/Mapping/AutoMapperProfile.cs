@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
+using Yazilimxyz.BusinessLayer.DTOs.Customer;
+using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
@@ -55,6 +57,16 @@ namespace Yazilimxyz.BusinessLayer.Mapping
             CreateMap<ResultSupportMessageDto, SupportMessage>().ReverseMap();
             CreateMap<CreateSupportMessageDto, SupportMessage>().ReverseMap();
             CreateMap<GetByIdSupportMessageDto, SupportMessage>().ReverseMap();
+
+            CreateMap<ResultCustomerDto, Customer>().ReverseMap();
+            CreateMap<CreateCustomerDto, Customer>().ReverseMap();
+            CreateMap<UpdateCustomerDto, Customer>().ReverseMap();
+            CreateMap<GetByIdCustomerDto, Customer>().ReverseMap();
+
+            CreateMap<ResultCustomerAddressDto, CustomerAddress>().ReverseMap();
+            CreateMap<CreateCustomerAddressDto, CustomerAddress>().ReverseMap();
+            CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
+            CreateMap<GetByIdCustomerAddressDto, CustomerAddress>().ReverseMap();
         }
     }
 }
