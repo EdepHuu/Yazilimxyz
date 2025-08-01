@@ -1,10 +1,7 @@
 ﻿using AutoMapper;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
-<<<<<<< HEAD
 using Yazilimxyz.BusinessLayer.DTOs.Customer;
 using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
-=======
->>>>>>> develop
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
@@ -30,7 +27,7 @@ namespace Yazilimxyz.BusinessLayer.Mapping
             CreateMap<UpdateProductDto, Product>().ReverseMap();
             CreateMap<GetByIdProductDto, Product>().ReverseMap();
 
-           
+
             CreateMap<ResultProductImageDto, ProductImage>().ReverseMap();
             CreateMap<CreateProductImageDto, ProductImage>().ReverseMap();
             CreateMap<UpdateProductImageDto, ProductImage>().ReverseMap();
@@ -52,7 +49,7 @@ namespace Yazilimxyz.BusinessLayer.Mapping
             CreateMap<UpdateOrderItemDto, OrderItem>().ReverseMap();
             CreateMap<GetByIdOrderItemDto, OrderItem>().ReverseMap();
 
-            CreateMap<ResultMerchantDto,  Merchant>().ReverseMap();
+            CreateMap<ResultMerchantDto, Merchant>().ReverseMap();
             CreateMap<CreateMerchantDto, Merchant>().ReverseMap();
             CreateMap<UpdateMerchantDto, Merchant>().ReverseMap();
             CreateMap<GetByIdMerchantDto, Merchant>().ReverseMap();
@@ -60,7 +57,6 @@ namespace Yazilimxyz.BusinessLayer.Mapping
             CreateMap<ResultSupportMessageDto, SupportMessage>().ReverseMap();
             CreateMap<CreateSupportMessageDto, SupportMessage>().ReverseMap();
             CreateMap<GetByIdSupportMessageDto, SupportMessage>().ReverseMap();
-<<<<<<< HEAD
 
             CreateMap<ResultCustomerDto, Customer>().ReverseMap();
             CreateMap<CreateCustomerDto, Customer>().ReverseMap();
@@ -71,8 +67,6 @@ namespace Yazilimxyz.BusinessLayer.Mapping
             CreateMap<CreateCustomerAddressDto, CustomerAddress>().ReverseMap();
             CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
             CreateMap<GetByIdCustomerAddressDto, CustomerAddress>().ReverseMap();
-=======
->>>>>>> develop
         }
     }
 }
