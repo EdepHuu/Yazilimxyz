@@ -73,11 +73,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 					case "AppAdmin":
 						_context.AppAdmins.Add(new AppAdmin
 						{
-							Id = user.Id,
-							Name = user.Name,
-							LastName = user.LastName,
-							Email = user.Email,
-							UserName = user.Email
+							AppUserId = user.Id,
+							Name = dto.Name,
+							LastName = dto.LastName
 						});
 						break;
 
@@ -115,9 +113,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				};
 			}
 
-			string role = await _context.AppAdmins.AnyAsync(a => a.Id == user.Id) ? "AppAdmin" :
-						  await _context.Merchants.AnyAsync(m => m.AppUserId == user.Id) ? "Merchant" :
-						  "Customer";
+			string role = await _context.AppAdmins.AnyAsync(a => a.AppUserId == user.Id) ? "AppAdmin" :
+			  await _context.Merchants.AnyAsync(m => m.AppUserId == user.Id) ? "Merchant" :
+			  "Customer";
 
 			return new ResultUserDto
 			{

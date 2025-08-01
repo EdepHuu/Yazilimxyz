@@ -9,6 +9,9 @@ using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.Concrete;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
+using Yazilimxyz.DataAccessLayer.Abstract;
+using Yazilimxyz.DataAccessLayer.Concrete;
+using Yazilimxyz.BusinessLayer.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +21,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseSqlServer(connectionString,
 		b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer")));
 
-// Identity
 builder.Services.AddIdentity<AppUser, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
@@ -59,9 +61,31 @@ builder.Services.AddCors(options =>
 });
 
 // DI
-builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IProductService, ProductManager>();
+builder.Services.AddScoped<ICategoryService, CategoryManager>();
+builder.Services.AddScoped<IOrderService, OrderManager>();
+builder.Services.AddScoped<IOrderItemService, OrderItemManager>();
+builder.Services.AddScoped<IProductVariantService, ProductVariantManager>();
+builder.Services.AddScoped<IProductImageService, ProductImageManager>();
+builder.Services.AddScoped<ISupportMessageService, SupportMessageManager>();
 builder.Services.AddScoped<IAuthService, AuthManager>();
-
+builder.Services.AddScoped<IAppUserService, AppUserManager>();
+builder.Services.AddScoped<IMerchantService, MerchantManager>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+builder.Services.AddScoped<ISupportMessageRepository, SupportMessageRepository>();
+builder.Services.AddScoped<IAppUserRepository, AppUserRepository>();
+builder.Services.AddScoped<IAppAdminRepository, AppAdminRepository>();
+builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
+builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile)); // AutoMapper için
+builder.Services.AddScoped<ITokenService, JwtTokenService>(); // TokenService için
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 

@@ -16,8 +16,9 @@ namespace Yazilimxyz.EntityLayer.Entities
 
         public Customer? Customer { get; set; }
         public Merchant? Merchant { get; set; }
+		public bool IsAdmin { get; set; } // Bu gerekli
 
-        public ICollection<Product> Products { get; set; } = new List<Product>();
+		public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<SupportMessage> SentMessages { get; set; } = new List<SupportMessage>();
         public ICollection<SupportMessage> ReceivedMessages { get; set; } = new List<SupportMessage>();
