@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
+using Yazilimxyz.BusinessLayer.DTOs.AppAdmin;
+using Yazilimxyz.BusinessLayer.DTOs.AppUser;
+using Yazilimxyz.BusinessLayer.DTOs.CartItem;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
 using Yazilimxyz.BusinessLayer.DTOs.Customer;
 using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
-
-
-
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
@@ -72,8 +72,21 @@ namespace Yazilimxyz.BusinessLayer.Mapping
             CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
             CreateMap<GetByIdCustomerAddressDto, CustomerAddress>().ReverseMap();
 
+            CreateMap<ResultAppUserDto, AppUser>().ReverseMap();
+            CreateMap<CreateAppUserDto, AppUser>().ReverseMap();
+            CreateMap<UpdateAppUserDto, AppUser>().ReverseMap();
+            CreateMap<GetByIdAppUserDto, AppUser>().ReverseMap();
 
-          
+            CreateMap<ResultCartItemDto, CartItem>().ReverseMap();
+            CreateMap<CreateCartItemDto, CartItem>().ReverseMap();
+            CreateMap<UpdateCartItemDto, CartItem>().ReverseMap();
+            CreateMap<GetByIdCartItemDto, CartItem>().ReverseMap();
+
+            CreateMap<ResultAppAdminDto, AppAdmin>().ReverseMap();
+            CreateMap<CreateAppAdminDto, AppAdmin>().ReverseMap();
+            CreateMap<UpdateAppAdminDto, AppAdmin>().ReverseMap();
+            CreateMap<GetByIdAppAdminDto, AppAdmin>().ReverseMap();
+
         }
     }
 }
