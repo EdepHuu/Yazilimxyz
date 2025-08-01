@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
+using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.BusinessLayer.Concrete

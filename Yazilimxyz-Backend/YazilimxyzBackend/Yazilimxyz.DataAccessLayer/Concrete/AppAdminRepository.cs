@@ -11,58 +11,79 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Concrete
 {
-    public class AppAdminRepository : IAppAdminRepository
-    {
-        private readonly UserManager<AppAdmin> _userManager;
-        private readonly AppDbContext _context;
+	public class AppAdminRepository : IAppAdminRepository
+	{
+		private readonly UserManager<AppUser> _userManager;
+		private readonly AppDbContext _context;
 
-        public AppAdminRepository(UserManager<AppAdmin> userManager, AppDbContext context)
-        {
-            _userManager = userManager;
-            _context = context;
-        }
+		public AppAdminRepository(UserManager<AppUser> userManager, AppDbContext context)
+		{
+			_userManager = userManager;
+			_context = context;
+		}
 
-        public async Task<AppAdmin?> GetByIdAsync(string id)
-        {
-            return await _userManager.FindByIdAsync(id);
-        }
+		public async Task<AppAdmin?> GetByIdAsync(string id)
+		{
+			return await _context.AppAdmins
+				.Include(x => x.AppUser)
+				.FirstOrDefaultAsync(x => x.AppUserId == id);
+		}
 
-        public async Task<AppAdmin?> GetByEmailAsync(string email)
-        {
-            return await _userManager.FindByEmailAsync(email);
-        }
+		public async Task<AppAdmin?> GetByEmailAsync(string email)
+		{
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null) return null;
+			return await _context.AppAdmins
+				.Include(x => x.AppUser)
+				.FirstOrDefaultAsync(x => x.AppUserId == user.Id);
+		}
 
-        public async Task<IEnumerable<AppAdmin?>> GetAllActiveAsync()
-        {
-            return await _context.Set<AppAdmin>()
-                .Where(a => a.IsActive)
-                .ToListAsync();
-        }
+		public async Task<IEnumerable<AppAdmin>> GetAllActiveAsync()
+		{
+			return await _context.AppAdmins
+				.Include(x => x.AppUser)
+				.Where(a => a.IsActive)
+				.ToListAsync();
+		}
 
-        public async Task<AppAdmin?> CreateAsync(AppAdmin admin)
-        {
-            var result = await _userManager.CreateAsync(admin);
-            return result.Succeeded ? admin : null;
-        }
+		public async Task<AppAdmin?> CreateAsync(AppAdmin admin, string password)
+		{
+			var appUser = admin.AppUser;
+			var result = await _userManager.CreateAsync(appUser, password);
+			if (!result.Succeeded)
+				return null;
 
-        public async Task<AppAdmin?> UpdateAsync(AppAdmin admin)
-        {
-            var result = await _userManager.UpdateAsync(admin);
-            return result.Succeeded ? admin : null;
-        }
+			admin.AppUserId = appUser.Id;
+			_context.AppAdmins.Add(admin);
+			await _context.SaveChangesAsync();
+			return admin;
+		}
 
-        public async Task DeleteAsync(string id)
-        {
-            var admin = await _userManager.FindByIdAsync(id);
-            if (admin != null)
-            {
-                await _userManager.DeleteAsync(admin);
-            }
-        }
+		public async Task<AppAdmin?> UpdateAsync(AppAdmin admin)
+		{
+			var result = await _userManager.UpdateAsync(admin.AppUser);
+			if (!result.Succeeded)
+				return null;
 
-        public async Task<bool> ExistsAsync(string id)
-        {
-            return await _userManager.FindByIdAsync(id) != null;
-        }
-    }
+			_context.AppAdmins.Update(admin);
+			await _context.SaveChangesAsync();
+			return admin;
+		}
+
+		public async Task DeleteAsync(string id)
+		{
+			var admin = await GetByIdAsync(id);
+			if (admin != null)
+			{
+				await _userManager.DeleteAsync(admin.AppUser);
+				_context.AppAdmins.Remove(admin);
+				await _context.SaveChangesAsync();
+			}
+		}
+
+		public async Task<bool> ExistsAsync(string id)
+		{
+			return await _context.AppAdmins.AnyAsync(x => x.AppUserId == id);
+		}
+	}
 }

@@ -7,14 +7,14 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Abstract
 {
-    public interface IAppAdminRepository
-    {
-        Task<AppAdmin?> GetByIdAsync(string id);
-        Task<AppAdmin?> GetByEmailAsync(string email);
-        Task<IEnumerable<AppAdmin?>> GetAllActiveAsync();
-        Task<AppAdmin?> CreateAsync(AppAdmin admin);
-        Task<AppAdmin?> UpdateAsync(AppAdmin admin);
-        Task DeleteAsync(string id);
-        Task<bool> ExistsAsync(string id);
-    }
+	public interface IAppAdminRepository
+	{
+		Task<AppAdmin?> GetByIdAsync(string appUserId);
+		Task<AppAdmin?> GetByEmailAsync(string email);
+		Task<IEnumerable<AppAdmin>> GetAllActiveAsync();
+		Task<AppAdmin?> CreateAsync(AppAdmin admin, string password);
+		Task<AppAdmin?> UpdateAsync(AppAdmin admin);
+		Task DeleteAsync(string appUserId);
+		Task<bool> ExistsAsync(string appUserId);
+	}
 }
