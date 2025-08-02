@@ -10,7 +10,6 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Product
         public string ModelInfo { get; set; }
         public string ProductCode { get; set; }
         public GenderType Gender { get; set; }
-        public bool IsActive { get; set; } = true;
         public int CategoryId { get; set; }
         public int MerchantId { get; set; }
     }
