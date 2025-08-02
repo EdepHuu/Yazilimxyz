@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Firstmg : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -92,8 +92,7 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    AppUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    AppUserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    AppUserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -104,11 +103,6 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         principalTable: "AppUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Customers_AppUsers_AppUserId1",
-                        column: x => x.AppUserId1,
-                        principalTable: "AppUsers",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -122,8 +116,7 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     Iban = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TaxNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CompanyAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AppUserId1 = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -134,11 +127,6 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         principalTable: "AppUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Merchants_AppUsers_AppUserId1",
-                        column: x => x.AppUserId1,
-                        principalTable: "AppUsers",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -418,24 +406,10 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Customers_AppUserId1",
-                table: "Customers",
-                column: "AppUserId1",
-                unique: true,
-                filter: "[AppUserId1] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Merchants_AppUserId",
                 table: "Merchants",
                 column: "AppUserId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Merchants_AppUserId1",
-                table: "Merchants",
-                column: "AppUserId1",
-                unique: true,
-                filter: "[AppUserId1] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_OrderId",

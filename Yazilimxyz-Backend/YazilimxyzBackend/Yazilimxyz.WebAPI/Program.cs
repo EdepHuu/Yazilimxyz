@@ -12,15 +12,16 @@ using Microsoft.OpenApi.Models;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.BusinessLayer.Mapping;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
+// DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseSqlServer(connectionString,
+	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
 		b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer")));
 
+// Identity
 builder.Services.AddIdentity<AppUser, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
@@ -49,7 +50,7 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 
-// CORS (Swagger veya frontend eriþimi için)
+// CORS
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowAll", policy =>
@@ -60,7 +61,7 @@ builder.Services.AddCors(options =>
 	});
 });
 
-// DI
+// DI (Service & Repo)
 builder.Services.AddScoped<IProductService, ProductManager>();
 builder.Services.AddScoped<ICategoryService, CategoryManager>();
 builder.Services.AddScoped<IOrderService, OrderManager>();
@@ -71,6 +72,7 @@ builder.Services.AddScoped<ISupportMessageService, SupportMessageManager>();
 builder.Services.AddScoped<IAuthService, AuthManager>();
 builder.Services.AddScoped<IAppUserService, AppUserManager>();
 builder.Services.AddScoped<IMerchantService, MerchantManager>();
+
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -84,17 +86,20 @@ builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile)); // AutoMapper için
-builder.Services.AddScoped<ITokenService, JwtTokenService>(); // TokenService için
+
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile)); // Profil tanýmý burada yapýlýr
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger + JWT token giriþi
+// Swagger + JWT Token Desteði
 builder.Services.AddSwaggerGen(c =>
 {
 	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
 
-	// Swagger üstünde token girebilmek için
 	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 	{
 		Name = "Authorization",
@@ -125,17 +130,14 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-	app.UseDeveloperExceptionPage(); // opsiyonel ama hata ayýklamada faydalý
+	app.UseDeveloperExceptionPage();
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
