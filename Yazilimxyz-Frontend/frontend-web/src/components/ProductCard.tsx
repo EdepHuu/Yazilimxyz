@@ -24,14 +24,13 @@ function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
 
   const handleAddToCart = () => {
-    // Ürün detay sayfasında olmayan bilgileri varsayılan olarak ekledik
     const itemToAdd = {
       id: product.id,
       title: product.title,
       price: product.price,
       image: product.image,
-      color: "Mevcut Renk", // Varsayılan bir renk
-      size: "M",           // Varsayılan bir beden
+      color: "Mevcut Renk",
+      size: "M",
     };
     addToCart(itemToAdd);
     router.push("/sepetim");
@@ -39,7 +38,6 @@ function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="group flex flex-col p-2">
-      {/* Ürün görseli ve başlığı için Link */}
       <Link href={`/urunDetay/${product.id}`}>
         <div className="overflow-hidden">
           <Image
@@ -47,13 +45,17 @@ function ProductCard({ product }: ProductCardProps) {
             alt={product.title}
             width={442}
             height={442}
-            className="w-full h-[442px] object-fill"
+            className="w-full h-[320px] object-fill"
           />
 
           <div className="flex justify-between items-center p-4">
             <div>
-              <h2 className="heading-sm-1 mb-1">{product.title}</h2>
-              <p className="heading-sm-1 text-main-gray mb-1">{product.colors}</p>
+              <h2 className="heading-sm-1 mb-1 truncate w-32 h-6">
+                {product.title}
+              </h2>
+              <p className="heading-sm-1 text-main-gray mb-1">
+                {product.colors}
+              </p>
             </div>
 
             <div className="ml-4">
@@ -63,17 +65,16 @@ function ProductCard({ product }: ProductCardProps) {
         </div>
       </Link>
 
-      {/* Sepete Ekle butonu */}
       <div className="px-4 py-2">
         <button
           onClick={handleAddToCart}
           className="w-full bg-black text-white text-sm py-2 rounded-md hover:bg-gray-800 transition-colors"
         >
-          Sepete Ekle...!
+          Sepete Ekle
         </button>
       </div>
     </div>
   );
 }
 
-export default ProductCard; 
+export default ProductCard;
