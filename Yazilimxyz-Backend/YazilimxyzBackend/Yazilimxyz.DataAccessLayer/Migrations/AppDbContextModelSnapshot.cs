@@ -199,17 +199,10 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("AppUserId1")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AppUserId")
                         .IsUnique();
-
-                    b.HasIndex("AppUserId1")
-                        .IsUnique()
-                        .HasFilter("[AppUserId1] IS NOT NULL");
 
                     b.ToTable("Customers");
                 });
@@ -278,9 +271,6 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("AppUserId1")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("CompanyAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -305,10 +295,6 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
 
                     b.HasIndex("AppUserId")
                         .IsUnique();
-
-                    b.HasIndex("AppUserId1")
-                        .IsUnique()
-                        .HasFilter("[AppUserId1] IS NOT NULL");
 
                     b.ToTable("Merchants");
                 });
@@ -611,14 +597,10 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Customer", b =>
                 {
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "AppUser")
-                        .WithOne()
+                        .WithOne("Customer")
                         .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Customer", "AppUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", null)
-                        .WithOne("Customer")
-                        .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Customer", "AppUserId1");
 
                     b.Navigation("AppUser");
                 });
@@ -637,14 +619,10 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Merchant", b =>
                 {
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "AppUser")
-                        .WithOne()
+                        .WithOne("Merchant")
                         .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Merchant", "AppUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", null)
-                        .WithOne("Merchant")
-                        .HasForeignKey("Yazilimxyz.EntityLayer.Entities.Merchant", "AppUserId1");
 
                     b.Navigation("AppUser");
                 });

@@ -91,22 +91,22 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(sm => sm.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Merchant → AppUser
-            modelBuilder.Entity<Merchant>()
-                .HasOne(m => m.AppUser)
-                .WithOne()
-                .HasForeignKey<Merchant>(m => m.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+			// Merchant → AppUser
+			modelBuilder.Entity<Merchant>()
+	            .HasOne(m => m.AppUser)
+	            .WithOne(u => u.Merchant) // bu şekilde
+	            .HasForeignKey<Merchant>(m => m.AppUserId)
+	            .OnDelete(DeleteBehavior.Restrict);
 
-            // Customer → AppUser
-            modelBuilder.Entity<Customer>()
-                .HasOne(c => c.AppUser)
-                .WithOne()
-                .HasForeignKey<Customer>(c => c.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+			// Customer → AppUser
+			modelBuilder.Entity<Customer>()
+	            .HasOne(c => c.AppUser)
+	            .WithOne(u => u.Customer)
+	            .HasForeignKey<Customer>(c => c.AppUserId)
+	            .OnDelete(DeleteBehavior.Restrict);
 
-            // CustomerAddress → Customer
-            modelBuilder.Entity<CustomerAddress>()
+			// CustomerAddress → Customer
+			modelBuilder.Entity<CustomerAddress>()
                 .HasOne(ca => ca.Customer)
                 .WithMany(c => c.Addresses)
                 .HasForeignKey(ca => ca.CustomerId)
