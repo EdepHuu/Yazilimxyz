@@ -1,5 +1,7 @@
 "use client";
 
+
+
 import { FavoriteIcon, SearchIcon, ShopIcon, UserIcon } from "@/icons/icon";
 import Link from "next/link";
 

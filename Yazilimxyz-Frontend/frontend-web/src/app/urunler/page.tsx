@@ -1,6 +1,7 @@
-// app/urunler/page.tsx
 import ProductCard from "@/components/ProductCard";
 import React from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const products = [
   {
@@ -19,43 +20,43 @@ const products = [
   },
   {
     id: 3,
-    title: "Loose Straight Jean",
-    colors: "Açık mavi",
+    title: "Siyah Deri Kol Çantası",
+    colors: "Siyah",
     price: 980,
     image: "/product-img-3.jpg",
   },
   {
     id: 4,
-    title: "Loose Straight Jean",
-    colors: "Buz mavisi, Koyu mavi",
+    title: "Kırmızı Güneş Gözlüğü",
+    colors: "Kırmızı",
     price: 1100,
     image: "/product-img-4.jpg",
   },
   {
     id: 5,
-    title: "Loose Straight Jean",
-    colors: "Taş rengi",
+    title: "Turuncu Sweatshirt",
+    colors: "Turuncu",
     price: 950,
     image: "/product-img-5.jpg",
   },
   {
     id: 6,
-    title: "Loose Straight Jean",
-    colors: "Açık mavi",
+    title: "Lacivert Pileli Uzun Etek",
+    colors: "Lacivert",
     price: 1020,
     image: "/product-img-6.jpg",
   },
   {
     id: 7,
-    title: "Loose Straight Jean",
-    colors: "Koyu mavi, Gri",
+    title: "Beyaz Spor Ayakkabı",
+    colors: "Beyaz",
     price: 1080,
     image: "/product-img-7.jpg",
   },
   {
     id: 8,
-    title: "Loose Straight Jean",
-    colors: "Lacivert",
+    title: "Oversize Bej Kaban",
+    colors: "Bej",
     price: 990,
     image: "/product-img-8.jpg",
   },
@@ -63,15 +64,19 @@ const products = [
 
 function UrunlerPage() {
   return (
-    <section className="container p-0 m-0">
-      <div className="heading-lg-3 mb-4">Yeni Ürünler</div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-    </section>
+    <>
+ 
+      <section className="container p-0 m-0">
+        <div className="heading-lg-3 mb-4">Yeni Ürünler</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      </section>
+     
+    </>
   );
 }
 
-export default UrunlerPage;
+export default UrunlerPage
