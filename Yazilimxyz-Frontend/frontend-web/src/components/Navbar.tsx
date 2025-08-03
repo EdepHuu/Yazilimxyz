@@ -42,7 +42,7 @@ export default function Navbar() {
               className="w-full pl-2 pr-8 py-2 border-none bg-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
             />
           </div>
-          <Link href="/login">
+          <Link href="/giris">
             <UserIcon />
           </Link>
           <Link href="/sepet">

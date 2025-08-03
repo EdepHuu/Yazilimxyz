@@ -4,7 +4,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Footer from "@/components/Footer";
-import { useCart } from "@/context/CartContext";
 import { useRouter } from 'next/navigation'; 
 
 interface ProductDetailPageProps {
@@ -140,7 +139,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);
   const [selectedSize, setSelectedSize] = useState("");
   
-  const { addToCart } = useCart();
   const router = useRouter(); // useRouter hook'u kullanıldı
 
   const handleAddToCart = () => {
@@ -153,7 +151,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         color: selectedColor,
         size: selectedSize,
       };
-      addToCart(itemToAdd);
       
       // Ürün sepete eklendikten sonra sepet sayfasına yönlendirme yapılıyor
       router.push('/sepetim');

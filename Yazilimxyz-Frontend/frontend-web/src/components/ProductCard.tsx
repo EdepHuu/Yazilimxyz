@@ -4,7 +4,6 @@ import { FavoriteGrayIcon } from "@/icons/icon";
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 
 type Product = {
@@ -20,7 +19,6 @@ type ProductCardProps = {
 };
 
 function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart();
   const router = useRouter();
 
   const handleAddToCart = () => {
@@ -32,7 +30,6 @@ function ProductCard({ product }: ProductCardProps) {
       color: "Mevcut Renk",
       size: "M",
     };
-    addToCart(itemToAdd);
     router.push("/sepetim");
   };
 
