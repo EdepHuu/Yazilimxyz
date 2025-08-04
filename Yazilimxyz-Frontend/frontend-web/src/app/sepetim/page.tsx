@@ -1,7 +1,9 @@
-//src/app/sepetim/page.tsx
+"use client";  // BU SATIR ÇOK ÖNEMLİ, EN ÜSTE EKLE
+
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const staticCartItems = [
   {
@@ -23,15 +25,27 @@ const staticCartItems = [
 ];
 
 export default function SepetimPage() {
-  const subtotal = staticCartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const router = useRouter();
+
+  const subtotal = staticCartItems.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0
+  );
   const shippingCost = 100;
   const total = subtotal + shippingCost;
+
+  const handleCheckout = () => {
+    router.push("/odeme"); // yönlendirme buradan oluyor
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Sepet</h1>
 
-      <nav className="text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
+      <nav
+        className="text-sm text-gray-500 mb-6"
+        aria-label="Breadcrumb"
+      >
         <ol className="list-reset flex gap-2">
           <li>
             <Link href="/" className="hover:underline cursor-pointer">
@@ -58,7 +72,10 @@ export default function SepetimPage() {
               </div>
 
               {staticCartItems.map((item) => (
-                <div key={item.id} className="grid grid-cols-5 items-center mb-6 border-b pb-6 last:border-b-0 last:pb-0">
+                <div
+                  key={item.id}
+                  className="grid grid-cols-5 items-center mb-6 border-b pb-6 last:border-b-0 last:pb-0"
+                >
                   <div className="col-span-2 flex items-center gap-4">
                     <Image
                       src={item.image}
@@ -69,22 +86,36 @@ export default function SepetimPage() {
                     />
                     <div>
                       <h2 className="font-semibold">{item.title}</h2>
-                      <p className="text-sm text-gray-500">Ürün Kodu: {item.id}</p>
-                      <p className="text-sm text-gray-500">Beden: {item.size}</p>
+                      <p className="text-sm text-gray-500">
+                        Ürün Kodu: {item.id}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Beden: {item.size}
+                      </p>
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold">{item.price.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</p>
+                    <p className="font-semibold">
+                      {item.price.toLocaleString("tr-TR", {
+                        style: "currency",
+                        currency: "TRY",
+                      })}
+                    </p>
                   </div>
                   <div>
                     <p>{item.quantity}</p>
                   </div>
                   <div>
-                    <p className="font-semibold">{(item.price * item.quantity).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</p>
+                    <p className="font-semibold">
+                      {(item.price * item.quantity).toLocaleString("tr-TR", {
+                        style: "currency",
+                        currency: "TRY",
+                      })}
+                    </p>
                   </div>
                   <div>
                     <button className="text-gray-400 hover:text-red-500">
-                       X
+                      X
                     </button>
                   </div>
                 </div>
@@ -97,23 +128,40 @@ export default function SepetimPage() {
           <h2 className="text-xl font-bold mb-4">Sepet Toplamı</h2>
           <div className="flex justify-between mb-2">
             <p>Sipariş Toplamı</p>
-            <p className="font-semibold">{subtotal.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</p>
+            <p className="font-semibold">
+              {subtotal.toLocaleString("tr-TR", {
+                style: "currency",
+                currency: "TRY",
+              })}
+            </p>
           </div>
           <div className="flex justify-between mb-4">
             <p>Kargo</p>
-            <p className="font-semibold">{shippingCost.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</p>
+            <p className="font-semibold">
+              {shippingCost.toLocaleString("tr-TR", {
+                style: "currency",
+                currency: "TRY",
+              })}
+            </p>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-4 mt-4">
             <p>Toplam</p>
-            <p>{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</p>
+            <p>
+              {total.toLocaleString("tr-TR", {
+                style: "currency",
+                currency: "TRY",
+              })}
+            </p>
           </div>
-
-          <button className="w-full bg-black text-white py-3 mt-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+          <button>Sepete Ekle</button>
+          <button
+            onClick={handleCheckout}
+            className="w-full bg-black text-white py-3 mt-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+          >
             Satın Al
           </button>
         </div>
       </div>
-      {/* Footer buradaydı, şimdilik kaldırıldı. */}
     </div>
   );
 }
