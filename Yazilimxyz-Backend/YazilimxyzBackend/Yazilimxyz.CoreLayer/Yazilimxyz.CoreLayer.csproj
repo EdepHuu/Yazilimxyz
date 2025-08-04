@@ -7,12 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Aspects\" />
-    <Folder Include="CrossCuttingConcerns\" />
+    <Folder Include="Aspects\Validation\" />
+    <Folder Include="Aspects\Transaction\" />
+    <Folder Include="Aspects\Performance\" />
     <Folder Include="DependencyResolvers\" />
-
-
-
 
   </ItemGroup>
 

@@ -16,7 +16,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _categoryRepository = categoryRepository;
             _mapper = mapper;
         }
-
+        
         public async Task<List<ResultCategoryDto>> GetAllAsync()
         {
             var categories = await _categoryRepository.GetAllAsync();
