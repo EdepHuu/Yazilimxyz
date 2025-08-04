@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.ProductImage;
 using Yazilimxyz.DataAccessLayer.Abstract;
@@ -17,16 +19,33 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
+        public async Task<ResultProductImageDto?> GetByIdAsync(int id)
+        {
+            var image = await _productImageRepository.GetByIdAsync(id);
+            return _mapper.Map<ResultProductImageDto>(image);
+        }
+
         public async Task<List<ResultProductImageDto>> GetAllAsync()
         {
             var images = await _productImageRepository.GetAllAsync();
             return _mapper.Map<List<ResultProductImageDto>>(images);
         }
 
-        public async Task<ResultProductImageDto> GetByIdAsync(int id)
+        public async Task<List<ResultProductImageDto>> GetByProductIdAsync(int productId)
         {
-            var image = await _productImageRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultProductImageDto>(image);
+            var images = await _productImageRepository.GetByProductIdAsync(productId);
+            return _mapper.Map<List<ResultProductImageDto>>(images);
+        }
+
+        public async Task<ResultProductImageDto?> GetMainImageAsync(int productId)
+        {
+            var mainImage = await _productImageRepository.GetMainImageAsync(productId);
+            return _mapper.Map<ResultProductImageDto>(mainImage);
+        }
+
+        public async Task ReorderImagesAsync(int productId, List<int> imageIds)
+        {
+            await _productImageRepository.ReorderImagesAsync(productId, imageIds);
         }
 
         public async Task CreateAsync(CreateProductImageDto dto)
@@ -37,17 +56,17 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
         public async Task UpdateAsync(UpdateProductImageDto dto)
         {
-            var image = _mapper.Map<ProductImage>(dto);
-            await _productImageRepository.UpdateAsync(image);
+            var image = await _productImageRepository.GetByIdAsync(dto.Id);
+            if (image != null)
+            {
+                _mapper.Map(dto, image);
+                await _productImageRepository.UpdateAsync(image);
+            }
         }
 
         public async Task DeleteAsync(int id)
         {
-            var image = await _productImageRepository.GetByIdAsync(id);
-            if (image != null)
-            {
-                await _productImageRepository.DeleteAsync(image);
-            }
+            await _productImageRepository.DeleteAsync(id);
         }
     }
 }
