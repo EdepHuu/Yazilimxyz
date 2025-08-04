@@ -7,9 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Aspects\" />
-    <Folder Include="CrossCuttingConcerns\" />
+    <Folder Include="Aspects\Validation\" />
+    <Folder Include="Aspects\Transaction\" />
+    <Folder Include="Aspects\Performance\" />
     <Folder Include="DependencyResolvers\" />
+    <Folder Include="Utilities\Helpers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Castle.DynamicProxy" Version="2.2.0" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.6.25358.103" />
   </ItemGroup>
 
 </Project>
