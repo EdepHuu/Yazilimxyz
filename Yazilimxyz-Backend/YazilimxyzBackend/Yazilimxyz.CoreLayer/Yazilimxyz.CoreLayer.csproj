@@ -10,7 +10,10 @@
     <Folder Include="Aspects\" />
     <Folder Include="CrossCuttingConcerns\" />
     <Folder Include="DependencyResolvers\" />
-    <Folder Include="Utilities\" />
+
+
+
+
   </ItemGroup>
 
 </Project>
