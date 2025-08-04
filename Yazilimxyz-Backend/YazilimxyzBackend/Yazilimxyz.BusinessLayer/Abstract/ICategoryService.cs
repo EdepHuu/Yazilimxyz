@@ -1,6 +1,4 @@
 ﻿using Yazilimxyz.BusinessLayer.DTOs.Category;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
@@ -11,8 +9,8 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<List<ResultCategoryDto>> GetActiveAsync();
         Task<List<ResultCategoryDto>> GetParentCategoriesAsync();
         Task<List<ResultCategoryDto>> GetSubCategoriesAsync(int parentId);
-        //Task<ResultCategoryWithSubDto?> GetWithSubCategoriesAsync(int id);
-        //Task<List<ResultCategoryHierarchyDto>> GetCategoryHierarchyAsync();
+        Task<ResultCategoryWithSubDto?> GetWithSubCategoriesAsync(int id);
+        Task<List<ResultCategoryHierarchyDto>> GetCategoryHierarchyAsync();
         Task CreateAsync(CreateCategoryDto dto);
         Task UpdateAsync(UpdateCategoryDto dto);
         Task DeleteAsync(int id);

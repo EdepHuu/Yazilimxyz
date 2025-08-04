@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
@@ -56,23 +54,23 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<List<ResultProductDto>>(products);
         }
 
-        //public async Task<ResultProductWithVariantsDto?> GetWithVariantsAsync(int id)
-        //{
-        //    var product = await _productRepository.GetWithVariantsAsync(id);
-        //    return _mapper.Map<ResultProductWithVariantsDto>(product);
-        //}
+        public async Task<ResultProductWithVariantsDto?> GetWithVariantsAsync(int id)
+        {
+            var product = await _productRepository.GetWithVariantsAsync(id);
+            return _mapper.Map<ResultProductWithVariantsDto>(product);
+        }
 
-        //public async Task<ResultProductWithImagesDto?> GetWithImagesAsync(int id)
-        //{
-        //    var product = await _productRepository.GetWithImagesAsync(id);
-        //    return _mapper.Map<ResultProductWithImagesDto>(product);
-        //}
+        public async Task<ResultProductWithImagesDto?> GetWithImagesAsync(int id)
+        {
+            var product = await _productRepository.GetWithImagesAsync(id);
+            return _mapper.Map<ResultProductWithImagesDto>(product);
+        }
 
-        //public async Task<ResultProductDetailedDto?> GetDetailedAsync(int id)
-        //{
-        //    var product = await _productRepository.GetDetailedAsync(id);
-        //    return _mapper.Map<ResultProductDetailedDto>(product);
-        //}
+        public async Task<ResultProductDetailedDto?> GetDetailedAsync(int id)
+        {
+            var product = await _productRepository.GetDetailedAsync(id);
+            return _mapper.Map<ResultProductDetailedDto>(product);
+        }
 
         public async Task<List<ResultProductDto>> SearchAsync(string searchTerm)
         {
