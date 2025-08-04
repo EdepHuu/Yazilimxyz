@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.DataAccessLayer"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.InfrastructureLayer", "Yazilimxyz.InfrastructureLayer\Yazilimxyz.InfrastructureLayer.csproj", "{C10A5DA6-62A0-47D5-B738-0B3825EC439A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yazilimxyz.CoreLayer", "Yazilimxyz.CoreLayer\Yazilimxyz.CoreLayer.csproj", "{172C3A86-FF16-49B3-A956-1CD75B2CB5C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{C10A5DA6-62A0-47D5-B738-0B3825EC439A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C10A5DA6-62A0-47D5-B738-0B3825EC439A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C10A5DA6-62A0-47D5-B738-0B3825EC439A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{172C3A86-FF16-49B3-A956-1CD75B2CB5C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{172C3A86-FF16-49B3-A956-1CD75B2CB5C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{172C3A86-FF16-49B3-A956-1CD75B2CB5C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{172C3A86-FF16-49B3-A956-1CD75B2CB5C7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
