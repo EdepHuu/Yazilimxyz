@@ -48,11 +48,11 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
         public async Task UpdateAsync(UpdateCustomerAddressDto dto)
         {
-            var address = await _customerAddressRepository.GetByIdAsync(dto.Id);
-            if (address != null)
+            var existing = await _customerAddressRepository.GetByIdAsync(dto.Id);
+            if (existing != null)
             {
-                _mapper.Map(dto, address);
-                await _customerAddressRepository.UpdateAsync(address);
+                _mapper.Map(dto, existing);
+                await _customerAddressRepository.UpdateAsync(existing);
             }
         }
 
