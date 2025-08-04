@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.DataAccessLayer.Abstract;
@@ -32,11 +30,11 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<ResultOrderDto>(order);
         }
 
-        //public async Task<ResultOrderWithItemsDto?> GetWithItemAsync(int id)
-        //{
-        //    var order = await _orderRepository.GetWithItemAsync(id);
-        //    return _mapper.Map<ResultOrderWithItemsDto>(order);
-        //}
+        public async Task<ResultOrderWithItemsDto?> GetWithItemAsync(int id)
+        {
+            var order = await _orderRepository.GetWithItemAsync(id);
+            return _mapper.Map<ResultOrderWithItemsDto>(order);
+        }
 
         public async Task<List<ResultOrderDto>> GetAllAsync()
         {

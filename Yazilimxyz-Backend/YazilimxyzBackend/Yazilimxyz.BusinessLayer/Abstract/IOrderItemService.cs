@@ -1,6 +1,4 @@
 ﻿using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {

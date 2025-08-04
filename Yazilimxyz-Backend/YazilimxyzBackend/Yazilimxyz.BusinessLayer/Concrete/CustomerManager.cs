@@ -29,11 +29,11 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<ResultCustomerDto?>(customer);
         }
 
-        //public async Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id)
-        //{
-        //    var customer = await _customerRepository.GetWithAddressesAsync(id);
-        //    return _mapper.Map<ResultCustomerWithAddressesDto?>(customer);
-        //}
+        public async Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id)
+        {
+            var customer = await _customerRepository.GetWithAddressesAsync(id);
+            return _mapper.Map<ResultCustomerWithAddressesDto?>(customer);
+        }
 
         public async Task CreateAsync(CreateCustomerDto dto)
         {

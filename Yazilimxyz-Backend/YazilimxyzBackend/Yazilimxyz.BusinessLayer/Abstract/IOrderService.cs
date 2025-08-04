@@ -1,7 +1,5 @@
 ﻿using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.EntityLayer.Enums;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
@@ -9,7 +7,7 @@ namespace Yazilimxyz.BusinessLayer.Abstract
     {
         Task<ResultOrderDto?> GetByIdAsync(int id);
         Task<ResultOrderDto?> GetByOrderNumberAsync(string orderNumber);
-        //Task<ResultOrderWithItemsDto?> GetWithItemAsync(int id);
+        Task<ResultOrderWithItemsDto?> GetWithItemAsync(int id);
 
         Task<List<ResultOrderDto>> GetAllAsync();
         Task<List<ResultOrderDto>> GetByUserIdAsync(string userId);

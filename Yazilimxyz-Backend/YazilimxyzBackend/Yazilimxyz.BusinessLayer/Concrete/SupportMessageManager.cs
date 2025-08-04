@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Yazilimxyz.BusinessLayer.Abstract;
-using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
+using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
 

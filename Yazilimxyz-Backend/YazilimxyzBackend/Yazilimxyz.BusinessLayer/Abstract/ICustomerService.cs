@@ -1,5 +1,4 @@
 ﻿using Yazilimxyz.BusinessLayer.DTOs.Customer;
-using System.Threading.Tasks;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
@@ -7,7 +6,7 @@ namespace Yazilimxyz.BusinessLayer.Abstract
     {
         Task<ResultCustomerDto?> GetByIdAsync(int id);
         Task<ResultCustomerDto?> GetByAppUserIdAsync(string appUserId);
-        //Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id);
+        Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id);
         Task CreateAsync(CreateCustomerDto dto);
         Task UpdateAsync(UpdateCustomerDto dto);
         Task DeleteAsync(int id);

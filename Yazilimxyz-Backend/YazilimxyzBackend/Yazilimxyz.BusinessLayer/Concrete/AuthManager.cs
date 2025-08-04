@@ -1,15 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Yazilimxyz.BusinessLayer.Abstract;
-using Yazilimxyz.DataAccessLayer.Context;
-
 using Yazilimxyz.BusinessLayer.DTOs.Auth;
-
+using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
 
