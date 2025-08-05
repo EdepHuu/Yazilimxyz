@@ -29,17 +29,17 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return user is not null ? _mapper.Map<ResultAppUserDto>(user) : null;
         }
 
-        //public async Task<ResultAppUserWithCustomerDto?> GetWithCustomerAsync(string id)
-        //{
-        //    var user = await _appUserRepository.GetWithCustomerAsync(id);
-        //    return user is not null ? _mapper.Map<ResultAppUserWithCustomerDto>(user) : null;
-        //}
+        public async Task<ResultAppUserWithCustomerDto?> GetWithCustomerAsync(string id)
+        {
+            var user = await _appUserRepository.GetWithCustomerAsync(id);
+            return user is not null ? _mapper.Map<ResultAppUserWithCustomerDto>(user) : null;
+        }
 
-        //public async Task<ResultAppUserWithMerchantDto?> GetWithMerchantAsync(string id)
-        //{
-        //    var user = await _appUserRepository.GetWithMerchantAsync(id);
-        //    return user is not null ? _mapper.Map<ResultAppUserWithMerchantDto>(user) : null;
-        //}
+        public async Task<ResultAppUserWithMerchantDto?> GetWithMerchantAsync(string id)
+        {
+            var user = await _appUserRepository.GetWithMerchantAsync(id);
+            return user is not null ? _mapper.Map<ResultAppUserWithMerchantDto>(user) : null;
+        }
 
         public async Task<List<ResultAppUserDto>> GetAllAsync()
         {
