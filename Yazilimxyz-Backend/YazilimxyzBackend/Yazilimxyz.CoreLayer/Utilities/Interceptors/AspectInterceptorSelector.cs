@@ -1,5 +1,3 @@
-﻿using Castle.Core.Interceptor;
-using Castle.DynamicProxy;
 //using Core.Aspects.Performance;
 using System;
 using System.Collections.Generic;
