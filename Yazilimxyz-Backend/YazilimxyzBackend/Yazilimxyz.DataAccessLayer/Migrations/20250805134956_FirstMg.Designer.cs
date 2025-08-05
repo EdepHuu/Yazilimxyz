@@ -12,8 +12,8 @@ using Yazilimxyz.DataAccessLayer.Context;
 namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250802134233_Firstmg")]
-    partial class Firstmg
+    [Migration("20250805134956_FirstMg")]
+    partial class FirstMg
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -412,6 +412,7 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AppUserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("BasePrice")
@@ -427,6 +428,10 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("FabricInfo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Gender")
                         .HasColumnType("int");
 
@@ -436,7 +441,7 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<int>("MerchantId")
                         .HasColumnType("int");
 
-                    b.Property<string>("ModelInfo")
+                    b.Property<string>("ModelMeasurements")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -477,6 +482,9 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsMain")
+                        .HasColumnType("bit");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
@@ -679,7 +687,9 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 {
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", null)
                         .WithMany("Products")
-                        .HasForeignKey("AppUserId");
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.Category", "Category")
                         .WithMany("Products")
