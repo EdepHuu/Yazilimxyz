@@ -29,16 +29,16 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdCategoryDto, Category>().ReverseMap();
 
             CreateMap<Category, ResultCategoryWithSubDto>()
-    .ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count))
-    .ForMember(dest => dest.SubCategoryCount, opt => opt.MapFrom(src => src.SubCategories.Count))
-    .ForMember(dest => dest.SubCategories, opt => opt.MapFrom(src => src.SubCategories));
+				.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count))
+				.ForMember(dest => dest.SubCategoryCount, opt => opt.MapFrom(src => src.SubCategories.Count))
+				.ForMember(dest => dest.SubCategories, opt => opt.MapFrom(src => src.SubCategories));
 
 			CreateMap<Category, ResultCategoryHierarchyDto>()
-	.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count));
-    // AutoMapper, Category'nin SubCategories ve ParentCategory özelliklerini 
-    // ResultCategoryHierarchyDto'nun aynı isimli özelliklerine otomatik olarak eşleştirecektir.
-    // Bu nedenle, SubCategories ve ParentCategory için ForMember kullanmaya gerek yoktur.
-    // Ancak veritabanından veri çekerken .Include() kullanmanız gerekir.
+			.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count));
+			// AutoMapper, Category'nin SubCategories ve ParentCategory özelliklerini 
+			// ResultCategoryHierarchyDto'nun aynı isimli özelliklerine otomatik olarak eşleştirecektir.
+			// Bu nedenle, SubCategories ve ParentCategory için ForMember kullanmaya gerek yoktur.
+			// Ancak veritabanından veri çekerken .Include() kullanmanız gerekir.
     
 
             // Product
@@ -48,26 +48,27 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdProductDto, Product>().ReverseMap();
 
             CreateMap<Product, ResultProductWithVariantsDto>()
-    .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-    .ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.AppUser : null))
-    .ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
-    .ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants));
+				.ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.AppUser : null))
+				.ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
+				.ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants));
 
             CreateMap<Product, ResultProductWithImagesDto>()
-    .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-    .ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.AppUser : null))
-    .ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
-    .ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages));
+				.ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.AppUser : null))
+				.ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
+				.ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages));
 
-            CreateMap<Product, ResultProductDetailedDto>()
-    .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-    .ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.AppUser : null))
-    .ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
-    .ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages))
-    .ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants));
+			CreateMap<Product, ResultProductDetailedDto>()
+				.ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant.CompanyName))
+				.ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.MerchantId)) // Bu satır önemli
+				.ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender)) // Enum kalacaksa ToString yok
+				.ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages))
+				.ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants));
 
-            // ProductImage
-            CreateMap<ResultProductImageDto, ProductImage>().ReverseMap();
+			// ProductImage
+			CreateMap<ResultProductImageDto, ProductImage>().ReverseMap();
 			CreateMap<CreateProductImageDto, ProductImage>().ReverseMap();
 			CreateMap<UpdateProductImageDto, ProductImage>().ReverseMap();
 			CreateMap<GetByIdProductImageDto, ProductImage>().ReverseMap();
@@ -85,9 +86,9 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdOrderDto, Order>().ReverseMap();
 
             CreateMap<Order, ResultOrderWithItemsDto>()
-    .ForMember(dest => dest.StatusText, opt => opt.MapFrom(src => src.Status.ToString()))
-    .ForMember(dest => dest.PaymentStatusText, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
-    .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems));
+				.ForMember(dest => dest.StatusText, opt => opt.MapFrom(src => src.Status.ToString()))
+				.ForMember(dest => dest.PaymentStatusText, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
+				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems));
 
             // OrderItem (Sadece tek yönlü, reverseMap yok!)
             CreateMap<OrderItem, ResultOrderItemDto>()
@@ -127,8 +128,8 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdCustomerDto, Customer>().ReverseMap();
 
             CreateMap<Customer, ResultCustomerWithAddressesDto>()
-    .ForMember(dest => dest.AddressCount, opt => opt.MapFrom(src => src.Addresses.Count))
-    .ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => src.Addresses));
+				.ForMember(dest => dest.AddressCount, opt => opt.MapFrom(src => src.Addresses.Count))
+				.ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => src.Addresses));
 
             // CustomerAddress
             CreateMap<ResultCustomerAddressDto, CustomerAddress>().ReverseMap();
@@ -143,34 +144,34 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdAppUserDto, AppUser>().ReverseMap();
 
             CreateMap<AppUser, ResultAppUserWithMerchantDto>()
-    .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-    .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
-    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-    .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
-    .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
-    .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
-    .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-    // İlişkili Merchant verilerini eşliyoruz
-    // Merchant nesnesinin null olma ihtimaline karşı null kontrolü ekliyoruz
-    .ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.Merchant != null ? (int?)src.Merchant.Id : null))
-    .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.CompanyName : null))
-    .ForMember(dest => dest.Iban, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.Iban : null))
-    .ForMember(dest => dest.TaxNumber, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.TaxNumber : null))
-    .ForMember(dest => dest.CompanyAddress, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.CompanyAddress : null))
-    .ForMember(dest => dest.MerchantPhone, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.Phone : null));
+				.ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+				.ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
+				.ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+				.ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
+				.ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+				.ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+				.ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
+				// İlişkili Merchant verilerini eşliyoruz
+				// Merchant nesnesinin null olma ihtimaline karşı null kontrolü ekliyoruz
+				.ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.Merchant != null ? (int?)src.Merchant.Id : null))
+				.ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.CompanyName : null))
+				.ForMember(dest => dest.Iban, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.Iban : null))
+				.ForMember(dest => dest.TaxNumber, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.TaxNumber : null))
+				.ForMember(dest => dest.CompanyAddress, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.CompanyAddress : null))
+				.ForMember(dest => dest.MerchantPhone, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.Phone : null));
 
             CreateMap<AppUser, ResultAppUserWithCustomerDto>()
-    .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-    .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
-    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-    .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
-    .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
-    .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
-    .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-    // İlişkili Customer verilerini eşliyoruz
-    // Customer nesnesinin null olma ihtimaline karşı null kontrolü ekliyoruz
-    .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.Customer != null ? (int?)src.Customer.Id : null))
-    .ForMember(dest => dest.AddressCount, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Addresses.Count : 0));
+				.ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+				.ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
+				.ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+				.ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
+				.ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+				.ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+				.ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
+				// İlişkili Customer verilerini eşliyoruz
+				// Customer nesnesinin null olma ihtimaline karşı null kontrolü ekliyoruz
+				.ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.Customer != null ? (int?)src.Customer.Id : null))
+				.ForMember(dest => dest.AddressCount, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Addresses.Count : 0));
 
             // CartItem
             CreateMap<ResultCartItemDto, CartItem>().ReverseMap();
