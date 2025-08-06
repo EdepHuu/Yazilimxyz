@@ -1,6 +1,4 @@
 ﻿using Yazilimxyz.BusinessLayer.DTOs.ProductImage;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {

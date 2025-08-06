@@ -47,17 +47,17 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<List<ResultCategoryDto>>(categories);
         }
 
-        //public async Task<ResultCategoryWithSubDto?> GetWithSubCategoriesAsync(int id)
-        //{
-        //    var category = await _categoryRepository.GetWithSubCategoriesAsync(id);
-        //    return _mapper.Map<ResultCategoryWithSubDto?>(category);
-        //}
+        public async Task<ResultCategoryWithSubDto?> GetWithSubCategoriesAsync(int id)
+        {
+           var category = await _categoryRepository.GetWithSubCategoriesAsync(id);
+            return _mapper.Map<ResultCategoryWithSubDto?>(category);
+        }
 
-        //public async Task<List<ResultCategoryHierarchyDto>> GetCategoryHierarchyAsync()
-        //{
-        //    var categories = await _categoryRepository.GetCategoryHierarchyAsync();
-        //    return _mapper.Map<List<ResultCategoryHierarchyDto>>(categories);
-        //}
+        public async Task<List<ResultCategoryHierarchyDto>> GetCategoryHierarchyAsync()
+        {
+            var categories = await _categoryRepository.GetCategoryHierarchyAsync();
+            return _mapper.Map<List<ResultCategoryHierarchyDto>>(categories);
+        }
 
         public async Task CreateAsync(CreateCategoryDto dto)
         {

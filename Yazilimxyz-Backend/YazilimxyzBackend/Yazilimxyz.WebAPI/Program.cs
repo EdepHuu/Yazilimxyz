@@ -94,6 +94,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfile)); // Profil tanýmý bura
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
 
 // Swagger + JWT Token Desteði
 builder.Services.AddSwaggerGen(c =>

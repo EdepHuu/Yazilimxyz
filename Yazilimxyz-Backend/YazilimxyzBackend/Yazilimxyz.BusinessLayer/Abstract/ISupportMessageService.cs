@@ -1,7 +1,5 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;
-using Yazilimxyz.BusinessLayer.DTOs.AppUser;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Yazilimxyz.BusinessLayer.DTOs.AppUser;
+using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
