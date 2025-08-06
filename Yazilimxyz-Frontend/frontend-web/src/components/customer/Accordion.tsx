@@ -1,5 +1,5 @@
 "use client";
-import { ChevronDown } from "@/icons/icon";
+import { ChevronDown } from "@/components/customer/icons/icon";
 import { useEffect, useState } from "react";
 
 type AccordionProps = {

@@ -1,4 +1,5 @@
 "use client";
+import axios from "axios";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -7,6 +8,35 @@ const tabs = ["Giriş Yap", "Üye Ol", "Bizimle Çalış"];
 export default function Tabs() {
   const [activeTab, setActiveTab] = useState("Giriş Yap");
   const [seller, setSeller] = useState<string | null>(null);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_LOGIN_ENDPOINT}`,
+        { email, password }
+      );
+
+      const data = response.data;
+
+      if (data.success) {
+        localStorage.setItem("token", data.token);
+        setMessage("✅ Giriş başarılı!");
+
+        //Giriş başarılıysa urunler sayfasına yönlendir
+        window.location.href = "/urunler";
+      } else {
+        setMessage(`❌ ${data.message}`);
+      }
+    } catch (error) {
+      setMessage("❌ Hata: Sunucuya bağlanılamadı.");
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto my-12">
@@ -34,29 +64,40 @@ export default function Tabs() {
 
       <div className="mt-6">
         {activeTab === "Giriş Yap" && (
-          <div>
+          <form onSubmit={handleLogin} className="">
             <div>
-              <label className="block heading-sm-2 mb-1">E-posta</label>
-              <input
-                type="email"
-                placeholder="ornek@mail.com"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              />
+              <div>
+                <label className="block heading-sm-2 mb-1">E-posta</label>
+                <input
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  type="email"
+                  placeholder="ornek@mail.com"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                />
+              </div>
+              <div className="mt-4">
+                <label className="block heading-sm-2 mb-1">Şifre</label>
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  type="password"
+                  placeholder="*****"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                />
+              </div>
+              <div>
+                <button
+                  type="submit"
+                  className="w-full heading-sm-2 rounded-lg mt-8 px-4 py-2 bg-gray-300"
+                >
+                  Giriş yap
+                </button>
+              </div>
             </div>
-            <div className="mt-4">
-              <label className="block heading-sm-2 mb-1">Şifre</label>
-              <input
-                type="password"
-                placeholder="*****"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              />
-            </div>
-            <div>
-              <button className="w-full heading-sm-2 rounded-lg mt-8 px-4 py-2 bg-gray-300">
-                Giriş yap
-              </button>
-            </div>
-          </div>
+            {message && <p className="mt-4 text-sm">{message}</p>}
+          </form>
         )}
         {activeTab === "Üye Ol" && (
           <div>
@@ -187,7 +228,7 @@ export default function Tabs() {
                   </label>
                 </div>
 
-                <Link href="/satici-paneli">
+                <Link href="/customer/satici-paneli">
                   <button className="w-full heading-sm-2 rounded-lg mt-2 px-4 py-2 bg-gray-300">
                     Başvur
                   </button>

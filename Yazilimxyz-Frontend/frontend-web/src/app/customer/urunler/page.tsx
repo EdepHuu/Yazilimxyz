@@ -1,7 +1,7 @@
 "use client";
-import Accordion from "@/components/Accordion";
-import ProductCard from "@/components/ProductCard";
-import { SearchGrayIcon } from "@/icons/icon";
+import Accordion from "@/components/customer/Accordion";
+import ProductCard from "@/components/customer/ProductCard";
+import { SearchGrayIcon } from "@/components/customer/icons/icon";
 import React, { useState } from "react";
 
 interface SizeOption {

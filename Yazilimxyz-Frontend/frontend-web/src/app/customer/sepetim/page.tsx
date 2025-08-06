@@ -34,7 +34,7 @@ export default function SepetimPage() {
   const total = subtotal + shippingCost;
 
   const handleCheckout = () => {
-    router.push("/odeme"); // yönlendirme buradan oluyor
+    router.push("/customer/odeme"); // yönlendirme buradan oluyor
   };
 
   return (

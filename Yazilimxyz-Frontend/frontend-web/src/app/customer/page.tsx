@@ -1,5 +1,4 @@
-import Button from "@/components/Button";
-import Image from "next/image";
+import Button from "@/components/customer/Button";
 import Link from "next/link";
 
 export default function Home() {
@@ -16,7 +15,7 @@ export default function Home() {
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center space-y-2">
             <h2 className="heading-xl">Seçili Ürünlerde</h2>
             <p className="heading-3xl">%40 İndirim</p>
-            <Link href="/urunler">
+            <Link href="/customer/urunler">
               <Button bgColor="white" className="mt-32">
                 Alışverişe Başla
               </Button>
