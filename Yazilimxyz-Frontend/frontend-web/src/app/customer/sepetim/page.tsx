@@ -1,5 +1,4 @@
-"use client";  // BU SATIR ÇOK ÖNEMLİ, EN ÜSTE EKLE
-
+"use client"; 
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -35,7 +34,7 @@ export default function SepetimPage() {
   const total = subtotal + shippingCost;
 
   const handleCheckout = () => {
-    router.push("/odeme"); // yönlendirme buradan oluyor
+    router.push("/customer/odeme"); // yönlendirme buradan oluyor
   };
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { FavoriteIcon, SearchIcon, ShopIcon, UserIcon } from "@/icons/icon";
+import { FavoriteIcon, SearchIcon, ShopIcon, UserIcon } from "@/components/customer/icons/icon";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -18,7 +18,7 @@ export default function Navbar() {
           {navLinks.map((link, index) => (
             <Link
               key={index}
-              href={`/${link.toLowerCase().replace(/\s+/g, "-")}`}
+              href={`/customer/${link.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <span className="heading-sm-3 md:heading-md-4 cursor-pointer">
                 {link}
@@ -42,10 +42,10 @@ export default function Navbar() {
               className="w-full pl-2 pr-8 py-2 border-none bg-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
             />
           </div>
-          <Link href="/giris">
+          <Link href="/customer/giris">
             <UserIcon />
           </Link>
-          <Link href="/sepet">
+          <Link href="/customer/sepet">
             <ShopIcon />
           </Link>
         </div>
@@ -77,10 +77,10 @@ export default function Navbar() {
             </div>
 
             <div className="flex gap-4">
-              <Link href="/login">
+              <Link href="/customer/login">
                 <UserIcon />
               </Link>
-              <Link href="/sepet">
+              <Link href="/customer/sepet">
                 <ShopIcon />
               </Link>
             </div>
@@ -95,7 +95,7 @@ export default function Navbar() {
                 {navLinks.map((link, index) => (
                   <Link
                     key={index}
-                    href={`/${link.toLowerCase().replace(/\s+/g, "-")}`}
+                    href={`/customer/${link.toLowerCase().replace(/\s+/g, "-")}`}
                     onClick={() => setIsOpen(false)}
                     className="bg-gray-200 p-3 rounded-xl"
                   >

@@ -6,7 +6,7 @@ import {
   MapIcon,
   PhoneIcon,
   TwitterIcon,
-} from "@/icons/icon";
+} from "@/components/customer/icons/icon";
 
 export default function Footer() {
   return (

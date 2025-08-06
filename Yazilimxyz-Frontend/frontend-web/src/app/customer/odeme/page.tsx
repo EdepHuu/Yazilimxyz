@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/customer/Navbar";
+import Footer from "@/components/customer/Footer";
 
 export default function odemePage() {
   return (
@@ -19,7 +19,7 @@ export default function odemePage() {
             <span> &gt; </span>
           </li>
           <li>
-            <Link href="/sepetim" className="hover:underline cursor-pointer">
+            <Link href="/customer/sepetim" className="hover:underline cursor-pointer">
               Sepetim
             </Link>
             <span> &gt; </span>

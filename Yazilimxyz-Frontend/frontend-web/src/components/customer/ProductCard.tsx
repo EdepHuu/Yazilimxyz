@@ -1,6 +1,6 @@
 "use client";
 
-import { FavoriteGrayIcon } from "@/icons/icon";
+import { FavoriteGrayIcon } from "@/components/customer/icons/icon";
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -30,12 +30,12 @@ function ProductCard({ product }: ProductCardProps) {
       color: "Mevcut Renk",
       size: "M",
     };
-    router.push("/sepetim");
+    router.push("/customer/sepetim");
   };
 
   return (
     <div className="group flex flex-col p-2">
-      <Link href={`/urunDetay/${product.id}`}>
+      <Link href={`/customer/urunDetay/${product.id}`}>
         <div className="overflow-hidden">
           <Image
             src={product.image}

@@ -150,7 +150,7 @@ export default function ProductDetailPage() {
       size: selectedSize,
     });
 
-    router.push("/sepetim");
+    router.push("/customer/sepetim");
   };
 
   return (
