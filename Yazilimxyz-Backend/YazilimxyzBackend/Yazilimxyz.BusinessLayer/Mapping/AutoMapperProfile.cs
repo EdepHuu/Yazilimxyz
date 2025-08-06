@@ -39,37 +39,61 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			// ResultCategoryHierarchyDto'nun aynı isimli özelliklerine otomatik olarak eşleştirecektir.
 			// Bu nedenle, SubCategories ve ParentCategory için ForMember kullanmaya gerek yoktur.
 			// Ancak veritabanından veri çekerken .Include() kullanmanız gerekir.
-    
 
-            // Product
-            CreateMap<ResultProductDto, Product>().ReverseMap();
+
+			// Product
+			CreateMap<Product, ResultProductDto>()
+				.ForMember(dest => dest.MainPhoto,
+					opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(p => p.IsMain).ImageUrl));
+
 			CreateMap<CreateProductDto, Product>().ReverseMap();
 			CreateMap<UpdateProductDto, Product>().ReverseMap();
-			CreateMap<GetByIdProductDto, Product>().ReverseMap();
-            CreateMap<ResultProductWithMerchantDto, Product>().ReverseMap();
+			CreateMap<Product, GetByIdProductDto>()
+				.ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant.CompanyName))
+				.ForMember(dest => dest.ProductImages, opt => opt.MapFrom(src => src.ProductImages))
+				.ForMember(dest => dest.ProductVariants, opt => opt.MapFrom(src => src.ProductVariants))
+				.ForMember(dest => dest.MainPhoto,
+					opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(p => p.IsMain).ImageUrl));
 
-            CreateMap<Product, ResultProductWithVariantsDto>()
+			CreateMap<Product, ResultProductWithMerchantDto>()
+				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant.CompanyName))
+				.ForMember(dest => dest.MainPhoto,
+					opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(p => p.IsMain).ImageUrl));
+
+
+			CreateMap<Product, ResultProductWithVariantsDto>()
 				.ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
 				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant != null ? src.Merchant.AppUser : null))
 				.ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender.ToString()))
 				.ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants));
 
             CreateMap<Product, ResultProductWithImagesDto>()
-     .ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages));
+				.ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages));
 
-            CreateMap<Product, ResultProductDetailedDto>()
-				.ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-				.ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant.CompanyName))
-				.ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.MerchantId)) // Bu satır önemli
-				.ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender)) // Enum kalacaksa ToString yok
-				.ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages))
-				.ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants));
+			CreateMap<Product, ResultProductDetailedDto>()
+				 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+				 .ForMember(dest => dest.MerchantName, opt => opt.MapFrom(src => src.Merchant.CompanyName))
+				 .ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.MerchantId))
+				 .ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.ProductImages))
+				 .ForMember(dest => dest.Variants, opt => opt.MapFrom(src => src.ProductVariants))
+				 .ForMember(dest => dest.MainPhoto,
+					opt => opt.MapFrom(src => src.ProductImages.FirstOrDefault(p => p.IsMain).ImageUrl));
+
 
 			// ProductImage
-			CreateMap<ResultProductImageDto, ProductImage>().ReverseMap();
-			CreateMap<CreateProductImageDto, ProductImage>().ReverseMap();
+			CreateMap<CreateProductImageDto, ProductImage>();
 			CreateMap<UpdateProductImageDto, ProductImage>().ReverseMap();
-			CreateMap<GetByIdProductImageDto, ProductImage>().ReverseMap();
+
+			CreateMap<ProductImage, ResultProductImageDto>()
+				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
+				.ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedAt));
+
+
+			CreateMap<ProductImage, GetByIdProductImageDto>()
+				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
+				.ForMember(dest => dest.ProductCode, opt => opt.MapFrom(src => src.Product.ProductCode))
+				.ForMember(dest => dest.ProductPrice, opt => opt.MapFrom(src => src.Product.BasePrice));
 
 			// ProductVariant
 			CreateMap<ResultProductVariantDto, ProductVariant>().ReverseMap();
