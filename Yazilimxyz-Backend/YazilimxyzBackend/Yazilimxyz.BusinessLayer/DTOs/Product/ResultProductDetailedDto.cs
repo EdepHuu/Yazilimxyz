@@ -26,6 +26,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Product
 		// Yetki kontrolü için şart
 		[JsonIgnore]
 		public int MerchantId { get; set; }
+		public string? MainPhoto { get; set; }
 
 		public List<ResultProductImageDto> Images { get; set; } = new();
 		public List<ResultProductVariantDto> Variants { get; set; } = new();

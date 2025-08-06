@@ -16,23 +16,24 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
         {
         }
 
-        public async Task<IEnumerable<ProductImage>> GetByProductIdAsync(int productId)
-        {
-            return await _dbSet
-                .Where(pi => pi.ProductId == productId)
-                .OrderBy(pi => pi.SortOrder)
-                .ToListAsync();
-        }
+		public async Task<IEnumerable<ProductImage>> GetByProductIdAsync(int productId)
+		{
+			return await _dbSet
+				.Include(p => p.Product)
+				.Where(pi => pi.ProductId == productId)
+				.OrderBy(pi => pi.SortOrder)
+				.ToListAsync();
+		}
 
-        public async Task<ProductImage?> GetMainImageAsync(int productId)
-        {
-            return await _dbSet
-                .Where(pi => pi.ProductId == productId)
-                .OrderBy(pi => pi.SortOrder)
-                .FirstOrDefaultAsync();
-        }
+		public async Task<ProductImage?> GetMainImageAsync(int productId)
+		{
+			return await _dbSet
+				.Include(p => p.Product)
+				.Where(pi => pi.ProductId == productId && pi.IsMain)
+				.FirstOrDefaultAsync();
+		}
 
-        public async Task ReorderImagesAsync(int productId, List<int> imageIds)
+		public async Task ReorderImagesAsync(int productId, List<int> imageIds)
         {
             using var transaction = await _appDbContext.Database.BeginTransactionAsync();
             try
@@ -54,5 +55,38 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
                 throw;
             }
         }
-    }
+
+		public async Task<Product?> GetProductWithMerchantAsync(int productId)
+		{
+			return await _appDbContext.Products
+				.Include(p => p.Merchant)
+				.FirstOrDefaultAsync(p => p.Id == productId);
+		}
+
+		public async Task ResetMainImageAsync(int productId)
+		{
+			var images = await _dbSet.Where(pi => pi.ProductId == productId && pi.IsMain).ToListAsync();
+			foreach (var img in images)
+			{
+				img.IsMain = false;
+			}
+
+			await _appDbContext.SaveChangesAsync();
+		}
+
+		public async Task SwapImageOrderAsync(int imageId1, int imageId2)
+		{
+			var img1 = await _dbSet.FindAsync(imageId1);
+			var img2 = await _dbSet.FindAsync(imageId2);
+
+			if (img1 == null || img2 == null) return;
+
+			var temp = img1.SortOrder;
+			img1.SortOrder = img2.SortOrder;
+			img2.SortOrder = temp;
+
+			await _appDbContext.SaveChangesAsync();
+		}
+
+	}
 }

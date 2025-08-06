@@ -25,8 +25,9 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Product
         // Satıcıya ait bilgiler
         public int MerchantId { get; set; }
         public string MerchantName { get; set; }
+		public string? MainPhoto { get; set; }
 
-        // Eğer ürün resimlerini de getirmek isterseniz bu listeyi ekleyin.
-        public List<ResultProductImageDto> Images { get; set; } = new();
+		// Eğer ürün resimlerini de getirmek isterseniz bu listeyi ekleyin.
+		public List<ResultProductImageDto> Images { get; set; } = new();
     }
 }

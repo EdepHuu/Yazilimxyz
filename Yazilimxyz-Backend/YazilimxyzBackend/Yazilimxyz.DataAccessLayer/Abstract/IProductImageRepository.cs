@@ -12,5 +12,8 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task<IEnumerable<ProductImage>> GetByProductIdAsync(int productId);
         Task<ProductImage?> GetMainImageAsync(int productId);
         Task ReorderImagesAsync(int productId, List<int> imageId);
-    }
+		Task<Product?> GetProductWithMerchantAsync(int productId);
+		Task ResetMainImageAsync(int productId);
+		Task SwapImageOrderAsync(int imageId1, int imageId2);
+	}
 }

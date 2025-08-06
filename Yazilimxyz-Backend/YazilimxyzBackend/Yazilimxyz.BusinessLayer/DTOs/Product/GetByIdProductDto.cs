@@ -26,6 +26,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Product
 		[JsonIgnore]
 		public int MerchantId { get; set; }
 		public string MerchantName { get; set; }
+		public string? MainPhoto { get; set; }
 
 		public List<ResultProductVariantDto> ProductVariants { get; set; } = new();
 		public List<ResultProductImageDto> ProductImages { get; set; } = new();
