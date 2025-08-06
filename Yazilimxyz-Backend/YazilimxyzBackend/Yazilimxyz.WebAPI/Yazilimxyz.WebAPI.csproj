@@ -27,4 +27,8 @@
     <ProjectReference Include="..\Yazilimxyz.InfrastructureLayer\Yazilimxyz.InfrastructureLayer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
 </Project>

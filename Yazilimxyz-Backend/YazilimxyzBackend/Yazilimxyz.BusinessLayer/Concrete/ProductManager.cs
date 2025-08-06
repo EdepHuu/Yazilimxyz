@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
@@ -26,10 +27,10 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			_categoryRepository = categoryRepository;
 		}
 
-        public async Task<ResultProductDto?> GetByIdAsync(int id)
+        public async Task<GetByIdProductDto?> GetByIdAsync(int id)
         {
             var product = await _productRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultProductDto>(product);
+            return _mapper.Map<GetByIdProductDto>(product);
         }
 
         public async Task<List<ResultProductDto>> GetAllAsync()
@@ -50,10 +51,10 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<List<ResultProductDto>>(products);
         }
 
-        public async Task<List<ResultProductDto>> GetByMerchantIdAsync(int merchantId)
+        public async Task<List<ResultProductWithMerchantDto>> GetByMerchantIdAsync(int merchantId)
         {
             var products = await _productRepository.GetByMerchantIdAsync(merchantId);
-            return _mapper.Map<List<ResultProductDto>>(products);
+            return _mapper.Map<List<ResultProductWithMerchantDto>>(products);
         }
 
         public async Task<List<ResultProductDto>> GetByGenderAsync(GenderType gender)
