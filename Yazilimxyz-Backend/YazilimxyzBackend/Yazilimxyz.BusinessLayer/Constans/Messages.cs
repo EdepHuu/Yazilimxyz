@@ -12,12 +12,14 @@ namespace Yazilimxyz.BusinessLayer.Constans
         public static string MaintenanceTime = "Sistem Bakımda.";
 
         //Category Messages
-        public static string CategoryAdded = "Kategori  Eklendi";
-        public static string CategoryDeleted = "Kategori Silindi";
-        public static string CategoryUpdated = "Kategori Güncellendi";
-        public static string CategoryNameInvalid = "Kategori İsmi Geçersiz";
-        public static string CategoryDetailsListed = "Kategori Detayları Listelendi";
-        public static string CategoryLimitExceded = "Kategori limiti aşıldığı için yeni ürün eklenemiyor";
+        public static string TenanceTime = "Sistem şu anda bakımda.";
+        public static string CategoryLimitExceeded = "Kategori limiti aşıldı.";
+        public static string CategoryNameAlreadyExists = "Bu isimde bir kategori zaten mevcut.";
+        public static string CategoryNotFound = "Kategori bulunamadı.";
+        public static string CategoriesListed = "Kategoriler başarıyla listelendi.";
+        public static string CategoryAdded = "Kategori başarıyla eklendi.";
+        public static string CategoryUpdated = "Kategori başarıyla güncellendi.";
+        public static string CategoryDeleted = "Kategori başarıyla silindi.";
 
         //Order Messages
         public static string OrderCreate = "Siparişiniz  Oluşturuldu.";
