@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
 using Microsoft.AspNetCore.Http;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
@@ -33,6 +34,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<GetByIdProductDto>(product);
         }
 
+        [CacheAspect] // key, value
         public async Task<List<ResultProductDto>> GetAllAsync()
         {
             var products = await _productRepository.GetAllAsync();
@@ -87,7 +89,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<List<ResultProductDto>>(products);
         }
 
-		public async Task CreateAsync(CreateProductDto dto)
+
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task CreateAsync(CreateProductDto dto)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 			if (string.IsNullOrEmpty(userId))
@@ -125,7 +129,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			await _productRepository.AddAsync(product);
 		}
 
-		public async Task UpdateAsync(UpdateProductDto dto)
+
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task UpdateAsync(UpdateProductDto dto)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 			if (string.IsNullOrEmpty(userId))
@@ -170,7 +176,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			await _productRepository.UpdateAsync(product);
 		}
 
-		public async Task DeleteAsync(int id)
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task DeleteAsync(int id)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 			if (string.IsNullOrEmpty(userId))
