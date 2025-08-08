@@ -29,7 +29,7 @@ export default function Tabs() {
         setMessage("✅ Giriş başarılı!");
 
         //Giriş başarılıysa urunler sayfasına yönlendir
-        window.location.href = "/urunler";
+        window.location.href = "/customer/urunler";
       } else {
         setMessage(`❌ ${data.message}`);
       }
