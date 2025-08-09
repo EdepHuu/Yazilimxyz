@@ -2,13 +2,19 @@
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
-    public interface ICustomerService
-    {
-        Task<ResultCustomerDto?> GetByIdAsync(int id);
-        Task<ResultCustomerDto?> GetByAppUserIdAsync(string appUserId);
-        Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id);
-        Task CreateAsync(CreateCustomerDto dto);
-        Task UpdateAsync(UpdateCustomerDto dto);
-        Task DeleteAsync(int id);
-    }
+	public interface ICustomerService
+	{
+		// SELF
+		Task<ResultCustomerDto?> GetMyProfileAsync();
+
+		// ADMIN
+		Task<ResultCustomerDto?> GetByIdAsync(int id);
+		Task<ResultCustomerDto?> GetByAppUserIdAsync(string appUserId);
+		Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id);
+		Task AdminCreateAsync(AdminCreateCustomerDto dto);
+		Task AdminSetActiveAsync(int id, bool isActive);
+
+		// REGISTER akışı
+		Task CreateForUserAsync(string appUserId);
+	}
 }
