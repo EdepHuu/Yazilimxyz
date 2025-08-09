@@ -133,28 +133,58 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdOrderItemDto, OrderItem>().ReverseMap();
 
 			// Merchant
-			CreateMap<ResultMerchantDto, Merchant>().ReverseMap();
-			CreateMap<CreateMerchantDto, Merchant>().ReverseMap();
-			CreateMap<UpdateMerchantDto, Merchant>().ReverseMap();
-			CreateMap<GetByIdMerchantDto, Merchant>().ReverseMap();
+			CreateMap<Merchant, ResultMerchantDto>().ReverseMap();
+			// KALDI: basit alanlar birebir, iki yönlü kullanım problem yaratmıyor.
+
+			// Create: tek yönlü map yeterli (DTO -> Entity)
+			// ReverseMap istersen kalabilir ama genelde geri dönüştürmeye ihtiyaç yok.
+			CreateMap<CreateMerchantDto, Merchant>();
+			// NEDEN: Create'te DTO'dan Entity'ye map yeterli.
+			// REVERSEMAP’I KALDIRDIM: Create DTO’dan Entity’ye dönüş dışında geri map’e gerek yok,
+			// yanlışlıkla AppUserId gibi alanların UI’ya taşınmasını istemeyiz.
+
+			// Update: DTO -> Entity map (AppUserId DTO’dan kalktıysa sorun yok)
+			// ReverseMap’e ihtiyaç yok.
+			CreateMap<UpdateMerchantDto, Merchant>();
+			// NEDEN: Update sadece Entity’yi güncelleyecek.
+			// REVERSEMAP’I KALDIRDIM: Update DTO geri döndürülmez (read model değil).
+
+			// GetById: Read model; Entity -> DTO yönde özel map gerekli.
+			// ReverseMap gereksiz ve riskli: UI'dan geri map istenmiyor.
+			CreateMap<Merchant, GetByIdMerchantDto>()
+				.ForMember(d => d.AppUser, o => o.MapFrom(s => s.AppUser))            // EKLEDİM
+				.ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.AppUser.CreatedAt))  // EKLEDİM (AppUser’dan)
+				.ForMember(d => d.UpdatedDate, o => o.Ignore());                           // EKLEDİM (entity’de yoksa)
+
+			// AppUser -> ResultAppUserDto map’i lazım (GetByIdMerchantDto için)
+			CreateMap<AppUser, ResultAppUserDto>(); // EKLEDİM
+
 
 			// SupportMessage
-			CreateMap<ResultSupportMessageDto, SupportMessage>().ReverseMap();
-			CreateMap<CreateSupportMessageDto, SupportMessage>().ReverseMap();
-			CreateMap<GetByIdSupportMessageDto, SupportMessage>().ReverseMap();
+			CreateMap<Customer, ResultCustomerDto>()
+				.ForMember(d => d.UserName, o => o.MapFrom(s => s.AppUser.UserName))
+				.ForMember(d => d.Email, o => o.MapFrom(s => s.AppUser.Email))
+				.ForMember(d => d.AddressCount, o => o.MapFrom(s => s.Addresses.Count));
 
-			// Customer
-			CreateMap<ResultCustomerDto, Customer>().ReverseMap();
-			CreateMap<CreateCustomerDto, Customer>().ReverseMap();
-			CreateMap<UpdateCustomerDto, Customer>().ReverseMap();
-			CreateMap<GetByIdCustomerDto, Customer>().ReverseMap();
+			CreateMap<Customer, GetByIdCustomerDto>()
+				.ForMember(d => d.UserName, o => o.MapFrom(s => s.AppUser.UserName))
+				.ForMember(d => d.Email, o => o.MapFrom(s => s.AppUser.Email))
+				.ForMember(d => d.FirstName, o => o.MapFrom(s => s.AppUser.Name))
+				.ForMember(d => d.LastName, o => o.MapFrom(s => s.AppUser.LastName))
+				.ForMember(d => d.PhoneNumber, o => o.MapFrom(s => s.AppUser.PhoneNumber))
+				.ForMember(d => d.Addresses, o => o.MapFrom(s => s.Addresses));
 
-            CreateMap<Customer, ResultCustomerWithAddressesDto>()
-				.ForMember(dest => dest.AddressCount, opt => opt.MapFrom(src => src.Addresses.Count))
-				.ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => src.Addresses));
+			CreateMap<Customer, ResultCustomerWithAddressesDto>()
+				.ForMember(d => d.UserName, o => o.MapFrom(s => s.AppUser.UserName))
+				.ForMember(d => d.Email, o => o.MapFrom(s => s.AppUser.Email))
+				.ForMember(d => d.AddressCount, o => o.MapFrom(s => s.Addresses.Count))
+				.ForMember(d => d.Addresses, o => o.MapFrom(s => s.Addresses));
 
-            // CustomerAddress
-            CreateMap<ResultCustomerAddressDto, CustomerAddress>().ReverseMap();
+			CreateMap<CustomerAddress, ResultCustomerAddressDto>();
+
+
+			// CustomerAddress
+			CreateMap<ResultCustomerAddressDto, CustomerAddress>().ReverseMap();
 			CreateMap<CreateCustomerAddressDto, CustomerAddress>().ReverseMap();
 			CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
 			CreateMap<GetByIdCustomerAddressDto, CustomerAddress>().ReverseMap();
