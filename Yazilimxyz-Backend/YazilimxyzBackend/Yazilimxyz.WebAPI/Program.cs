@@ -13,6 +13,7 @@ using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.BusinessLayer.Mapping;
 using AutoMapper;
+using System.Security.Claims; // <-- eklendi
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,14 +51,18 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 
+// Admin Policy: "IsAdmin" claim'i true olmalý
+builder.Services.AddAuthorization(opts =>
+{
+	opts.AddPolicy("Admin", policy => policy.RequireClaim("IsAdmin", "true"));
+});
+
 // CORS
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowAll", policy =>
 	{
-		policy.AllowAnyOrigin()
-			  .AllowAnyMethod()
-			  .AllowAnyHeader();
+		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
 	});
 });
 
@@ -83,7 +88,6 @@ builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>(
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
 builder.Services.AddScoped<ISupportMessageRepository, SupportMessageRepository>();
 builder.Services.AddScoped<IAppUserRepository, AppUserRepository>();
-builder.Services.AddScoped<IAppAdminRepository, AppAdminRepository>();
 builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
@@ -91,19 +95,16 @@ builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
-
 // AutoMapper
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile)); // Profil tanýmý burada yapýlýr
-
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
-// Swagger + JWT Token Desteði
+// Swagger + JWT
 builder.Services.AddSwaggerGen(c =>
 {
 	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
-
 	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 	{
 		Name = "Authorization",
@@ -113,17 +114,12 @@ builder.Services.AddSwaggerGen(c =>
 		In = ParameterLocation.Header,
 		Description = "JWT Token'ý 'Bearer {token}' formatýnda giriniz."
 	});
-
 	c.AddSecurityRequirement(new OpenApiSecurityRequirement
 	{
 		{
 			new OpenApiSecurityScheme
 			{
-				Reference = new OpenApiReference
-				{
-					Type = ReferenceType.SecurityScheme,
-					Id = "Bearer"
-				}
+				Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
 			},
 			Array.Empty<string>()
 		}
@@ -143,5 +139,50 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Uygulama açýlýrken admin'i seed et
+using (var scope = app.Services.CreateScope())
+{
+	await SeedAdminAsync(scope.ServiceProvider, builder.Configuration);
+}
+
 app.MapControllers();
 app.Run();
+
+
+// ================== SEED ADMIN ==================
+static async Task SeedAdminAsync(IServiceProvider sp, IConfiguration cfg)
+{
+	var userMgr = sp.GetRequiredService<UserManager<AppUser>>();
+	var email = cfg["Admin:Email"] ?? "admin@yazilimxyz.com";
+	var pass = cfg["Admin:Password"] ?? "Admin_123!";
+	var name = cfg["Admin:Name"] ?? "System";
+	var last = cfg["Admin:LastName"] ?? "Admin";
+
+	var admin = await userMgr.FindByEmailAsync(email);
+	if (admin == null)
+	{
+		admin = new AppUser
+		{
+			UserName = email,
+			Email = email,
+			Name = name,
+			LastName = last,
+			IsAdmin = true,
+			EmailConfirmed = true,
+			CreatedAt = DateTime.UtcNow
+		};
+
+		var create = await userMgr.CreateAsync(admin, pass);
+		if (!create.Succeeded)
+		{
+			var msg = string.Join(", ", create.Errors.Select(e => e.Description));
+			throw new Exception("Admin seed baþarýsýz: " + msg);
+		}
+	}
+	else if (!admin.IsAdmin)
+	{
+		admin.IsAdmin = true;
+		await userMgr.UpdateAsync(admin);
+	}
+}
