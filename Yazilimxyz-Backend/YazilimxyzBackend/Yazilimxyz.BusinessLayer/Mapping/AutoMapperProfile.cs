@@ -133,10 +133,32 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdOrderItemDto, OrderItem>().ReverseMap();
 
 			// Merchant
-			CreateMap<ResultMerchantDto, Merchant>().ReverseMap();
-			CreateMap<CreateMerchantDto, Merchant>().ReverseMap();
-			CreateMap<UpdateMerchantDto, Merchant>().ReverseMap();
-			CreateMap<GetByIdMerchantDto, Merchant>().ReverseMap();
+			CreateMap<Merchant, ResultMerchantDto>().ReverseMap();
+			// KALDI: basit alanlar birebir, iki yönlü kullanım problem yaratmıyor.
+
+			// Create: tek yönlü map yeterli (DTO -> Entity)
+			// ReverseMap istersen kalabilir ama genelde geri dönüştürmeye ihtiyaç yok.
+			CreateMap<CreateMerchantDto, Merchant>();
+			// NEDEN: Create'te DTO'dan Entity'ye map yeterli.
+			// REVERSEMAP’I KALDIRDIM: Create DTO’dan Entity’ye dönüş dışında geri map’e gerek yok,
+			// yanlışlıkla AppUserId gibi alanların UI’ya taşınmasını istemeyiz.
+
+			// Update: DTO -> Entity map (AppUserId DTO’dan kalktıysa sorun yok)
+			// ReverseMap’e ihtiyaç yok.
+			CreateMap<UpdateMerchantDto, Merchant>();
+			// NEDEN: Update sadece Entity’yi güncelleyecek.
+			// REVERSEMAP’I KALDIRDIM: Update DTO geri döndürülmez (read model değil).
+
+			// GetById: Read model; Entity -> DTO yönde özel map gerekli.
+			// ReverseMap gereksiz ve riskli: UI'dan geri map istenmiyor.
+			CreateMap<Merchant, GetByIdMerchantDto>()
+				.ForMember(d => d.AppUser, o => o.MapFrom(s => s.AppUser))            // EKLEDİM
+				.ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.AppUser.CreatedAt))  // EKLEDİM (AppUser’dan)
+				.ForMember(d => d.UpdatedDate, o => o.Ignore());                           // EKLEDİM (entity’de yoksa)
+
+			// AppUser -> ResultAppUserDto map’i lazım (GetByIdMerchantDto için)
+			CreateMap<AppUser, ResultAppUserDto>(); // EKLEDİM
+
 
 			// SupportMessage
 			CreateMap<ResultSupportMessageDto, SupportMessage>().ReverseMap();
