@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
@@ -7,66 +9,150 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.BusinessLayer.Concrete
 {
-    public class MerchantManager : IMerchantService
-    {
-        private readonly IMerchantRepository _merchantRepository;
-        private readonly IMapper _mapper;
+	public class MerchantManager : IMerchantService
+	{
+		private readonly IMerchantRepository _merchantRepository;
+		private readonly IMapper _mapper;
+		private readonly IHttpContextAccessor _http;
 
-        public MerchantManager(IMerchantRepository merchantRepository, IMapper mapper)
-        {
-            _merchantRepository = merchantRepository;
-            _mapper = mapper;
-        }
+		public MerchantManager(IMerchantRepository merchantRepository, IMapper mapper, IHttpContextAccessor http)
+		{
+			_merchantRepository = merchantRepository;
+			_mapper = mapper;
+			_http = http;
+		}
 
-        public async Task<ResultMerchantDto?> GetByIdAsync(int id)
-        {
-            var merchant = await _merchantRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultMerchantDto?>(merchant);
-        }
+		// ---------- SELF ----------
+		public async Task<ResultMerchantDto?> GetMyProfileAsync()
+		{
+			var userId = _http.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+			{
+				return null;
+			}
 
-        public async Task<ResultMerchantDto?> GetByAppUserIdAsync(string appUserId)
-        {
-            var merchant = await _merchantRepository.GetByAppUserIdAsync(appUserId);
-            return _mapper.Map<ResultMerchantDto?>(merchant);
-        }
+			var me = await _merchantRepository.GetByAppUserIdAsync(userId);
+			return _mapper.Map<ResultMerchantDto?>(me);
+		}
 
-        public async Task<List<ResultMerchantDto>> GetAllAsync()
-        {
-            var merchants = await _merchantRepository.GetAllAsync();
-            return _mapper.Map<List<ResultMerchantDto>>(merchants);
-        }
+		public async Task UpdateMyProfileAsync(UpdateMyMerchantProfileDto dto)
+		{
+			if (dto == null)
+			{
+				throw new ArgumentException("Geçersiz veri.");
+			}
 
-        public async Task<List<ResultMerchantDto>> GetByCompanyNameAsync(string companyName)
-        {
-            var merchants = await _merchantRepository.GetByCompanyName(companyName);
-            return _mapper.Map<List<ResultMerchantDto>>(merchants);
-        }
+			var userId = _http.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+			{
+				throw new UnauthorizedAccessException("Kullanıcı doğrulanamadı.");
+			}
 
-        public async Task<List<ResultProductDto>> GetProductsByMerchantAsync(int merchantId)
-        {
-            var products = await _merchantRepository.GetProductsByMerchantAsync(merchantId);
-            return _mapper.Map<List<ResultProductDto>>(products);
-        }
+			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+			if (merchant == null)
+			{
+				throw new Exception("Merchant profili bulunamadı.");
+			}
 
-        public async Task CreateAsync(CreateMerchantDto dto)
-        {
-            var merchant = _mapper.Map<Merchant>(dto);
-            await _merchantRepository.AddAsync(merchant);
-        }
+			if (string.IsNullOrWhiteSpace(dto.CompanyName)) { throw new ArgumentException("Şirket adı zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.Iban)) { throw new ArgumentException("IBAN zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.TaxNumber)) { throw new ArgumentException("Vergi numarası zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.CompanyAddress)) { throw new ArgumentException("Şirket adresi zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.Phone)) { throw new ArgumentException("Telefon zorunludur."); }
 
-        public async Task UpdateAsync(UpdateMerchantDto dto)
-        {
-            var existing = await _merchantRepository.GetByIdAsync(dto.Id);
-            if (existing != null)
-            {
-                _mapper.Map(dto, existing);
-                await _merchantRepository.UpdateAsync(existing);
-            }
-        }
+			// (opsiyonel) benzersizlik kontrolleri varsa:
+			if (await _merchantRepository.ExistsByIbanAsync(dto.Iban, merchant.Id))
+			{
+				throw new ArgumentException("Bu IBAN başka bir kayıtta mevcut.");
+			}
+			if (await _merchantRepository.ExistsByTaxNumberAsync(dto.TaxNumber, merchant.Id))
+			{
+				throw new ArgumentException("Bu vergi numarası başka bir kayıtta mevcut.");
+			}
 
-        public async Task DeleteAsync(int id)
-        {
-            await _merchantRepository.DeleteAsync(id);
-        }
-    }
+			merchant.CompanyName = dto.CompanyName;
+			merchant.Iban = dto.Iban;
+			merchant.TaxNumber = dto.TaxNumber;
+			merchant.CompanyAddress = dto.CompanyAddress;
+			merchant.Phone = dto.Phone;
+
+			await _merchantRepository.UpdateAsync(merchant);
+		}
+
+		// ---------- ADMIN ----------
+		public async Task<ResultMerchantDto?> GetByIdAsync(int id)
+		{
+			var merchant = await _merchantRepository.GetByIdAsync(id);
+			return _mapper.Map<ResultMerchantDto?>(merchant);
+		}
+
+		public async Task<ResultMerchantDto?> GetByAppUserIdAsync(string appUserId)
+		{
+			var merchant = await _merchantRepository.GetByAppUserIdAsync(appUserId);
+			return _mapper.Map<ResultMerchantDto?>(merchant);
+		}
+
+		public async Task<List<ResultMerchantDto>> GetAllAsync()
+		{
+			var merchants = await _merchantRepository.GetAllAsync();
+			return _mapper.Map<List<ResultMerchantDto>>(merchants);
+		}
+
+		public async Task<List<ResultMerchantDto>> GetByCompanyNameAsync(string companyName)
+		{
+			var merchants = await _merchantRepository.GetByCompanyName(companyName?.Trim() ?? string.Empty);
+			return _mapper.Map<List<ResultMerchantDto>>(merchants);
+		}
+
+		public async Task<List<ResultProductDto>> GetProductsByMerchantAsync(int merchantId)
+		{
+			var products = await _merchantRepository.GetProductsByMerchantAsync(merchantId);
+			return _mapper.Map<List<ResultProductDto>>(products);
+		}
+
+		public async Task AdminUpdateAsync(int id, UpdateMerchantDto dto)
+		{
+			if (id <= 0 || dto == null) { throw new ArgumentException("Geçersiz veri."); }
+
+			var merchant = await _merchantRepository.GetByIdAsync(id);
+			if (merchant == null) { throw new Exception("Merchant bulunamadı."); }
+
+			if (string.IsNullOrWhiteSpace(dto.CompanyName)) { throw new ArgumentException("Şirket adı zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.Iban)) { throw new ArgumentException("IBAN zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.TaxNumber)) { throw new ArgumentException("Vergi numarası zorunludur."); }
+
+			if (await _merchantRepository.ExistsByIbanAsync(dto.Iban, id)) { throw new ArgumentException("Bu IBAN başka bir kayıtta mevcut."); }
+			if (await _merchantRepository.ExistsByTaxNumberAsync(dto.TaxNumber, id)) { throw new ArgumentException("Bu vergi numarası başka bir kayıtta mevcut."); }
+
+			merchant.CompanyName = dto.CompanyName;
+			merchant.Iban = dto.Iban;
+			merchant.TaxNumber = dto.TaxNumber;
+			merchant.CompanyAddress = dto.CompanyAddress;
+			merchant.Phone = dto.Phone;
+
+			await _merchantRepository.UpdateAsync(merchant);
+		}
+
+		public async Task AdminSetActiveAsync(int id, bool isActive)
+		{
+			if (id <= 0) { throw new ArgumentException("Geçersiz id."); }
+			await _merchantRepository.SetActiveAsync(id, isActive);
+		}
+
+		// ---------- REGISTER/ADMIN CREATE ----------
+		public async Task CreateForUserAsync(CreateMerchantDto dto)
+		{
+			if (dto == null) { throw new ArgumentException("Geçersiz veri."); }
+			if (string.IsNullOrWhiteSpace(dto.AppUserId)) { throw new ArgumentException("AppUserId zorunludur."); }
+
+			if (string.IsNullOrWhiteSpace(dto.CompanyName)) { throw new ArgumentException("Şirket adı zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.Iban)) { throw new ArgumentException("IBAN zorunludur."); }
+			if (string.IsNullOrWhiteSpace(dto.TaxNumber)) { throw new ArgumentException("Vergi numarası zorunludur."); }
+			if (await _merchantRepository.ExistsByIbanAsync(dto.Iban, null)) { throw new ArgumentException("Bu IBAN başka bir kayıtta mevcut."); }
+			if (await _merchantRepository.ExistsByTaxNumberAsync(dto.TaxNumber, null)) { throw new ArgumentException("Bu vergi numarası başka bir kayıtta mevcut."); }
+
+			var entity = _mapper.Map<Merchant>(dto);
+			await _merchantRepository.AddAsync(entity);
+		}
+	}
 }
