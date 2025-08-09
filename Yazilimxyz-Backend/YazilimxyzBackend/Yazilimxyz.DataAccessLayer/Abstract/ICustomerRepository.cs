@@ -7,9 +7,14 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Abstract
 {
-    public interface ICustomerRepository : IGenericRepository<Customer>
-    {
-        Task<Customer?> GetByAppUserIdAsync(string appUserId);
-        Task<Customer?> GetWithAddressesAsync(int id);
-    }
+	public interface ICustomerRepository : IGenericRepository<Customer>
+	{
+		Task<Customer?> GetByIdWithUserAsync(int id);
+		Task<Customer?> GetByAppUserIdAsync(string appUserId);
+		Task<Customer?> GetByAppUserIdWithUserAsync(string appUserId);
+		Task<Customer?> GetByAppUserIdWithUserAndAddressesAsync(string appUserId);
+		Task<Customer?> GetWithAddressesAsync(int id);
+
+		Task SetActiveAsync(int id, bool isActive); // soft-deactivate
+	}
 }

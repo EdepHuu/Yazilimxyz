@@ -72,6 +72,8 @@ builder.Services.AddScoped<ISupportMessageService, SupportMessageManager>();
 builder.Services.AddScoped<IAuthService, AuthManager>();
 builder.Services.AddScoped<IAppUserService, AppUserManager>();
 builder.Services.AddScoped<IMerchantService, MerchantManager>();
+builder.Services.AddScoped<ICustomerService, CustomerManager>();
+builder.Services.AddScoped<ICustomerAddressService, CustomerAddressManager>();
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -88,6 +90,7 @@ builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
 
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile)); // Profil tanýmý burada yapýlýr
