@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Yazilimxyz.BusinessLayer.DTOs.AppAdmin;
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
 using Yazilimxyz.BusinessLayer.DTOs.CartItem;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
@@ -231,11 +230,6 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<UpdateCartItemDto, CartItem>().ReverseMap();
 			CreateMap<GetByIdCartItemDto, CartItem>().ReverseMap();
 
-			// AppAdmin
-			CreateMap<ResultAppAdminDto, AppAdmin>().ReverseMap();
-			CreateMap<CreateAppAdminDto, AppAdmin>().ReverseMap();
-			CreateMap<UpdateAppAdminDto, AppAdmin>().ReverseMap();
-			CreateMap<GetByIdAppAdminDto, AppAdmin>().ReverseMap();
 		}
 	}
 }
