@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Auth;
+using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
@@ -12,114 +13,196 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 	{
 		private readonly UserManager<AppUser> _userManager;
 		private readonly ITokenService _tokenService;
-		private readonly AppDbContext _context;
+		private readonly ICustomerService _customerService;
+		private readonly IMerchantService _merchantService;
+		private readonly AppDbContext _db;
 
-		public AuthManager(UserManager<AppUser> userManager, ITokenService tokenService, AppDbContext context)
+		public AuthManager(
+			UserManager<AppUser> userManager,
+			ITokenService tokenService,
+			ICustomerService customerService,
+			IMerchantService merchantService,
+			AppDbContext db)
 		{
 			_userManager = userManager;
 			_tokenService = tokenService;
-			_context = context;
+			_customerService = customerService;
+			_merchantService = merchantService;
+			_db = db;
 		}
 
 		public async Task<ResultUserDto> RegisterAsync(RegisterDto dto)
 		{
+			if (dto == null)
+			{
+				return Fail("Geçersiz istek.");
+			}
+
+			if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+			{
+				return Fail("Email ve şifre zorunludur.");
+			}
+
+			var isCustomer = string.Equals(dto.Role, "Customer", StringComparison.OrdinalIgnoreCase);
+			var isMerchant = string.Equals(dto.Role, "Merchant", StringComparison.OrdinalIgnoreCase);
+			if (!isCustomer && !isMerchant)
+			{
+				return Fail("Geçersiz rol. Sadece 'Customer' veya 'Merchant' kayıt olabilir.");
+			}
+
+			// ---- CUSTOMER: merchant alanları GELİRSE reddet ----
+			if (isCustomer)
+			{
+				if (!string.IsNullOrWhiteSpace(dto.CompanyName))
+				{
+					return Fail("Customer kaydında şirket adı gönderilemez.");
+				}
+				if (!string.IsNullOrWhiteSpace(dto.Iban))
+				{
+					return Fail("Customer kaydında IBAN gönderilemez.");
+				}
+				if (!string.IsNullOrWhiteSpace(dto.TaxNumber))
+				{
+					return Fail("Customer kaydında vergi numarası gönderilemez.");
+				}
+				if (!string.IsNullOrWhiteSpace(dto.CompanyAddress))
+				{
+					return Fail("Customer kaydında şirket adresi gönderilemez.");
+				}
+			}
+
+			// ---- MERCHANT: merchant alanları ZORUNLU ----
+			if (isMerchant)
+			{
+				if (string.IsNullOrWhiteSpace(dto.CompanyName)) return Fail("Şirket adı zorunludur.");
+				if (string.IsNullOrWhiteSpace(dto.Iban)) return Fail("IBAN zorunludur.");
+				if (string.IsNullOrWhiteSpace(dto.TaxNumber)) return Fail("Vergi numarası zorunludur.");
+				if (string.IsNullOrWhiteSpace(dto.CompanyAddress)) return Fail("Şirket adresi zorunludur.");
+				if (string.IsNullOrWhiteSpace(dto.Phone)) return Fail("Telefon zorunludur.");
+			}
+
+			var exists = await _userManager.FindByEmailAsync(dto.Email);
+			if (exists != null)
+			{
+				return Fail($"'{dto.Email}' zaten kayıtlı.");
+			}
+
+			// AppUser oluştur (admin kayıt yolu kapalı)
+			var user = new AppUser
+			{
+				Name = dto.Name,
+				LastName = dto.LastName,
+				Email = dto.Email,
+				UserName = dto.Email,
+				PhoneNumber = dto.Phone, // her iki rolde de serbest/zorunlu (Merchant’ta zorunlu kontrolü yukarıda)
+				IsAdmin = false,
+				CreatedAt = DateTime.UtcNow
+			};
+
+			var createRes = await _userManager.CreateAsync(user, dto.Password);
+			if (!createRes.Succeeded)
+			{
+				return Fail(string.Join(" | ", createRes.Errors.Select(e => e.Description)));
+			}
+
 			try
 			{
-				if (await _userManager.FindByEmailAsync(dto.Email) is not null)
-					return new ResultUserDto { Success = false, Message = $"'{dto.Email}' zaten kayıtlı." };
-
-				var user = new AppUser
+				if (isCustomer)
 				{
-					Name = dto.Name,
-					LastName = dto.LastName,
-					Email = dto.Email,
-					UserName = dto.Email,
-					PhoneNumber = dto.Phone
-				};
-
-				var result = await _userManager.CreateAsync(user, dto.Password);
-				if (!result.Succeeded)
-					return new ResultUserDto
+					// Customer için domain kaydı
+					await _customerService.CreateForUserAsync(user.Id);
+				}
+				else // Merchant
+				{
+					// Merchant için domain kaydı (alanlar zorunlu kontrol edildi)
+					var merchantDto = new CreateMerchantDto
 					{
-						Success = false,
-						Message = string.Join(" | ", result.Errors.Select(e => e.Description))
+						AppUserId = user.Id,
+						CompanyName = dto.CompanyName!,
+						Iban = dto.Iban!,
+						TaxNumber = dto.TaxNumber!,
+						CompanyAddress = dto.CompanyAddress!,
+						Phone = dto.Phone!
 					};
 
-				switch (dto.Role)
-				{
-					case "Customer":
-						_context.Customers.Add(new Customer { AppUserId = user.Id });
-						break;
-
-					case "Merchant":
-						_context.Merchants.Add(new Merchant
-						{
-							AppUserId = user.Id,
-							CompanyName = dto.CompanyName ?? "",
-							Iban = dto.Iban ?? "",
-							TaxNumber = dto.TaxNumber ?? "",
-							CompanyAddress = dto.CompanyAddress ?? "",
-							Phone = dto.Phone ?? ""
-						});
-						break;
-
-					case "AppAdmin":
-						_context.AppAdmins.Add(new AppAdmin
-						{
-							AppUserId = user.Id,
-							Name = dto.Name,
-							LastName = dto.LastName
-						});
-						break;
-
-					default:
-						return new ResultUserDto { Success = false, Message = "Geçersiz rol türü." };
+					await _merchantService.CreateForUserAsync(merchantDto);
 				}
-
-				await _context.SaveChangesAsync();
 
 				return new ResultUserDto
 				{
 					Success = true,
-					Message = "Kayıt başarılı",
+					Message = "Kayıt başarılı.",
 					Name = user.Name,
 					LastName = user.LastName,
 					Email = user.Email,
-					Role = dto.Role
+					Role = dto.Role,
+					Token = _tokenService.CreateToken(user, dto.Role)
 				};
 			}
 			catch (Exception ex)
 			{
-				return new ResultUserDto { Success = false, Message = ex.Message };
+				// domain oluşturma başarısızsa AppUser'ı geri al
+				await _userManager.DeleteAsync(user);
+				return Fail(ex.Message);
 			}
 		}
 
 		public async Task<ResultUserDto> LoginAsync(LoginDto dto)
 		{
-			var user = await _userManager.FindByEmailAsync(dto.Email);
-			if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+			if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
 			{
-				return new ResultUserDto
-				{
-					Success = false,
-					Message = "Email veya şifre hatalı."
-				};
+				return Fail("Email ve şifre zorunludur.");
 			}
 
-			string role = await _context.AppAdmins.AnyAsync(a => a.AppUserId == user.Id) ? "AppAdmin" :
-			  await _context.Merchants.AnyAsync(m => m.AppUserId == user.Id) ? "Merchant" :
-			  "Customer";
+			var user = await _userManager.FindByEmailAsync(dto.Email);
+			if (user == null)
+			{
+				return Fail("Email veya şifre hatalı.");
+			}
+
+			var passOk = await _userManager.CheckPasswordAsync(user, dto.Password);
+			if (!passOk)
+			{
+				return Fail("Email veya şifre hatalı.");
+			}
+
+			// Rol tespiti
+			string role;
+			if (user.IsAdmin)
+			{
+				role = "AppAdmin";
+			}
+			else
+			{
+				// Merchant / Customer kontrolü
+				var isMerchant = await _db.Merchants.AnyAsync(m => m.AppUserId == user.Id);
+				if (isMerchant)
+				{
+					role = "Merchant";
+				}
+				else
+				{
+					var isCustomer = await _db.Customers.AnyAsync(c => c.AppUserId == user.Id);
+					role = isCustomer ? "Customer" : "User";
+				}
+			}
 
 			return new ResultUserDto
 			{
 				Success = true,
+				Message = "Giriş başarılı.",
 				Name = user.Name,
 				LastName = user.LastName,
 				Email = user.Email,
 				Role = role,
-				Token = _tokenService.CreateToken(user, role),
-				Message = "Giriş başarılı"
+				Token = _tokenService.CreateToken(user, role)
 			};
 		}
+
+		private static ResultUserDto Fail(string msg) => new()
+		{
+			Success = false,
+			Message = msg
+		};
 	}
 }
