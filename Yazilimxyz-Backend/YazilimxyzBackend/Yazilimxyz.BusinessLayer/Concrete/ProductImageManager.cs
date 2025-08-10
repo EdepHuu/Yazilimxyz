@@ -1,3 +1,4 @@
+
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
 using Microsoft.AspNetCore.Http;
@@ -296,4 +297,4 @@ namespace Yazilimxyz.BusinessLayer.Concrete
                 throw new UnauthorizedAccessException("Bu ürüne işlem yapma yetkiniz yok.");
         }
     }
-}
+

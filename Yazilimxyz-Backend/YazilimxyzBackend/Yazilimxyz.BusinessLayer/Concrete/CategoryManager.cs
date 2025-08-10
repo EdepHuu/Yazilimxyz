@@ -1,3 +1,4 @@
+
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
 using Core.Utilities.Results;
@@ -158,29 +159,5 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
             await _categoryRepository.DeleteAsync(id);
             return new SuccessResult(Messages.CategoryDeleted);
-        }
 
-        // İş Kuralları (Business Rules)
 
-        // Aynı isimde kategori var mı?
-        private async Task<bool> CheckIfCategoryNameExists(string name)
-        {
-            var categories = await _categoryRepository.GetAllAsync();
-            return categories.Any(c => c.Name.ToLower() == name.ToLower());
-        }
-
-        // Kategori sayısı belirli bir sınırı geçti mi?
-        private async Task<bool> CheckIfCategoryLimitExceeded()
-        {
-            var categories = await _categoryRepository.GetAllAsync();
-            return categories.Count() >= 20; // Örneğin maksimum 20 kategori
-        }
-
-        // Verilen ID'ye sahip kategori var mı?
-        private async Task<bool> CheckIfCategoryExistsById(int id)
-        {
-            var category = await _categoryRepository.GetByIdAsync(id);
-            return category != null;
-        }
-    }
-}

@@ -1,3 +1,4 @@
+
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.BusinessLayer.Concrete
+
 {
     public class CustomerManager : ICustomerService
     {
@@ -105,5 +107,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             }
             await _customerRepository.AddAsync(new Customer { AppUserId = appUserId });
         }
+
     }
+
+    }
+
 }
