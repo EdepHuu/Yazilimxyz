@@ -1,9 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Linq.Expressions;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
@@ -17,6 +13,15 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
              
         }
 
+        public async Task<bool> AnyAsync(Expression<Func<Category, bool>> predicate)
+        {
+            return await _dbSet.AnyAsync(predicate);
+        }
+
+        public async Task<int> CountAsync()
+        {
+            return await _dbSet.CountAsync();
+        }
         public async Task<IEnumerable<Category>> GetActiveAsync()
         {
             return await _dbSet.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();

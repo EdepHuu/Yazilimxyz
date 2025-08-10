@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Abstract
@@ -14,5 +10,7 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task<IEnumerable<Category>> GetSubCategoriesAsync(int parentId);
         Task<Category?> GetWithSubCategoriesAsync(int id);
         Task<IEnumerable<Category>> GetCategoryHierarchyAsync();
+        Task<bool> AnyAsync(Expression<Func<Category, bool>> predicate);
+        Task<int> CountAsync();
     }
 }
