@@ -35,6 +35,18 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("ICartItemService.Get")]
         public async Task AddAsync(CreateCartItemDto dto)
         {
+            if (dto == null)
+                throw new ArgumentException("Geçersiz istek.");
+
+            if (string.IsNullOrWhiteSpace(dto.UserId))
+                throw new ArgumentException("Kullanıcı Id boş olamaz.");
+
+            if (dto.ProductVariantId <= 0)
+                throw new ArgumentException("Geçersiz ürün varyantı Id.");
+
+            if (dto.Quantity < 1)
+                throw new ArgumentException("Miktar 1'den az olamaz.");
+
             var item = _mapper.Map<CartItem>(dto);
             await _cartItemRepository.AddAsync(item);
         }
@@ -42,6 +54,15 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("ICartItemService.Get")]
         public async Task UpdateAsync(UpdateCartItemDto dto)
         {
+            if (dto == null)
+                throw new ArgumentException("Geçersiz istek.");
+
+            if (dto.Id <= 0)
+                throw new ArgumentException("Geçersiz sepet öğesi Id.");
+
+            if (dto.Quantity < 1)
+                throw new ArgumentException("Miktar 1'den az olamaz.");
+
             var item = _mapper.Map<CartItem>(dto);
             await _cartItemRepository.UpdateAsync(item);
         }
@@ -49,18 +70,27 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("ICartItemService.Get")]
         public async Task DeleteAsync(int id)
         {
+            if (id <= 0)
+                throw new ArgumentException("Geçersiz sepet öğesi Id.");
+
             await _cartItemRepository.DeleteAsync(id);
         }
 
         [CacheRemoveAspect("ICartItemService.Get")]
         public async Task ClearUserCartAsync(string userId)
         {
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new ArgumentException("Kullanıcı Id boş olamaz.");
+
             await _cartItemRepository.ClearUserCartAsync(userId);
         }
 
         [CacheAspect] // key, value
         public async Task<int> GetCartItemCountAsync(string userId)
         {
+            if (string.IsNullOrWhiteSpace(userId))
+                return 0;
+
             return await _cartItemRepository.GetCartItemCountAsync(userId);
         }
     }
