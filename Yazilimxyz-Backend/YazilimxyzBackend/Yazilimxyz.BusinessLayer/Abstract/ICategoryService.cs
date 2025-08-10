@@ -16,5 +16,7 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IResult> CreateAsync(CreateCategoryDto dto);
         Task<IResult> UpdateAsync(UpdateCategoryDto dto);
         Task<IResult> DeleteAsync(int id);
+
+
     }
 }
