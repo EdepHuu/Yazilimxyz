@@ -3,12 +3,15 @@
 import axios from "axios";
 import { useState } from "react";
 
+const ROLE_CUSTOMER = "Customer";
+
 export default function UyeOl() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accept, setAccept] = useState(false);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,34 +19,66 @@ export default function UyeOl() {
       setMessage("❌ Lütfen kullanıcı sözleşmesini onaylayın.");
       return;
     }
+
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_REGISTER_ENDPOINT}`,
-        { phone, email, password, role: "Customer" }
-      );
+      setLoading(true);
+
+      // Sadece gerekli alanlar dolu, kalan hepsi null (boş) gönderilir.
+      const payload = {
+        // Customer için zorunlu olmayanlar boş string
+        name: "",
+        lastName: "",
+        companyName: "",
+        iban: "",
+        taxNumber: "",
+        companyAddress: "",
+
+        // zorunlular
+        email: email.trim(),
+        password,
+        role: ROLE_CUSTOMER,
+
+        // opsiyonel: boşsa "" gönder
+        phone: (phone || "").trim(),
+      };
+
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_REGISTER_ENDPOINT}`;
+      console.log("REGISTER URL =>", url);
+      const res = await axios.post(url, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
       const data = res.data;
       if (data?.success) {
         setMessage("✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyor…");
-        setTimeout(() => {
-          window.location.href = "/customer/giris";
-        }, 800);
+        setTimeout(() => (window.location.href = "/customer/giris"), 800);
       } else {
         setMessage(`❌ ${data?.message ?? "Kayıt başarısız."}`);
       }
-    } catch {
-      setMessage("❌ Sunucuya bağlanılamadı.");
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        console.log("REGISTER ERROR =>", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+        setMessage(`❌ ${err.response?.data?.message || err.message}`);
+      } else {
+        console.error(err);
+        setMessage("❌ Sunucuya bağlanılamadı.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="w-full max-w-md mx-auto my-12">
-      {/* Giriş sayfasındaki başlıkla aynı */}
       <div className="text-center mb-6">
         <span className="block text-xl">Merhaba,</span>
         ShopEase’a giriş yap veya hesap oluştur, indirimleri kaçırma!
       </div>
 
-      {/* ÜST SEKME: 3 buton, Üye Ol aktif */}
       <div className="flex bg-gray-100 rounded-lg p-1">
         <button
           onClick={() => (window.location.href = "/customer/giris")}
@@ -51,14 +86,12 @@ export default function UyeOl() {
         >
           Giriş Yap
         </button>
-
         <button
           disabled
           className="flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200 bg-white text-black shadow"
         >
           Üye Ol
         </button>
-
         <button
           onClick={() => (window.location.href = "/merchant/giris")}
           className="flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200 text-gray-500 hover:text-black"
@@ -67,7 +100,6 @@ export default function UyeOl() {
         </button>
       </div>
 
-      {/* Üye Ol formu */}
       <form onSubmit={handleRegister} className="mt-6">
         <div>
           <label className="block text-sm font-medium mb-1">Telefon Numarası</label>
@@ -116,8 +148,12 @@ export default function UyeOl() {
           </span>
         </label>
 
-        <button className="w-full heading-sm-2 rounded-lg mt-6 px-4 py-2 bg-gray-300" type="submit">
-          Üye Ol
+        <button
+          className="w-full heading-sm-2 rounded-lg mt-6 px-4 py-2 bg-gray-300 disabled:opacity-70"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Gönderiliyor…" : "Üye Ol"}
         </button>
 
         {message && <p className="mt-2 text-sm">{message}</p>}
