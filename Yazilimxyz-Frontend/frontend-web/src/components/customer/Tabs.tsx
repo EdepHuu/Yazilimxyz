@@ -12,7 +12,7 @@ export default function Tabs() {
 
   const handleTabClick = (tab: string) => {
     if (tab === "Üye Ol") {
-      window.location.href = "/customer/uyeol"; // doğru rota
+      window.location.href = "/customer/uyeol";
       return;
     }
     if (tab === "Bizimle Çalış") {
@@ -20,26 +20,38 @@ export default function Tabs() {
       return;
     }
     setActiveTab("Giriş Yap");
-    };
-
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage("");
+
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_LOGIN_ENDPOINT}`,
-        { email, password }
-      );
-      const data = res.data;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_LOGIN_ENDPOINT}`;
+      console.log("LOGIN URL =>", url);
+      
+      const response = await axios.post(url, { email, password }, {
+        headers: { "Content-Type": "application/json" }
+      });
+
+
+      const data = response.data;
+
       if (data.success) {
-        localStorage.setItem("token", data.token);
+        // API’nin döndürdüğü property isimleri farklıysa uyarlayabilirsin
+        localStorage.setItem("token", data.token || data.Token || "");
         setMessage("✅ Giriş başarılı!");
         window.location.href = "/customer/urunler";
       } else {
-        setMessage(`❌ ${data.message}`);
+        setMessage(`❌ ${data.message || "Giriş başarısız."}`);
       }
-    } catch {
-      setMessage("❌ Hata: Sunucuya bağlanılamadı.");
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.statusText ||
+        err?.message ||
+        "Sunucuya bağlanılamadı.";
+      setMessage(`❌ ${msg}`);
     }
   };
 
@@ -56,7 +68,11 @@ export default function Tabs() {
             key={tab}
             onClick={() => handleTabClick(tab)}
             className={`flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200
-              ${activeTab === tab ? "bg-white text-black shadow" : "text-gray-500 hover:text-black"}`}
+              ${
+                activeTab === tab
+                  ? "bg-white text-black shadow"
+                  : "text-gray-500 hover:text-black"
+              }`}
           >
             {tab}
           </button>
