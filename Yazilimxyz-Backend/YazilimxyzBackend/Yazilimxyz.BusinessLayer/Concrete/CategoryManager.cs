@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
 using Core.Utilities.Results;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
@@ -19,6 +20,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<List<ResultCategoryDto>>> GetAllAsync()
         {
             if (DateTime.Now.Hour == 1)
@@ -31,6 +33,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<List<ResultCategoryDto>>(mapped, Messages.CategoriesListed);
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<ResultCategoryDto>> GetByIdAsync(int id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
@@ -43,6 +46,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<ResultCategoryDto>(mapped);
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<List<ResultCategoryDto>>> GetActiveAsync()
         {
             var categories = await _categoryRepository.GetActiveAsync();
@@ -50,6 +54,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<List<ResultCategoryDto>>(mapped);
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<List<ResultCategoryDto>>> GetParentCategoriesAsync()
         {
             var categories = await _categoryRepository.GetParentCategoriesAsync();
@@ -57,6 +62,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<List<ResultCategoryDto>>(mapped);
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<List<ResultCategoryDto>>> GetSubCategoriesAsync(int parentId)
         {
             var categories = await _categoryRepository.GetSubCategoriesAsync(parentId);
@@ -64,6 +70,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<List<ResultCategoryDto>>(mapped);
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<ResultCategoryWithSubDto>> GetWithSubCategoriesAsync(int id)
         {
             var category = await _categoryRepository.GetWithSubCategoriesAsync(id);
@@ -76,6 +83,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<ResultCategoryWithSubDto>(mapped);
         }
 
+        [CacheAspect] // key, value
         public async Task<IDataResult<List<ResultCategoryHierarchyDto>>> GetCategoryHierarchyAsync()
         {
             var categories = await _categoryRepository.GetCategoryHierarchyAsync();
@@ -83,6 +91,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<List<ResultCategoryHierarchyDto>>(mapped);
         }
 
+        [CacheRemoveAspect("ICategoryService.Get")]
         public async Task<IResult> CreateAsync(CreateCategoryDto dto)
         {
             if (await CheckIfCategoryNameExists(dto.Name))
@@ -100,6 +109,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessResult(Messages.CategoryAdded);
         }
 
+        [CacheRemoveAspect("ICategoryService.Get")]
         public async Task<IResult> UpdateAsync(UpdateCategoryDto dto)
         {
             var existing = await _categoryRepository.GetByIdAsync(dto.Id);
@@ -113,6 +123,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessResult(Messages.CategoryUpdated);
         }
 
+        [CacheRemoveAspect("ICategoryService.Get")]
         public async Task<IResult> DeleteAsync(int id)
         {
             var exists = await CheckIfCategoryExistsById(id);
@@ -125,10 +136,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessResult(Messages.CategoryDeleted);
         }
 
-
-
         // İş Kuralları (Business Rules)
-      
 
         // Aynı isimde kategori var mı?
         private async Task<bool> CheckIfCategoryNameExists(string name)

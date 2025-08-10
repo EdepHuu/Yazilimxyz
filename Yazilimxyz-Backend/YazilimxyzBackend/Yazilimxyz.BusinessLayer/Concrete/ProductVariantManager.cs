@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.ProductVariant;
 using Yazilimxyz.DataAccessLayer.Abstract;
@@ -23,24 +24,28 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<ResultProductVariantDto>(variant);
         }
 
+        [CacheAspect] // key, value - Tüm varyantlar cache'lenir
         public async Task<List<ResultProductVariantDto>> GetAllAsync()
         {
             var variants = await _productVariantRepository.GetAllAsync();
             return _mapper.Map<List<ResultProductVariantDto>>(variants);
         }
 
+        [CacheAspect] // Ürüne göre varyantlar cache'lenir
         public async Task<List<ResultProductVariantDto>> GetByProductIdAsync(int productId)
         {
             var variants = await _productVariantRepository.GetByProductIdAsync(productId);
             return _mapper.Map<List<ResultProductVariantDto>>(variants);
         }
 
+        [CacheAspect] // Spesifik varyant cache'lenir
         public async Task<ResultProductVariantDto?> GetByProductAndOptionsAsync(int productId, string size, string color)
         {
             var variant = await _productVariantRepository.GetByProductAndOptionsAsync(productId, size, color);
             return _mapper.Map<ResultProductVariantDto>(variant);
         }
 
+        [CacheAspect] // Stokta olan varyantlar cache'lenir
         public async Task<List<ResultProductVariantDto>> GetInStockAsync(int productId)
         {
             var variants = await _productVariantRepository.GetInStockAsync(productId);
@@ -52,17 +57,20 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return await _productVariantRepository.IsInStockAsync(variantId, quantity);
         }
 
+        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir - stok güncellemesi
         public async Task UpdateStockAsync(int variantId, int quantity)
         {
             await _productVariantRepository.UpdateStockAsync(variantId, quantity);
         }
 
+        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir
         public async Task CreateAsync(CreateProductVariantDto dto)
         {
             var variant = _mapper.Map<ProductVariant>(dto);
             await _productVariantRepository.AddAsync(variant);
         }
 
+        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir
         public async Task UpdateAsync(UpdateProductVariantDto dto)
         {
             var variant = await _productVariantRepository.GetByIdAsync(dto.Id);
@@ -73,6 +81,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             }
         }
 
+        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir
         public async Task DeleteAsync(int id)
         {
             await _productVariantRepository.DeleteAsync(id);

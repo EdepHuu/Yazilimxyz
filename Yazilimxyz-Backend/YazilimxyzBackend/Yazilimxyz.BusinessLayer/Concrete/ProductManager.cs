@@ -2,10 +2,8 @@
 using Core.Aspects.Autofac.Caching;
 using Microsoft.AspNetCore.Http;
 using Yazilimxyz.BusinessLayer.Abstract;
-using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
-using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.EntityLayer.Enums;
 
