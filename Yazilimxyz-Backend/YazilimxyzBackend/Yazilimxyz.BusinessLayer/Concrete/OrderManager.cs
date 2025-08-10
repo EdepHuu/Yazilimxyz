@@ -71,6 +71,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("IOrderService.Get")]
         public async Task CreateAsync(CreateOrderDto dto)
         {
+            ValidateOrderDto(dto);
+
             var order = _mapper.Map<Order>(dto);
             await _orderRepository.AddAsync(order);
         }
@@ -78,6 +80,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("IOrderService.Get")]
         public async Task UpdateAsync(UpdateOrderDto dto)
         {
+            ValidateOrderDto(dto);
+
             var order = await _orderRepository.GetByIdAsync(dto.Id);
             if (order != null)
             {
@@ -90,6 +94,38 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         public async Task DeleteAsync(int id)
         {
             await _orderRepository.DeleteAsync(id);
+        }
+
+
+        private void ValidateOrderDto(dynamic dto)
+        {
+            if (dto == null)
+                throw new ArgumentException("Sipariş bilgileri boş olamaz.");
+
+            if (string.IsNullOrWhiteSpace(dto.UserId))
+                throw new ArgumentException("Kullanıcı ID zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(dto.OrderNumber))
+                throw new ArgumentException("Sipariş numarası zorunludur.");
+
+            if (dto.TotalAmount <= 0)
+                throw new ArgumentException("Toplam tutar sıfırdan büyük olmalıdır.");
+
+            if (dto.Status < OrderStatus.Pending || dto.Status > OrderStatus.Cancelled)
+                throw new ArgumentException("Geçersiz sipariş durumu.");
+
+            if (dto.PaymentStatus < PaymentStatus.Pending || dto.PaymentStatus > PaymentStatus.Refunded)
+                throw new ArgumentException("Geçersiz ödeme durumu.");
+
+
+            if (string.IsNullOrWhiteSpace(dto.ShippingAddressLine))
+                throw new ArgumentException("Teslimat adresi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(dto.ShippingCity))
+                throw new ArgumentException("Teslimat şehri zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(dto.ShippingDistrict))
+                throw new ArgumentException("Teslimat ilçesi zorunludur.");
         }
     }
 }

@@ -94,6 +94,18 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("ICategoryService.Get")]
         public async Task<IResult> CreateAsync(CreateCategoryDto dto)
         {
+            if (dto == null)
+                return new ErrorResult("Geçersiz istek.");
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length < 2)
+                return new ErrorResult("Kategori adı en az 2 karakter olmalıdır.");
+
+            if (dto.SortOrder < 0)
+                return new ErrorResult("Sıralama değeri negatif olamaz.");
+
+            if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId < 0)
+                return new ErrorResult("Ana kategori Id negatif olamaz.");
+
             if (await CheckIfCategoryNameExists(dto.Name))
             {
                 return new ErrorResult(Messages.CategoryNameAlreadyExists);
@@ -112,11 +124,23 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheRemoveAspect("ICategoryService.Get")]
         public async Task<IResult> UpdateAsync(UpdateCategoryDto dto)
         {
+            if (dto == null)
+                return new ErrorResult("Geçersiz istek.");
+
             var existing = await _categoryRepository.GetByIdAsync(dto.Id);
             if (existing == null)
             {
                 return new ErrorResult(Messages.CategoryNotFound);
             }
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length < 2)
+                return new ErrorResult("Kategori adı en az 2 karakter olmalıdır.");
+
+            if (dto.SortOrder < 0)
+                return new ErrorResult("Sıralama değeri negatif olamaz.");
+
+            if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId < 0)
+                return new ErrorResult("Ana kategori Id negatif olamaz.");
 
             _mapper.Map(dto, existing);
             await _categoryRepository.UpdateAsync(existing);
