@@ -297,4 +297,5 @@ namespace Yazilimxyz.BusinessLayer.Concrete
                 throw new UnauthorizedAccessException("Bu ürüne işlem yapma yetkiniz yok.");
         }
     }
+}
 

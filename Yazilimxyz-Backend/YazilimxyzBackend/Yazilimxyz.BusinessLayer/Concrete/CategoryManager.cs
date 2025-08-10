@@ -159,5 +159,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
             await _categoryRepository.DeleteAsync(id);
             return new SuccessResult(Messages.CategoryDeleted);
+        } 
 
 

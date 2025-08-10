@@ -1,4 +1,4 @@
-import Tabs from "@/components/customer/Tabs";
+import Tabs from "@/components/customer/giris";
 import React from "react";
 
 function page() {

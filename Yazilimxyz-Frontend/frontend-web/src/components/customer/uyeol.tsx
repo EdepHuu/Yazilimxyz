@@ -1,9 +1,12 @@
 "use client";
 
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useState } from "react";
 
 const ROLE_CUSTOMER = "Customer";
+
+type ApiError = { message?: string };
+type ResultUserResponse = { success?: boolean; message?: string };
 
 export default function UyeOl() {
   const [phone, setPhone] = useState("");
@@ -23,7 +26,7 @@ export default function UyeOl() {
     try {
       setLoading(true);
 
-      // Sadece gerekli alanlar dolu, kalan hepsi null (boş) gönderilir.
+      // Sadece gerekli alanlar dolu, kalan hepsi boş string gönderilir.
       const payload = {
         // Customer için zorunlu olmayanlar boş string
         name: "",
@@ -44,7 +47,8 @@ export default function UyeOl() {
 
       const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_REGISTER_ENDPOINT}`;
       console.log("REGISTER URL =>", url);
-      const res = await axios.post(url, payload, {
+
+      const res = await axios.post<ResultUserResponse>(url, payload, {
         headers: { "Content-Type": "application/json" },
       });
 
@@ -55,8 +59,9 @@ export default function UyeOl() {
       } else {
         setMessage(`❌ ${data?.message ?? "Kayıt başarısız."}`);
       }
-    } catch (err: any) {
-      if (axios.isAxiosError(err)) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const err = error as AxiosError<ApiError>;
         console.log("REGISTER ERROR =>", {
           status: err.response?.status,
           data: err.response?.data,
@@ -64,7 +69,7 @@ export default function UyeOl() {
         });
         setMessage(`❌ ${err.response?.data?.message || err.message}`);
       } else {
-        console.error(err);
+        console.error(error);
         setMessage("❌ Sunucuya bağlanılamadı.");
       }
     } finally {
