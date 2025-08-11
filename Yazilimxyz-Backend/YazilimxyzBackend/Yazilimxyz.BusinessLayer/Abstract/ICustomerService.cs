@@ -1,20 +1,21 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.Customer;
+﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.Customer;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
 	public interface ICustomerService
 	{
-		// SELF
-		Task<ResultCustomerDto?> GetMyProfileAsync();
+        // SELF
+        Task<IDataResult<ResultCustomerDto?>> GetMyProfileAsync();
 
-		// ADMIN
-		Task<ResultCustomerDto?> GetByIdAsync(int id);
-		Task<ResultCustomerDto?> GetByAppUserIdAsync(string appUserId);
-		Task<ResultCustomerWithAddressesDto?> GetWithAddressesAsync(int id);
-		Task AdminCreateAsync(AdminCreateCustomerDto dto);
-		Task AdminSetActiveAsync(int id, bool isActive);
+        // ADMIN
+        Task<IDataResult<ResultCustomerDto?>> GetByIdAsync(int id);
+        Task<IDataResult<ResultCustomerDto?>> GetByAppUserIdAsync(string appUserId);
+        Task<IDataResult<ResultCustomerWithAddressesDto?>> GetWithAddressesAsync(int id);
+        Task<IResult> AdminCreateAsync(AdminCreateCustomerDto dto);
+        Task<IResult> AdminSetActiveAsync(int id, bool isActive);
 
-		// REGISTER akışı
-		Task CreateForUserAsync(string appUserId);
-	}
+        // REGISTER akışı
+        Task<IResult> CreateForUserAsync(string appUserId);
+    }
 }

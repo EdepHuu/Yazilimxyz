@@ -1,15 +1,18 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.CartItem;
+﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.CartItem;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
     public interface ICartItemService
     {
-        Task<List<ResultCartItemDto>> GetByUserIdAsync(string userId);
-        Task<ResultCartItemDto?> GetByUserAndVariantAsync(string userId, int variantId);
-        Task AddAsync(CreateCartItemDto dto);
-        Task UpdateAsync(UpdateCartItemDto dto);
-        Task DeleteAsync(int id);
-        Task ClearUserCartAsync(string userId);
-        Task<int> GetCartItemCountAsync(string userId);
+        Task<IDataResult<List<ResultCartItemDto>>> GetByUserIdAsync(string userId);
+        Task<IDataResult<ResultCartItemDto?>> GetByUserAndVariantAsync(string userId, int variantId);
+
+        Task<IResult> AddAsync(CreateCartItemDto dto);
+        Task<IResult> UpdateAsync(UpdateCartItemDto dto);
+        Task<IResult> DeleteAsync(int id);
+        Task<IResult> ClearUserCartAsync(string userId);
+
+        Task<IDataResult<int>> GetCartItemCountAsync(string userId);
     }
 }
