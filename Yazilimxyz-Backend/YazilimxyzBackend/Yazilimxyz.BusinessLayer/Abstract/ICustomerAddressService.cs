@@ -1,15 +1,16 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
+﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
     public interface ICustomerAddressService
     {
-        Task<List<ResultCustomerAddressDto>> GetByCustomerIdAsync(int customerId);
-        Task<ResultCustomerAddressDto?> GetDefaultAddressAsync(int customerId);
-        Task SetDefaultAddressAsync(int customerId, int addressId);
-        Task<ResultCustomerAddressDto?> GetByIdAsync(int id);
-        Task CreateAsync(CreateCustomerAddressDto dto);
-        Task UpdateAsync(UpdateCustomerAddressDto dto);
-        Task DeleteAsync(int id);
+        Task<IDataResult<List<ResultCustomerAddressDto>>> GetByCustomerIdAsync(int customerId);
+        Task<IDataResult<ResultCustomerAddressDto?>> GetDefaultAddressAsync(int customerId);
+        Task<IResult> SetDefaultAddressAsync(int customerId, int addressId);
+        Task<IDataResult<ResultCustomerAddressDto?>> GetByIdAsync(int id);
+        Task<IResult> CreateAsync(CreateCustomerAddressDto dto);
+        Task<IResult> UpdateAsync(UpdateCustomerAddressDto dto);
+        Task<IResult> DeleteAsync(int id);
     }
 }

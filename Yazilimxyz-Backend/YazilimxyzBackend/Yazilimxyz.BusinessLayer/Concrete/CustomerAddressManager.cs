@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
@@ -18,107 +20,126 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultCustomerAddressDto>> GetByCustomerIdAsync(int customerId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultCustomerAddressDto>>> GetByCustomerIdAsync(int customerId)
         {
             if (customerId <= 0)
-                throw new ArgumentException("Geçersiz müşteri id.");
+                return new ErrorDataResult<List<ResultCustomerAddressDto>>(Messages.InvalidCustomerId);
 
             var addresses = await _customerAddressRepository.GetByCustomerIdAsync(customerId);
-            return _mapper.Map<List<ResultCustomerAddressDto>>(addresses);
+            var resultDto = _mapper.Map<List<ResultCustomerAddressDto>>(addresses);
+
+            return new SuccessDataResult<List<ResultCustomerAddressDto>>(resultDto, Messages.CustomerAddressesListed);
         }
 
-        [CacheAspect] // key, value
-        public async Task<ResultCustomerAddressDto?> GetDefaultAddressAsync(int customerId)
+        [CacheAspect]
+        public async Task<IDataResult<ResultCustomerAddressDto?>> GetDefaultAddressAsync(int customerId)
         {
             if (customerId <= 0)
-                throw new ArgumentException("Geçersiz müşteri id.");
+                return new ErrorDataResult<ResultCustomerAddressDto?>(null, Messages.InvalidCustomerId);
 
             var address = await _customerAddressRepository.GetDefaultAddressAsync(customerId);
-            return _mapper.Map<ResultCustomerAddressDto?>(address);
+
+            if (address == null)
+                return new ErrorDataResult<ResultCustomerAddressDto?>(null, Messages.DefaultAddressNotFound);
+
+            var mapped = _mapper.Map<ResultCustomerAddressDto?>(address);
+            return new SuccessDataResult<ResultCustomerAddressDto?>(mapped, Messages.DefaultAddressSet);
         }
 
         [CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task SetDefaultAddressAsync(int customerId, int addressId)
+        public async Task<IResult> SetDefaultAddressAsync(int customerId, int addressId)
         {
             if (customerId <= 0)
-                throw new ArgumentException("Geçersiz müşteri id.");
+                return new ErrorResult(Messages.InvalidCustomerId);
 
             if (addressId <= 0)
-                throw new ArgumentException("Geçersiz adres id.");
+                return new ErrorResult(Messages.InvalidAddressId);
 
             await _customerAddressRepository.SetDefaultAddressAsync(customerId, addressId);
+            return new SuccessResult(Messages.DefaultAddressSet);
         }
 
-        [CacheAspect] // key, value
-        public async Task<ResultCustomerAddressDto?> GetByIdAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultCustomerAddressDto?>> GetByIdAsync(int id)
         {
             if (id <= 0)
-                throw new ArgumentException("Geçersiz adres id.");
+                return new ErrorDataResult<ResultCustomerAddressDto?>(null, Messages.InvalidAddressId);
 
             var address = await _customerAddressRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultCustomerAddressDto?>(address);
+
+            if (address == null)
+                return new ErrorDataResult<ResultCustomerAddressDto?>(null, Messages.CustomerAddressNotFound);
+
+            var mapped = _mapper.Map<ResultCustomerAddressDto?>(address);
+            return new SuccessDataResult<ResultCustomerAddressDto?>(mapped);
         }
 
         [CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task CreateAsync(CreateCustomerAddressDto dto)
+        public async Task<IResult> CreateAsync(CreateCustomerAddressDto dto)
         {
             if (dto == null)
-                throw new ArgumentException("Geçersiz istek.");
+                return new ErrorResult("Geçersiz istek.");
 
             if (dto.CustomerId <= 0)
-                throw new ArgumentException("Geçersiz müşteri id.");
+                return new ErrorResult(Messages.InvalidCustomerId);
 
             if (string.IsNullOrWhiteSpace(dto.FullName))
-                throw new ArgumentException("Ad Soyad zorunludur.");
+                return new ErrorResult("Ad Soyad zorunludur.");
 
             if (string.IsNullOrWhiteSpace(dto.Phone))
-                throw new ArgumentException("Telefon numarası zorunludur.");
+                return new ErrorResult("Telefon numarası zorunludur.");
 
             if (string.IsNullOrWhiteSpace(dto.Address))
-                throw new ArgumentException("Adres bilgisi zorunludur.");
+                return new ErrorResult("Adres bilgisi zorunludur.");
 
             var address = _mapper.Map<CustomerAddress>(dto);
             await _customerAddressRepository.AddAsync(address);
+
+            return new SuccessResult(Messages.CustomerAddressAdded);
         }
 
         [CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task UpdateAsync(UpdateCustomerAddressDto dto)
+        public async Task<IResult> UpdateAsync(UpdateCustomerAddressDto dto)
         {
             if (dto == null)
-                throw new ArgumentException("Geçersiz istek.");
+                return new ErrorResult("Geçersiz istek.");
 
             if (dto.Id <= 0)
-                throw new ArgumentException("Geçersiz adres id.");
+                return new ErrorResult(Messages.InvalidAddressId);
 
             var existing = await _customerAddressRepository.GetByIdAsync(dto.Id);
             if (existing == null)
-                throw new ArgumentException("Adres bulunamadı.");
+                return new ErrorResult(Messages.CustomerAddressNotFound);
 
             if (string.IsNullOrWhiteSpace(dto.FullName))
-                throw new ArgumentException("Ad Soyad zorunludur.");
+                return new ErrorResult("Ad Soyad zorunludur.");
 
             if (string.IsNullOrWhiteSpace(dto.Phone))
-                throw new ArgumentException("Telefon numarası zorunludur.");
+                return new ErrorResult("Telefon numarası zorunludur.");
 
             if (string.IsNullOrWhiteSpace(dto.Address))
-                throw new ArgumentException("Adres bilgisi zorunludur.");
+                return new ErrorResult("Adres bilgisi zorunludur.");
 
             _mapper.Map(dto, existing);
             await _customerAddressRepository.UpdateAsync(existing);
+
+            return new SuccessResult(Messages.CustomerAddressUpdated);
         }
 
         [CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task DeleteAsync(int id)
+        public async Task<IResult> DeleteAsync(int id)
         {
             if (id <= 0)
-                throw new ArgumentException("Geçersiz adres id.");
+                return new ErrorResult(Messages.InvalidAddressId);
 
             var existing = await _customerAddressRepository.GetByIdAsync(id);
             if (existing == null)
-                throw new ArgumentException("Adres bulunamadı.");
+                return new ErrorResult(Messages.CustomerAddressNotFound);
 
             await _customerAddressRepository.DeleteAsync(id);
+
+            return new SuccessResult(Messages.CustomerAddressDeleted);
         }
     }
 }
