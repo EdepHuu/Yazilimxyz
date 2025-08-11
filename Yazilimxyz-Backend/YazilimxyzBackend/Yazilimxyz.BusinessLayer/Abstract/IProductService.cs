@@ -16,8 +16,8 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<ResultProductWithImagesDto?> GetWithImagesAsync(int id);
         Task<ResultProductDetailedDto?> GetDetailedAsync(int id);
         Task<List<ResultProductDto>> SearchAsync(string searchTerm);
-
-        Task CreateAsync(CreateProductDto dto);
+		Task<PagedResult<ProductListItemDto>> FilterAsync(ProductFilterRequestDto req);
+		Task CreateAsync(CreateProductDto dto);
         Task UpdateAsync(UpdateProductDto dto);
         Task DeleteAsync(int id);
     }

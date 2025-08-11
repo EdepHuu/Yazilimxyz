@@ -207,5 +207,38 @@ namespace Yazilimxyz.WebAPI.Controllers
 			await _productService.DeleteAsync(productId);
 			return Ok(new { message = "Ürün başarıyla silindi." });
 		}
+
+		[HttpPost("search")]
+		[AllowAnonymous]
+		[ProducesResponseType(typeof(PagedResult<ProductListItemDto>), StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		public async Task<IActionResult> SearchAsync([FromBody] ProductFilterRequestDto req)
+		{
+			if (req is null) return BadRequest("İstek gövdesi boş.");
+			// Normalizasyon / guard
+			if (req.Page <= 0) req.Page = 1;
+			if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
+			if (req.MinPrice.HasValue && req.MaxPrice.HasValue && req.MinPrice > req.MaxPrice)
+				return BadRequest("MinPrice, MaxPrice'tan büyük olamaz.");
+			// Dizi alanları gereksiz tekrar/boşluklardan arındır (opsiyonel ama faydalı)
+			req.MerchantIds = req.MerchantIds?.Distinct().ToArray();
+			req.Sizes = req.Sizes?
+				.Where(s => !string.IsNullOrWhiteSpace(s))
+				.Select(s => s.Trim())
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+			req.Colors = req.Colors?
+				.Where(c => !string.IsNullOrWhiteSpace(c))
+				.Select(c => c.Trim())
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+			req.Genders = req.Genders?
+				.Where(g => !string.IsNullOrWhiteSpace(g))
+				.Select(g => g.Trim())
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+			var result = await _productService.FilterAsync(req);
+			return Ok(result);
+		}
 	}
 }
