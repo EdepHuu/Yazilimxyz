@@ -265,7 +265,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
                 throw new Exception("Varyant bulunamadı.");
             }
 
-            await _productRepository.DeleteAsync(id);
+            await _productVariantRepository.DeleteAsync(id);
         }
     }
 }
