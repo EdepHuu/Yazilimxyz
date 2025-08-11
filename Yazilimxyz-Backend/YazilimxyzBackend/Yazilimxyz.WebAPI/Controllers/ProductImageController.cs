@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.ProductImage;
 
@@ -56,17 +58,18 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(result);
 		}
 
-		[HttpPost]
-		public async Task<IActionResult> Create([FromBody] CreateProductImageDto dto)
+		[HttpPost("create")]
+		[Consumes("multipart/form-data")]
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> Create([FromForm] CreateProductImageDto dto)
 		{
-			if (dto == null || string.IsNullOrWhiteSpace(dto.ImageUrl) || dto.ProductId <= 0)
-			{
+			if (dto == null || dto.ProductId <= 0 || dto.Image == null || dto.Image.Length == 0)
 				return BadRequest("Geçersiz veri gönderildi.");
-			}
 
-			await _productImageService.CreateAsync(dto);
+			await _productImageService.CreateAsync(dto);  // << sadece dto
 			return Ok("Fotoğraf başarıyla eklendi.");
 		}
+
 
 		[HttpPut]
 		public async Task<IActionResult> Update([FromBody] UpdateProductImageDto dto)

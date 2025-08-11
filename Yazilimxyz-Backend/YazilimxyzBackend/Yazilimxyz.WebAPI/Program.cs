@@ -1,34 +1,38 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
+using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Concrete;
+using Yazilimxyz.BusinessLayer.Mapping;
+using Yazilimxyz.CoreLayer.Storage;
+using Yazilimxyz.DataAccessLayer.Abstract;
+using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
-using Yazilimxyz.BusinessLayer.Abstract;
-using Yazilimxyz.BusinessLayer.Concrete;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.OpenApi.Models;
-using Yazilimxyz.DataAccessLayer.Abstract;
-using Yazilimxyz.DataAccessLayer.Concrete;
-using Yazilimxyz.BusinessLayer.Mapping;
-using AutoMapper;
-using System.Security.Claims; // <-- eklendi
+using Yazilimxyz.InfrastructureLayer.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
+// ---------- DbContext ----------
 builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
 		b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer")));
 
-// Identity
+// ---------- Identity ----------
 builder.Services.AddIdentity<AppUser, IdentityRole>()
 	.AddEntityFrameworkStores<AppDbContext>()
 	.AddDefaultTokenProviders();
 
-// JWT Config
-var jwtKey = builder.Configuration["Jwt:Key"];
+builder.Services.AddHttpContextAccessor();
+
+// ---------- JWT ----------
+var jwtKey = builder.Configuration["Jwt:Key"]!;
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -51,22 +55,27 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 
-// Admin Policy: "IsAdmin" claim'i true olmalý
+// ---------- Authorization ----------
 builder.Services.AddAuthorization(opts =>
 {
+	// "IsAdmin" claim'i true olmalý
 	opts.AddPolicy("Admin", policy => policy.RequireClaim("IsAdmin", "true"));
 });
 
-// CORS
+// ---------- CORS ----------
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowAll", policy =>
-	{
-		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-	});
+		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-// DI (Service & Repo)
+// ---------- Upload limit (ör. 20 MB) ----------
+builder.Services.Configure<FormOptions>(o =>
+{
+	o.MultipartBodyLengthLimit = 20_000_000;
+});
+
+// ---------- DI: Services ----------
 builder.Services.AddScoped<IProductService, ProductManager>();
 builder.Services.AddScoped<ICategoryService, CategoryManager>();
 builder.Services.AddScoped<IOrderService, OrderManager>();
@@ -80,6 +89,7 @@ builder.Services.AddScoped<IMerchantService, MerchantManager>();
 builder.Services.AddScoped<ICustomerService, CustomerManager>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressManager>();
 
+// ---------- DI: Repositories ----------
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -93,15 +103,15 @@ builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
+// ---------- DI: Token & Storage ----------
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 
-// AutoMapper
+// ---------- MVC & Swagger ----------
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHttpContextAccessor();
 
-// Swagger + JWT
 builder.Services.AddSwaggerGen(c =>
 {
 	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
@@ -128,6 +138,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// ---------- Middleware Sýrasý ----------
 if (app.Environment.IsDevelopment())
 {
 	app.UseDeveloperExceptionPage();
@@ -136,19 +147,23 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Uygulama açýlýrken admin'i seed et
+app.MapControllers();
+
+// ---------- Seed Admin ----------
 using (var scope = app.Services.CreateScope())
 {
 	await SeedAdminAsync(scope.ServiceProvider, builder.Configuration);
 }
 
-app.MapControllers();
 app.Run();
-
 
 // ================== SEED ADMIN ==================
 static async Task SeedAdminAsync(IServiceProvider sp, IConfiguration cfg)
