@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Text;
 using System.Threading.Tasks;
 using Yazilimxyz.EntityLayer.Entities;
@@ -18,5 +19,6 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task<Product?> GetWithImagesAsync(int id);
         Task<Product?> GetDetailedAsync(int id);
         Task<IEnumerable<Product>> SearchAsync(string searchTerm);
+        IQueryable<Product> Query(); // AsNoTracking temel sorgu (istersen)
     }
 }

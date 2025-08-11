@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
@@ -204,5 +205,93 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
 			await _productRepository.DeleteAsync(id);
 		}
-	}
+
+
+        public async Task<PagedResult<ProductListItemDto>> FilterAsync(ProductFilterRequest req)
+        {
+            if (req.Page <= 0) req.Page = 1;
+            if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
+
+            var q = _productRepository.Query(); // IQueryable<Product>
+
+            // Keyword
+            if (!string.IsNullOrWhiteSpace(req.Keyword))
+            {
+                var term = req.Keyword.Trim();
+                q = q.Where(p => p.Name.Contains(term));
+            }
+
+            // Kategori
+            if (req.CategoryId.HasValue)
+                q = q.Where(p => p.CategoryId == req.CategoryId.Value);
+
+            // ✅ Merchant (marka) — DTO: MerchantIds
+            if (req.MerchantIds != null && req.MerchantIds.Length > 0)
+                q = q.Where(p => req.MerchantIds.Contains(p.MerchantId));
+
+            // Variant - Size
+            if (req.Sizes != null && req.Sizes.Length > 0)
+                q = q.Where(p => p.ProductVariants.Any(v => req.Sizes.Contains(v.Size)));
+
+            // Variant - Color
+            if (req.Colors != null && req.Colors.Length > 0)
+                q = q.Where(p => p.ProductVariants.Any(v => req.Colors.Contains(v.Color)));
+
+            // Gender (enum ise string -> enum map)
+            if (req.Genders != null && req.Genders.Length > 0)
+            {
+                var genderEnums = req.Genders
+                    .Where(g => !string.IsNullOrWhiteSpace(g))
+                    .Select(g => Enum.TryParse<GenderType>(g, true, out var en) ? (GenderType?)en : null)
+                    .Where(e => e.HasValue)
+                    .Select(e => e!.Value)
+                    .ToArray();
+
+                if (genderEnums.Length > 0)
+                    q = q.Where(p => genderEnums.Contains(p.Gender));
+            }
+
+            // Fiyat
+            if (req.MinPrice.HasValue) q = q.Where(p => p.BasePrice >= req.MinPrice.Value);
+            if (req.MaxPrice.HasValue) q = q.Where(p => p.BasePrice <= req.MaxPrice.Value);
+
+            // Sıralama
+            q = (req.SortBy, req.SortDesc) switch
+            {
+                ("price", true) => q.OrderByDescending(p => p.BasePrice),
+                ("price", false) => q.OrderBy(p => p.BasePrice),
+                ("newest", _) => q.OrderByDescending(p => p.CreatedAt),
+                ("name", true) => q.OrderByDescending(p => p.Name),
+                _ => q.OrderBy(p => p.Name)
+            };
+
+            var total = await q.CountAsync();
+
+            var items = await q
+                .Skip((req.Page - 1) * req.PageSize)
+                .Take(req.PageSize)
+                .Select(p => new ProductListItemDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.BasePrice,
+                    CoverImageUrl = p.ProductImages
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => i.ImageUrl) // kendi alan adına göre
+                        .FirstOrDefault(),
+                    MerchantId = p.MerchantId,
+                    MerchantName = p.Merchant.CompanyName
+                })
+                .ToListAsync();
+
+            return new PagedResult<ProductListItemDto>
+            {
+                Total = total,
+                Page = req.Page,
+                PageSize = req.PageSize,
+                Items = items
+            };
+        }
+
+    }
 }

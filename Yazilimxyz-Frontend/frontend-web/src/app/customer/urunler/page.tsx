@@ -91,6 +91,7 @@ const sizes: SizeOption[] = [
   { id: 1, label: "XS" },
   { id: 2, label: "S" },
   { id: 3, label: "M" },
+  { id: 3, label: "L" },
   { id: 4, label: "XL" },
   { id: 5, label: "2XL" },
   { id: 6, label: "3XL" },
