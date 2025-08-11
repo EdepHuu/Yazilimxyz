@@ -192,5 +192,15 @@ namespace Yazilimxyz.WebAPI.Controllers
 			var products = await _merchantService.GetProductsByMerchantAsync(id);
 			return Ok(products);
 		}
-	}
+
+        [HttpGet("list")]
+        [AllowAnonymous] // veya [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> GetAllMerchants()
+        {
+            var merchants = await _merchantService.GetAllAsync();
+            // İstersen sadece aktif olanları göster:
+            merchants = merchants.Where(m => m.IsActive).ToList();
+            return Ok(merchants);
+        }
+    }
 }
