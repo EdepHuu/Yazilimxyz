@@ -17,6 +17,10 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<ResultProductDetailedDto?> GetDetailedAsync(int id);
         Task<List<ResultProductDto>> SearchAsync(string searchTerm);
 
+
+        Task<PagedResult<ProductListItemDto>> FilterAsync(ProductFilterRequest req);
+
+
         Task CreateAsync(CreateProductDto dto);
         Task UpdateAsync(UpdateProductDto dto);
         Task DeleteAsync(int id);

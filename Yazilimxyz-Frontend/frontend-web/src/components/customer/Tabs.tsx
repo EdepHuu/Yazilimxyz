@@ -1,8 +1,21 @@
 "use client";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useState } from "react";
 
 const tabs = ["Giriş Yap", "Üye Ol", "Bizimle Çalış"];
+const EXPECTED_ROLE = "Customer";
+
+type LoginResponse = {
+  success?: boolean;
+  message?: string;
+  token?: string;
+  Token?: string; // backend büyük T ile döndürebilir
+  role?: string;
+  Role?: string;
+  email?: string;
+};
+
+type ApiError = { message?: string };
 
 export default function Tabs() {
   const [activeTab, setActiveTab] = useState("Giriş Yap");
@@ -29,29 +42,42 @@ export default function Tabs() {
     try {
       const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_LOGIN_ENDPOINT}`;
       console.log("LOGIN URL =>", url);
-      
-      const response = await axios.post(url, { email, password }, {
-        headers: { "Content-Type": "application/json" }
-      });
 
+      const response = await axios.post<LoginResponse>(
+        url,
+        { email, password },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
       const data = response.data;
 
-      if (data.success) {
-        // API’nin döndürdüğü property isimleri farklıysa uyarlayabilirsin
+      if (data?.success) {
+        // Rol kontrolü — sadece Customer kabul
+        const role = (data.role || data.Role || "").trim();
+        if (role !== EXPECTED_ROLE) {
+          setMessage("❌ E-posta ya da şifre hatalı.");
+          return; // token kaydetme, yönlendirme yapma
+        }
+
         localStorage.setItem("token", data.token || data.Token || "");
         setMessage("✅ Giriş başarılı!");
         window.location.href = "/customer/urunler";
       } else {
-        setMessage(`❌ ${data.message || "Giriş başarısız."}`);
+        setMessage(`❌ ${data?.message || "Giriş başarısız."}`);
       }
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.statusText ||
-        err?.message ||
-        "Sunucuya bağlanılamadı.";
-      setMessage(`❌ ${msg}`);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const err = error as AxiosError<ApiError>;
+        const msg =
+          err.response?.data?.message ||
+          err.response?.statusText ||
+          err.message ||
+          "Sunucuya bağlanılamadı.";
+        setMessage(`❌ ${msg}`);
+      } else {
+        console.error(error);
+        setMessage("❌ Beklenmeyen bir hata oluştu.");
+      }
     }
   };
 
@@ -67,12 +93,11 @@ export default function Tabs() {
           <button
             key={tab}
             onClick={() => handleTabClick(tab)}
-            className={`flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200
-              ${
-                activeTab === tab
-                  ? "bg-white text-black shadow"
-                  : "text-gray-500 hover:text-black"
-              }`}
+            className={`flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200 ${
+              activeTab === tab
+                ? "bg-white text-black shadow"
+                : "text-gray-500 hover:text-black"
+            }`}
           >
             {tab}
           </button>
