@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
+using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.EntityLayer.Enums;
 
@@ -208,50 +209,53 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 		{
 			if (req.Page <= 0) req.Page = 1;
 			if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
-			var q = _productRepository.Query(); // IQueryable<Product>
-												// Keyword
-			if (!string.IsNullOrWhiteSpace(req.Keyword))
+			var q = _productRepository.Query(); // IsActive + Include(Merchant, ProductImages, ProductVariants)
+
+			// Marka (Merchant)
+			if (req.MerchantIds is { Length: > 0 })
+				q = q.Where(p => req.MerchantIds!.Contains(p.MerchantId));
+
+			var hasSizes = req.Sizes is { Length: > 0 };
+			var hasColors = req.Colors is { Length: > 0 };
+
+			// Varyant filtreleri (aynı varyantta eşleşme + stok)
+			if (hasSizes && hasColors)
 			{
-				var term = req.Keyword.Trim();
-				q = q.Where(p => p.Name.Contains(term));
+				q = q.Where(p => p.ProductVariants
+					.Any(v => req.Sizes!.Contains(v.Size) && req.Colors!.Contains(v.Color) && v.Stock > 0));
 			}
-			// Kategori
-			if (req.CategoryId.HasValue)
-				q = q.Where(p => p.CategoryId == req.CategoryId.Value);
-			// :white_check_mark: Merchant (marka) — DTO: MerchantIds
-			if (req.MerchantIds != null && req.MerchantIds.Length > 0)
-				q = q.Where(p => req.MerchantIds.Contains(p.MerchantId));
-			// Variant - Size
-			if (req.Sizes != null && req.Sizes.Length > 0)
-				q = q.Where(p => p.ProductVariants.Any(v => req.Sizes.Contains(v.Size)));
-			// Variant - Color
-			if (req.Colors != null && req.Colors.Length > 0)
-				q = q.Where(p => p.ProductVariants.Any(v => req.Colors.Contains(v.Color)));
-			// Gender (enum ise string -> enum map)
-			if (req.Genders != null && req.Genders.Length > 0)
+			else if (hasSizes)
 			{
-				var genderEnums = req.Genders
-					.Where(g => !string.IsNullOrWhiteSpace(g))
-					.Select(g => Enum.TryParse<GenderType>(g, true, out var en) ? (GenderType?)en : null)
-					.Where(e => e.HasValue)
-					.Select(e => e!.Value)
-					.ToArray();
-				if (genderEnums.Length > 0)
-					q = q.Where(p => genderEnums.Contains(p.Gender));
+				q = q.Where(p => p.ProductVariants
+					.Any(v => req.Sizes!.Contains(v.Size) && v.Stock > 0));
 			}
-			// Fiyat
+			else if (hasColors)
+			{
+				q = q.Where(p => p.ProductVariants
+					.Any(v => req.Colors!.Contains(v.Color) && v.Stock > 0));
+			}
+			else
+			{
+				// İstersen genel listede de stoklu varyant şartı koy:
+				// q = q.Where(p => p.ProductVariants.Any(v => v.Stock > 0));
+			}
+
+			// Fiyat (ürün bazlı)
 			if (req.MinPrice.HasValue) q = q.Where(p => p.BasePrice >= req.MinPrice.Value);
 			if (req.MaxPrice.HasValue) q = q.Where(p => p.BasePrice <= req.MaxPrice.Value);
+
 			// Sıralama
-			q = (req.SortBy, req.SortDesc) switch
+			q = (req.SortBy?.ToLowerInvariant(), req.SortDesc) switch
 			{
 				("price", true) => q.OrderByDescending(p => p.BasePrice),
 				("price", false) => q.OrderBy(p => p.BasePrice),
-				("newest", _) => q.OrderByDescending(p => p.CreatedAt),
 				("name", true) => q.OrderByDescending(p => p.Name),
-				_ => q.OrderBy(p => p.Name)
+				("name", false) => q.OrderBy(p => p.Name),
+				_ => q.OrderByDescending(p => p.CreatedAt) // newest default
 			};
+
 			var total = await q.CountAsync();
+
 			var items = await q
 				.Skip((req.Page - 1) * req.PageSize)
 				.Take(req.PageSize)
@@ -262,12 +266,16 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 					Price = p.BasePrice,
 					CoverImageUrl = p.ProductImages
 						.OrderBy(i => i.SortOrder)
-						.Select(i => i.ImageUrl) // kendi alan adına göre
+						.Select(i => i.ImageUrl)
 						.FirstOrDefault(),
 					MerchantId = p.MerchantId,
 					MerchantName = p.Merchant.CompanyName
+					// İstersen ileride UI için mevcut beden/renkleri de döneriz:
+					// AvailableSizes = p.ProductVariants.Where(v => v.Stock > 0).Select(v => v.Size).Distinct(),
+					// AvailableColors = p.ProductVariants.Where(v => v.Stock > 0).Select(v => v.Color).Distinct(),
 				})
 				.ToListAsync();
+
 			return new PagedResult<ProductListItemDto>
 			{
 				Total = total,
