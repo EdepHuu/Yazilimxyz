@@ -208,19 +208,18 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(new { message = "Ürün başarıyla silindi." });
 		}
 
-		[HttpPost("search")]
+		[HttpPost("Filter")]
 		[AllowAnonymous]
 		[ProducesResponseType(typeof(PagedResult<ProductListItemDto>), StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		public async Task<IActionResult> SearchAsync([FromBody] ProductFilterRequestDto req)
+		public async Task<IActionResult> SearchAsync([FromQuery] ProductFilterRequestDto req)
 		{
-			if (req is null) return BadRequest("İstek gövdesi boş.");
-			// Normalizasyon / guard
 			if (req.Page <= 0) req.Page = 1;
 			if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
 			if (req.MinPrice.HasValue && req.MaxPrice.HasValue && req.MinPrice > req.MaxPrice)
 				return BadRequest("MinPrice, MaxPrice'tan büyük olamaz.");
-			// Dizi alanları gereksiz tekrar/boşluklardan arındır (opsiyonel ama faydalı)
+
+			// normalize
 			req.MerchantIds = req.MerchantIds?.Distinct().ToArray();
 			req.Sizes = req.Sizes?
 				.Where(s => !string.IsNullOrWhiteSpace(s))
@@ -232,11 +231,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 				.Select(c => c.Trim())
 				.Distinct(StringComparer.OrdinalIgnoreCase)
 				.ToArray();
-			req.Genders = req.Genders?
-				.Where(g => !string.IsNullOrWhiteSpace(g))
-				.Select(g => g.Trim())
-				.Distinct(StringComparer.OrdinalIgnoreCase)
-				.ToArray();
+
 			var result = await _productService.FilterAsync(req);
 			return Ok(result);
 		}
