@@ -86,5 +86,15 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
                             p.ProductCode.Contains(searchTerm)))
                 .ToListAsync();
         }
-    }
+
+		public IQueryable<Product> Query()
+		{
+			return _dbSet
+				.AsNoTracking()
+				.Where(p => p.IsActive)                // temel filtre
+				.Include(p => p.Merchant)              // projection’da lazım olacaksa
+				.Include(p => p.ProductImages)         // projection için
+				.Include(p => p.ProductVariants);      // variant Any(...) filtreleri için
+		}
+	}
 }
