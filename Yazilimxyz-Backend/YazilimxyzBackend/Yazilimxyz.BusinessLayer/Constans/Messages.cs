@@ -56,11 +56,16 @@
         public static string UserAlreadyExists = "Kullanıcı mevcut";
         public static string AccessTokenCreated = "Token oluşturuldu";
 
-        //ProductImage Messages
+        // ProductImage Messages
         public static string ProductImageLimit = "Bir ürüne yediden fazla resim eklenemez";
         public static string ProductImageDeleted = "Resim silindi";
         public static string ProductImageUpdated = "Resim güncellendi";
         public static string ProductImageAdded = "Resim eklendi";
+        public static string ProductImageNotFound = "Resim bulunamadı.";
+        public static string ProductImagesListed = "Ürün resimleri listelendi.";
+        public static string ProductMainImageSet = "Ana resim başarıyla ayarlandı.";
+        public static string ProductImagesReordered = "Resimler başarıyla yeniden sıralandı.";
+
 
         // CartItem Messages
         public static string CartItemAdded = "Sepete ürün başarıyla eklendi.";
