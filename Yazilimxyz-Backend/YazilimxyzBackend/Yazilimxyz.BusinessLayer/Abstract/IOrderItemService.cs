@@ -1,16 +1,17 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
+﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
     public interface IOrderItemService
     {
-        Task<ResultOrderItemDto?> GetByIdAsync(int id);
-        Task<List<ResultOrderItemDto>> GetAllAsync();
-        Task<List<ResultOrderItemDto>> GetByOrderIdAsync(int orderId);
-        Task<List<ResultOrderItemDto>> GetByProductIdAsync(int productId);
+        Task<IDataResult<ResultOrderItemDto>> GetByIdAsync(int id);
+        Task<IDataResult<List<ResultOrderItemDto>>> GetAllAsync();
+        Task<IDataResult<List<ResultOrderItemDto>>> GetByOrderIdAsync(int orderId);
+        Task<IDataResult<List<ResultOrderItemDto>>> GetByProductIdAsync(int productId);
 
-        Task CreateAsync(CreateOrderItemDto dto);
-        Task UpdateAsync(UpdateOrderItemDto dto);
-        Task DeleteAsync(int id);
+        Task<IResult> CreateAsync(CreateOrderItemDto dto);
+        Task<IResult> UpdateAsync(UpdateOrderItemDto dto);
+        Task<IResult> DeleteAsync(int id);
     }
 }
