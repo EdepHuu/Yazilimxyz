@@ -108,10 +108,10 @@ export default function MerchantLoginPage() {
           </button>
           <button
             className="flex-1 py-2 rounded-lg text-gray-600 hover:text-black transition"
- feature/zahit/merchant
+
             onClick={() => router.push('/merchant/uyeol')}
 
-            onClick={() => router.push('/merchant/basvuru')}
+
 
           >
             ShopEase satıcısı ol
