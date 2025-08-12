@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class FirstMg : Migration
+    public partial class FirstMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -169,9 +169,11 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AddressLine2 = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     City = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     District = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PostalCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PostalCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Country = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDefault = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -398,9 +400,11 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 column: "ParentCategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CustomerAddresses_CustomerId",
+                name: "IX_CustomerAddresses_CustomerId_IsDefault",
                 table: "CustomerAddresses",
-                column: "CustomerId");
+                columns: new[] { "CustomerId", "IsDefault" },
+                unique: true,
+                filter: "[IsDefault] = 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Customers_AppUserId",
