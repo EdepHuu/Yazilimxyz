@@ -16,13 +16,18 @@ export default function MerchantLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
+  // 🔧 DEĞİŞTİ: default artık false (checkbox ilk açılışta seçili gelmiyor)
+  const [rememberMe, setRememberMe] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const savedRemember = localStorage.getItem('merchant_remember_me');
-    if (savedRemember) setRememberMe(savedRemember === '1');
+    if (savedRemember) {
+      setRememberMe(savedRemember === '1');
+    } else {
+      setRememberMe(false); // açıkça kapalı başlat
+    }
     const rememberedEmail = localStorage.getItem('merchant_remember_email');
     if (rememberedEmail) setEmail(rememberedEmail);
   }, []);
@@ -73,6 +78,21 @@ export default function MerchantLoginPage() {
         localStorage.removeItem('role');
       }
 
+      // ✅ EKLENDİ: middleware/SSR için cookie yaz
+      // rememberMe true => 12 saatlik kalıcı; false => session cookie
+      const maxAge = 60 * 60 * 12; // 12 saat
+      if (rememberMe) {
+        document.cookie = `token=${data.token ?? ''}; path=/; max-age=${maxAge}`;
+        document.cookie = `role=${data.role ?? 'Merchant'}; path=/; max-age=${maxAge}`;
+      } else {
+        // önce olası eski kalıcı cookie'yi nötrle
+        document.cookie = `token=; path=/; Max-Age=0`;
+        document.cookie = `role=; path=/; Max-Age=0`;
+        // ardından oturum cookie
+        document.cookie = `token=${data.token ?? ''}; path=/`;
+        document.cookie = `role=${data.role ?? 'Merchant'}; path=/`;
+      }
+
       setMsg('✅ Giriş başarılı. Yönlendiriliyor…');
       setTimeout(() => router.push('/merchant/panel'), 600);
     } catch (err: unknown) {
@@ -97,7 +117,7 @@ export default function MerchantLoginPage() {
         </div>
       </div>
 
-      {/* ✨ EKLENDİ: customer’daki gibi üst sekmeler */}
+      {/* üst sekmeler */}
       <div className="mx-auto max-w-6xl px-6 mt-6">
         <div className="flex bg-gray-100 rounded-lg p-1 w-full max-w-md mx-auto">
           <button
@@ -166,7 +186,6 @@ export default function MerchantLoginPage() {
                   Beni hatırla
                 </label>
 
-                {/* ✨ DEĞİŞTİ: buton customer ile aynı renk + metin "Giriş yap" */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -180,7 +199,7 @@ export default function MerchantLoginPage() {
             </div>
           </div>
 
-          {/* ORTA SÜTUN ve SAĞ SÜTUN — dokunulmadı */}
+          {/* orta ve sağ sütunlar değişmedi */}
           <aside className="space-y-6">
             <div className="rounded-2xl border border-neutral-200 bg-white p-7 shadow-lg">
               <div className="mb-2 text-[16px] font-semibold">
