@@ -1,85 +1,80 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import axios, { AxiosError } from 'axios';
+import React, { useState } from 'react';
+import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
-type LoginResponse = {
-  success: boolean;
+type RegisterResponse = {
+  success?: boolean;
   message?: string;
-  token?: string;
-  role?: string;
-  email?: string;
 };
 
-export default function MerchantLoginPage() {
+type ApiError = { message?: string };
+
+export default function MerchantRegisterPage() {
   const router = useRouter();
+
+  // Ad/Soyad alanlarını UI'dan kaldırdık; state'ler boş string olarak tutuluyor.
+  const [name] = useState('');        // backend’e "" gidecek (null/undefined değil)
+  const [lastName] = useState('');    // backend’e "" gidecek
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [phone, setPhone] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [iban, setIban] = useState('');
+  const [taxNumber, setTaxNumber] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
+
+  const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedRemember = localStorage.getItem('merchant_remember_me');
-    if (savedRemember) setRememberMe(savedRemember === '1');
-    const rememberedEmail = localStorage.getItem('merchant_remember_email');
-    if (rememberedEmail) setEmail(rememberedEmail);
-  }, []);
+  const registerUrl =
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? '') +
+    (process.env.NEXT_PUBLIC_REGISTER_ENDPOINT ?? '/api/Auth/register');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null);
+
+    if (!agree) {
+      setMsg('❌ Lütfen kullanıcı sözleşmesini onaylayın.');
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_LOGIN_ENDPOINT}`;
-      const res = await axios.post<LoginResponse>(
-        url,
-        { email, password },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      const data = res.data;
+      // role her zaman Merchant — Ad/Soyad boş string olarak gönderiliyor
+      const payload = {
+        name: name ?? '',
+        lastName: lastName ?? '',
+        email,
+        password,
+        role: 'Merchant',
+        phone,
+        companyName,
+        iban,
+        taxNumber,
+        companyAddress,
+      };
 
-      if (!data.success) {
-        setMsg(`❌ ${data.message ?? 'Giriş başarısız.'}`);
-        return;
-      }
+      const res = await axios.post<RegisterResponse>(registerUrl, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      const role = (data.role ?? '').toLowerCase();
-      const isMerchant =
-        role === 'merchant' || role === 'merchantadmin' || role === 'appadmin';
-
-      if (!isMerchant) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('role');
-        setMsg('❌ Bu sayfa sadece satıcı (Merchant) kullanıcılar içindir.');
-        return;
-      }
-
-      if (rememberMe) {
-        localStorage.setItem('token', data.token ?? '');
-        if (data.role) localStorage.setItem('role', data.role);
-        localStorage.setItem('merchant_remember_me', '1');
-        localStorage.setItem('merchant_remember_email', email);
+      if (res.data?.success) {
+        setMsg('✅ Kayıt başarılı. Giriş sayfasına yönlendiriliyorsunuz…');
+        setTimeout(() => router.push('/merchant/giris'), 900);
       } else {
-        sessionStorage.setItem('token', data.token ?? '');
-        if (data.role) sessionStorage.setItem('role', data.role);
-        localStorage.setItem('merchant_remember_me', '0');
-        localStorage.removeItem('merchant_remember_email');
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
+        setMsg(`❌ ${res.data?.message ?? 'Kayıt başarısız.'}`);
       }
-
-      setMsg('✅ Giriş başarılı. Yönlendiriliyor…');
-      setTimeout(() => router.push('/merchant/panel'), 600);
     } catch (err: unknown) {
       let apiMsg = 'Sunucuya ulaşılamadı.';
-      if (axios.isAxiosError(err)) {
-        const axErr = err as AxiosError<{ message?: string }>;
-        apiMsg = axErr.response?.data?.message ?? err.message ?? apiMsg;
+      if (axios.isAxiosError<ApiError>(err)) {
+        apiMsg = err.response?.data?.message ?? err.message ?? apiMsg;
+      } else if (err instanceof Error) {
+        apiMsg = err.message || apiMsg;
       }
       setMsg(`❌ ${apiMsg}`);
     } finally {
@@ -97,22 +92,18 @@ export default function MerchantLoginPage() {
         </div>
       </div>
 
-      {/* ✨ EKLENDİ: customer’daki gibi üst sekmeler */}
+      {/* üst sekmeler (gerekirse route'u /merchant/uyeol yapabilirsin) */}
       <div className="mx-auto max-w-6xl px-6 mt-6">
         <div className="flex bg-gray-100 rounded-lg p-1 w-full max-w-md mx-auto">
           <button
-            className="flex-1 py-2 rounded-lg bg-white text-black shadow transition"
+            className="flex-1 py-2 rounded-lg text-gray-600 hover:text-black transition"
             onClick={() => router.push('/merchant/giris')}
           >
             Giriş Yap
           </button>
           <button
-            className="flex-1 py-2 rounded-lg text-gray-600 hover:text-black transition"
- feature/zahit/merchant
-            onClick={() => router.push('/merchant/uyeol')}
-
+            className="flex-1 py-2 rounded-lg bg-white text-black shadow transition"
             onClick={() => router.push('/merchant/basvuru')}
-
           >
             ShopEase satıcısı ol
           </button>
@@ -122,16 +113,15 @@ export default function MerchantLoginPage() {
       {/* içerik */}
       <section className="mx-auto max-w-6xl px-6 py-10">
         <div className="grid gap-8 lg:grid-cols-4">
-          {/* SOL: giriş formu */}
+          {/* SOL: kayıt formu */}
           <div className="lg:col-span-2">
             <div className="rounded-2xl border border-neutral-200 bg-neutral-100/70 p-9 shadow-lg">
-              <form onSubmit={handleSubmit} className="grid gap-7">
+              <form onSubmit={handleSubmit} className="grid gap-6">
+                {/* Ad/Soyad kaldırıldı */}
+
                 <div className="grid gap-2">
-                  <label htmlFor="email" className="text-[15px] font-medium text-neutral-800">
-                    E‑posta Adresiniz
-                  </label>
+                  <label className="text-[15px] font-medium text-neutral-800">E‑posta</label>
                   <input
-                    id="email"
                     type="email"
                     required
                     value={email}
@@ -142,11 +132,8 @@ export default function MerchantLoginPage() {
                 </div>
 
                 <div className="grid gap-2">
-                  <label htmlFor="password" className="text-[15px] font-medium text-neutral-800">
-                    Şifre
-                  </label>
+                  <label className="text-[15px] font-medium text-neutral-800">Şifre</label>
                   <input
-                    id="password"
                     type="password"
                     required
                     value={password}
@@ -156,23 +143,82 @@ export default function MerchantLoginPage() {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid gap-2">
+                    <label className="text-[15px] font-medium text-neutral-800">Telefon</label>
+                    <input
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="h-12 rounded-2xl border border-neutral-300 bg-white px-4 text-[15px] outline-none focus:ring-2 focus:ring-neutral-900"
+                      placeholder="+90 5xx xxx xx xx"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <label className="text-[15px] font-medium text-neutral-800">Şirket Adı</label>
+                    <input
+                      required
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="h-12 rounded-2xl border border-neutral-300 bg-white px-4 text-[15px] outline-none focus:ring-2 focus:ring-neutral-900"
+                      placeholder="Örn. ABC Tekstil A.Ş."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid gap-2">
+                    <label className="text-[15px] font-medium text-neutral-800">IBAN</label>
+                    <input
+                      required
+                      value={iban}
+                      onChange={(e) => setIban(e.target.value)}
+                      className="h-12 rounded-2xl border border-neutral-300 bg-white px-4 text-[15px] outline-none focus:ring-2 focus:ring-neutral-900"
+                      placeholder="TR00 0000 0000 0000 0000 0000 00"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <label className="text-[15px] font-medium text-neutral-800">Vergi No</label>
+                    <input
+                      required
+                      value={taxNumber}
+                      onChange={(e) => setTaxNumber(e.target.value)}
+                      className="h-12 rounded-2xl border border-neutral-300 bg-white px-4 text-[15px] outline-none focus:ring-2 focus:ring-neutral-900"
+                      placeholder="Vergi numarası"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-[15px] font-medium text-neutral-800">Şirket Adresi</label>
+                  <textarea
+                    required
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    className="min-h-[96px] rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-neutral-900"
+                    placeholder="Açık adres"
+                  />
+                </div>
+
+                {/* Sözleşme onayı */}
                 <label className="flex items-center gap-3 text-sm text-neutral-700">
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
+                    checked={agree}
+                    onChange={(e) => setAgree(e.target.checked)}
                   />
-                  Beni hatırla
+                  Kullanıcı Sözleşmesi’ni okudum ve kabul ediyorum.
                 </label>
 
-                {/* ✨ DEĞİŞTİ: buton customer ile aynı renk + metin "Giriş yap" */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !agree}
                   className="h-12 rounded-2xl bg-gray-300 px-6 text-base font-medium text-black transition hover:opacity-90 disabled:opacity-60"
                 >
-                  {loading ? 'Giriş yapılıyor…' : 'Giriş yap'}
+                  {loading ? 'Kaydediliyor…' : 'Kayıt ol'}
                 </button>
 
                 {msg && <div className="text-center text-sm">{msg}</div>}
@@ -180,7 +226,7 @@ export default function MerchantLoginPage() {
             </div>
           </div>
 
-          {/* ORTA SÜTUN ve SAĞ SÜTUN — dokunulmadı */}
+          {/* ORTA ve SAĞ kolonlar — olduğu gibi */}
           <aside className="space-y-6">
             <div className="rounded-2xl border border-neutral-200 bg-white p-7 shadow-lg">
               <div className="mb-2 text-[16px] font-semibold">
