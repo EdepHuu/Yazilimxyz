@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+function cn(...c: (string | false | null | undefined)[]) {
+  return c.filter(Boolean).join(" ");
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const items = [
@@ -10,15 +14,16 @@ export default function Sidebar() {
     { href: "/merchant/urunler", label: "Ürünler" },
     { href: "/merchant/siparisler", label: "Siparişler" },
     { href: "/merchant/musteriler", label: "Müşteriler" },
-    { href: "/merchant/yorumlar", label: "Yorumlar" },
+    // { href: "/merchant/yorumlar", label: "Yorumlar" }, // kaldırıldı
     { href: "/merchant/ayarlar", label: "Ayarlar" },
   ];
 
   return (
     <aside className="hidden md:flex w-64 min-h-screen flex-col bg-slate-900 text-slate-100 p-4">
       <div className="text-lg font-semibold px-2 mb-6">Satıcı Paneli</div>
+
       <nav className="space-y-1">
-        {items.map(it => {
+        {items.map((it) => {
           const active = pathname.startsWith(it.href);
           return (
             <Link
@@ -38,9 +43,12 @@ export default function Sidebar() {
       <div className="mt-auto pt-4">
         <button
           onClick={() => {
-            // çıkış
             if (typeof window !== "undefined") {
+              // tüm depoları ve cookie'leri temizle
               localStorage.removeItem("token");
+              localStorage.removeItem("role");
+              sessionStorage.removeItem("token");
+              sessionStorage.removeItem("role");
               document.cookie = "token=; Max-Age=0; path=/";
               document.cookie = "role=; Max-Age=0; path=/";
               window.location.href = "/merchant/giris";
@@ -53,9 +61,4 @@ export default function Sidebar() {
       </div>
     </aside>
   );
-}
-
-// Küçük cn helper'ı (eğer yoksa):
-function cn(...classes: (string | false | null | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }
