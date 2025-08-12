@@ -1,7 +1,7 @@
-import React from "react";
+// src/app/merchant/page.tsx
+import { redirect } from "next/navigation";
 
-function MerchantPanel() {
-  return <div>MerchantPanel ana sayfası</div>;
+export default function MerchantIndex() {
+  // /merchant açıldığında kontrol paneline yönlendir
+  redirect("/merchant/panel");
 }
-
-export default MerchantPanel;
