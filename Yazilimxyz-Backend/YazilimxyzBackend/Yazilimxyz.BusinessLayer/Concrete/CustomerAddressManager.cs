@@ -75,59 +75,78 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<ResultCustomerAddressDto?>(mapped);
         }
 
-        [CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task<IResult> CreateAsync(CreateCustomerAddressDto dto)
-        {
-            if (dto == null)
-                return new ErrorResult("Geçersiz istek.");
+		[CacheRemoveAspect("ICustomerAddressService.Get")]
+		public async Task<IResult> CreateAsync(CreateCustomerAddressDto dto)
+		{
+			if (dto == null) return new ErrorResult("Geçersiz istek.");
+			if (dto.CustomerId <= 0) return new ErrorResult(Messages.InvalidCustomerId);
+			if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
+			if (string.IsNullOrWhiteSpace(dto.Phone)) return new ErrorResult("Telefon numarası zorunludur.");
+			if (string.IsNullOrWhiteSpace(dto.Address)) return new ErrorResult("Adres bilgisi zorunludur.");
 
-            if (dto.CustomerId <= 0)
-                return new ErrorResult(Messages.InvalidCustomerId);
+			// 1) Insert sırasında indexe takılmamak için her zaman false kaydediyoruz
+			var wantDefault = dto.IsDefault;
+			var address = _mapper.Map<CustomerAddress>(dto);
+			address.IsDefault = false;
 
-            if (string.IsNullOrWhiteSpace(dto.FullName))
-                return new ErrorResult("Ad Soyad zorunludur.");
+			await _customerAddressRepository.AddAsync(address); // EF return sonrası address.Id dolu olur
 
-            if (string.IsNullOrWhiteSpace(dto.Phone))
-                return new ErrorResult("Telefon numarası zorunludur.");
+			// 2) Default isteniyorsa şimdi ayarla (eski default'u otomatik false yapacak)
+			if (wantDefault)
+			{
+				await _customerAddressRepository.SetDefaultAddressAsync(address.CustomerId, address.Id);
+			}
+			else
+			{
+				// İsteğe bağlı: hiç default yoksa bunu default yap
+				var currentDefault = await _customerAddressRepository.GetDefaultAddressAsync(address.CustomerId);
+				if (currentDefault is null)
+					await _customerAddressRepository.SetDefaultAddressAsync(address.CustomerId, address.Id);
+			}
 
-            if (string.IsNullOrWhiteSpace(dto.Address))
-                return new ErrorResult("Adres bilgisi zorunludur.");
+			return new SuccessResult(Messages.CustomerAddressAdded);
+		}
 
-            var address = _mapper.Map<CustomerAddress>(dto);
-            await _customerAddressRepository.AddAsync(address);
+		[CacheRemoveAspect("ICustomerAddressService.Get")]
+		public async Task<IResult> UpdateAsync(UpdateCustomerAddressDto dto)
+		{
+			if (dto == null) return new ErrorResult("Geçersiz istek.");
+			if (dto.Id <= 0) return new ErrorResult(Messages.InvalidAddressId);
 
-            return new SuccessResult(Messages.CustomerAddressAdded);
-        }
+			var existing = await _customerAddressRepository.GetByIdAsync(dto.Id);
+			if (existing == null) return new ErrorResult(Messages.CustomerAddressNotFound);
 
-        [CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task<IResult> UpdateAsync(UpdateCustomerAddressDto dto)
-        {
-            if (dto == null)
-                return new ErrorResult("Geçersiz istek.");
+			if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
+			if (string.IsNullOrWhiteSpace(dto.Phone)) return new ErrorResult("Telefon numarası zorunludur.");
+			if (string.IsNullOrWhiteSpace(dto.Address)) return new ErrorResult("Adres bilgisi zorunludur.");
 
-            if (dto.Id <= 0)
-                return new ErrorResult(Messages.InvalidAddressId);
+			// 1) Default'u şimdilik elleme, diğer alanları güncelle
+			var wantDefault = dto.IsDefault;
 
-            var existing = await _customerAddressRepository.GetByIdAsync(dto.Id);
-            if (existing == null)
-                return new ErrorResult(Messages.CustomerAddressNotFound);
+			existing.Title = dto.Title;
+			existing.FullName = dto.FullName;
+			existing.Phone = dto.Phone;
+			existing.Address = dto.Address;
+			existing.AddressLine2 = dto.AddressLine2;
+			existing.City = dto.City;
+			existing.District = dto.District;
+			existing.PostalCode = dto.PostalCode;
+			existing.Country = dto.Country;
+			// existing.IsDefault -> değişmiyor (şimdi set etmeyeceğiz)
 
-            if (string.IsNullOrWhiteSpace(dto.FullName))
-                return new ErrorResult("Ad Soyad zorunludur.");
+			await _customerAddressRepository.UpdateAsync(existing);
 
-            if (string.IsNullOrWhiteSpace(dto.Phone))
-                return new ErrorResult("Telefon numarası zorunludur.");
+			// 2) Default yapılması isteniyorsa şimdi ayarla (indexe takılmadan)
+			if (wantDefault && !existing.IsDefault)
+			{
+				await _customerAddressRepository.SetDefaultAddressAsync(existing.CustomerId, existing.Id);
+			}
+			// (İstenirse: wantDefault=false ve existing.IsDefault=true ise default'u kaldırma kararı verilebilir.)
 
-            if (string.IsNullOrWhiteSpace(dto.Address))
-                return new ErrorResult("Adres bilgisi zorunludur.");
+			return new SuccessResult(Messages.CustomerAddressUpdated);
+		}
 
-            _mapper.Map(dto, existing);
-            await _customerAddressRepository.UpdateAsync(existing);
-
-            return new SuccessResult(Messages.CustomerAddressUpdated);
-        }
-
-        [CacheRemoveAspect("ICustomerAddressService.Get")]
+		[CacheRemoveAspect("ICustomerAddressService.Get")]
         public async Task<IResult> DeleteAsync(int id)
         {
             if (id <= 0)

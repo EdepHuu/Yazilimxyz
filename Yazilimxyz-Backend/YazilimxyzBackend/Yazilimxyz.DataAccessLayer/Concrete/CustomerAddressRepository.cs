@@ -26,14 +26,25 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
             return await _dbSet.FirstOrDefaultAsync(a => a.CustomerId == customerId && a.IsDefault);
         }
 
-        public async Task SetDefaultAddressAsync(int customerId, int addressId)
-        {
-            var addresses = await _dbSet.Where(a => a.CustomerId == customerId).ToListAsync();
-            foreach ( var address in addresses)
-            {
-                address.IsDefault = address.Id == addressId;
-            }
-            await _appDbContext.SaveChangesAsync();
-        }
-    }
+		public async Task SetDefaultAddressAsync(int customerId, int addressId)
+		{
+			// Güvenlik: hedef adres müşteriye ait mi?
+			var exists = await _dbSet.AnyAsync(a => a.Id == addressId && a.CustomerId == customerId);
+			if (!exists) throw new Exception("Adres bulunamadı veya müşteriye ait değil.");
+
+			await using var tx = await _appDbContext.Database.BeginTransactionAsync();
+
+			// 1) Hepsini false yap
+			await _dbSet
+				.Where(a => a.CustomerId == customerId && a.IsDefault)
+				.ExecuteUpdateAsync(s => s.SetProperty(x => x.IsDefault, false));
+
+			// 2) Seçileni true yap
+			await _dbSet
+				.Where(a => a.Id == addressId && a.CustomerId == customerId)
+				.ExecuteUpdateAsync(s => s.SetProperty(x => x.IsDefault, true));
+
+			await tx.CommitAsync();
+		}
+	}
 }
