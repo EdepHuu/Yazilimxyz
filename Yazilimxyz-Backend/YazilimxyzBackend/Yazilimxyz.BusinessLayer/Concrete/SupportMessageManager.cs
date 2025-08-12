@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using SignalRNotificationApi.Models;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
 using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;

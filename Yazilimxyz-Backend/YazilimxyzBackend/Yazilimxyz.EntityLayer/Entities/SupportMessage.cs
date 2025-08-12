@@ -1,18 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Yazilimxyz.EntityLayer.Entities;
 
-namespace Yazilimxyz.EntityLayer.Entities
+namespace SignalRNotificationApi.Models
 {
-    public class SupportMessage: BaseEntity
+    public class SupportMessage
     {
+        public int Id { get; set; }
+
+        // Mesajı gönderen kullanıcının ID'si
         public string SenderId { get; set; }
-        public AppUser Sender { get; set; }
+        public AppUser Sender { get; set; }  // Burada object değil AppUser
+
+        // Mesajı alan kullanıcının ID'si
         public string ReceiverId { get; set; }
-        public AppUser Receiver { get; set; }
+        public AppUser Receiver { get; set; } // Burada da object değil AppUser
+
+        // Mesaj içeriği
         public string Message { get; set; }
-        public bool IsFromSupport { get; set; }
+
+        // Destek ekibinden mi geldi?
+        public bool IsFromSupport { get; set; } = false;
+
+        // Mesajın gönderildiği tarih ve zaman
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
