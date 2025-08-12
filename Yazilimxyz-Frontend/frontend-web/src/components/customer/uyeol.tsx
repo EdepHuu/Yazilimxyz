@@ -80,7 +80,6 @@ export default function UyeOl() {
   return (
     <div className="w-full max-w-md mx-auto my-12">
       <div className="text-center mb-6">
-        <span className="block text-xl">Merhaba,</span>
         ShopEase’a giriş yap veya hesap oluştur, indirimleri kaçırma!
       </div>
 
