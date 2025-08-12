@@ -19,6 +19,13 @@
         public static string OrderCreate = "Siparişiniz  Oluşturuldu.";
         public static string OrderNotCreate = "Siparişiniz  Oluşturulamadı.";
 
+        //OrderItem Messages
+        public static string OrderItemAdded = "Sipariş kalemi başarıyla eklendi.";
+        public static string OrderItemUpdated = "Sipariş kalemi başarıyla güncellendi.";
+        public static string OrderItemDeleted = "Sipariş kalemi başarıyla silindi.";
+        public static string OrderItemNotFound = "Sipariş kalemi bulunamadı.";
+        public static string OrderItemsListed = "Sipariş kalemleri başarıyla listelendi.";
+
         //Product Messages
         public static string ProductAdded = "Ürün eklendi";
         public static string ProductDeleted = "Ürün Silindi";
