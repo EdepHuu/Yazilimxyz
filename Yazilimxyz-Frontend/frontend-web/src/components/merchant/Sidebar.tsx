@@ -44,6 +44,7 @@ export default function Sidebar() {
         <button
           onClick={() => {
             if (typeof window !== "undefined") {
+              // tüm depoları ve cookie'leri temizle
               localStorage.removeItem("token");
               localStorage.removeItem("role");
               sessionStorage.removeItem("token");

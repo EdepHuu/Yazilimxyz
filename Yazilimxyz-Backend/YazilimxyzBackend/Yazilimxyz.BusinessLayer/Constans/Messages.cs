@@ -15,9 +15,16 @@
         public static string CategoryUpdated = "Kategori başarıyla güncellendi.";
         public static string CategoryDeleted = "Kategori başarıyla silindi.";
 
-        //Order Messages
-        public static string OrderCreate = "Siparişiniz  Oluşturuldu.";
-        public static string OrderNotCreate = "Siparişiniz  Oluşturulamadı.";
+        // Order Messages
+        public static string OrderAdded = "Sipariş başarıyla oluşturuldu.";
+        public static string OrderNotAdded = "Sipariş oluşturulamadı.";
+        public static string OrderUpdated = "Sipariş başarıyla güncellendi.";
+        public static string OrderNotUpdated = "Sipariş güncellenemedi.";
+        public static string OrderDeleted = "Sipariş başarıyla silindi.";
+        public static string OrderNotDeleted = "Sipariş silinemedi.";
+        public static string OrderNotFound = "Sipariş bulunamadı.";
+        public static string OrdersListed = "Siparişler başarıyla listelendi.";
+        public static string OrderRetrieved = "Sipariş başarıyla getirildi.";
 
         //OrderItem Messages
         public static string OrderItemAdded = "Sipariş kalemi başarıyla eklendi.";
@@ -49,11 +56,16 @@
         public static string UserAlreadyExists = "Kullanıcı mevcut";
         public static string AccessTokenCreated = "Token oluşturuldu";
 
-        //ProductImage Messages
+        // ProductImage Messages
         public static string ProductImageLimit = "Bir ürüne yediden fazla resim eklenemez";
         public static string ProductImageDeleted = "Resim silindi";
         public static string ProductImageUpdated = "Resim güncellendi";
         public static string ProductImageAdded = "Resim eklendi";
+        public static string ProductImageNotFound = "Resim bulunamadı.";
+        public static string ProductImagesListed = "Ürün resimleri listelendi.";
+        public static string ProductMainImageSet = "Ana resim başarıyla ayarlandı.";
+        public static string ProductImagesReordered = "Resimler başarıyla yeniden sıralandı.";
+
 
         // CartItem Messages
         public static string CartItemAdded = "Sepete ürün başarıyla eklendi.";

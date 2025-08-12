@@ -13,7 +13,7 @@ export default function MerchantPanelLayout({
 
       {/* İçerik alanı */}
       <div className="flex-1 flex flex-col">
-        {/* Üst bar (global header yerine) */}
+        {/* Üst bar */}
         <Topbar />
 
         {/* Sayfa içeriği */}
