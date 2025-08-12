@@ -66,36 +66,36 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok("Profil başarıyla güncellendi.");
 		}
 
-		// ========== ADMIN ==========
-		// GET /api/merchant/admin?q=&page=&pageSize=
-		[HttpGet("admin")]
-		[Authorize(Policy = "Admin")]
-		public async Task<IActionResult> AdminList([FromQuery] string? q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-		{
-			if (page <= 0 || pageSize <= 0)
-			{
-				return BadRequest("Sayfalama değerleri geçersiz.");
-			}
+        // ========== ADMIN ==========
+        // GET /api/merchant/admin?q=&page=&pageSize=
+        [HttpGet("admin")]
+        [Authorize(Policy = "Admin")]
+        public async Task<IActionResult> AdminList([FromQuery] string? q, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            if (page <= 0 || pageSize <= 0)
+                return BadRequest("Sayfalama değerleri geçersiz.");
 
-			var all = await _merchantService.GetAllAsync();
+            var res = await _merchantService.GetAllAsync();   // IDataResult<List<ResultMerchantDto>>
+            var all = res?.Data ?? new List<ResultMerchantDto>();
 
-			if (!string.IsNullOrWhiteSpace(q))
-			{
-				all = all
-					.Where(x =>
-						(x.CompanyName?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
-						(x.TaxNumber?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false))
-					.ToList();
-			}
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim();
+                all = all
+                    .Where(x =>
+                        (x.CompanyName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (x.TaxNumber?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false))
+                    .ToList();
+            }
 
-			var skip = (page - 1) * pageSize;
-			var items = all.Skip(skip).Take(pageSize).ToList();
+            var skip = (page - 1) * pageSize;
+            var items = all.Skip(skip).Take(pageSize).ToList();
 
-			return Ok(items);
-		}
+            return Ok(new { total = all.Count, page, pageSize, items });
+        }
 
-		// GET /api/merchant/admin/{id}
-		[HttpGet("admin/{id:int}")]
+        // GET /api/merchant/admin/{id}
+        [HttpGet("admin/{id:int}")]
 		[Authorize(Policy = "Admin")]
 		public async Task<IActionResult> AdminGetById(int id)
 		{
