@@ -16,7 +16,7 @@ export default function MerchantLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // 🔧 DEĞİŞTİ: default artık false (checkbox ilk açılışta seçili gelmiyor)
+  // checkbox ilk açılışta seçili gelmesin
   const [rememberMe, setRememberMe] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function MerchantLoginPage() {
     if (savedRemember) {
       setRememberMe(savedRemember === '1');
     } else {
-      setRememberMe(false); // açıkça kapalı başlat
+      setRememberMe(false);
     }
     const rememberedEmail = localStorage.getItem('merchant_remember_email');
     if (rememberedEmail) setEmail(rememberedEmail);
@@ -78,17 +78,14 @@ export default function MerchantLoginPage() {
         localStorage.removeItem('role');
       }
 
-      // ✅ EKLENDİ: middleware/SSR için cookie yaz
-      // rememberMe true => 12 saatlik kalıcı; false => session cookie
+      // cookie: rememberMe true => 12 saatlik kalıcı; false => session cookie
       const maxAge = 60 * 60 * 12; // 12 saat
       if (rememberMe) {
         document.cookie = `token=${data.token ?? ''}; path=/; max-age=${maxAge}`;
         document.cookie = `role=${data.role ?? 'Merchant'}; path=/; max-age=${maxAge}`;
       } else {
-        // önce olası eski kalıcı cookie'yi nötrle
         document.cookie = `token=; path=/; Max-Age=0`;
         document.cookie = `role=; path=/; Max-Age=0`;
-        // ardından oturum cookie
         document.cookie = `token=${data.token ?? ''}; path=/`;
         document.cookie = `role=${data.role ?? 'Merchant'}; path=/`;
       }
@@ -128,11 +125,7 @@ export default function MerchantLoginPage() {
           </button>
           <button
             className="flex-1 py-2 rounded-lg text-gray-600 hover:text-black transition"
- feature/zahit/merchant
             onClick={() => router.push('/merchant/uyeol')}
-
-            onClick={() => router.push('/merchant/basvuru')}
-
           >
             ShopEase satıcısı ol
           </button>
@@ -199,7 +192,7 @@ export default function MerchantLoginPage() {
             </div>
           </div>
 
-          {/* orta ve sağ sütunlar değişmedi */}
+          {/* Orta ve sağ sütunlar */}
           <aside className="space-y-6">
             <div className="rounded-2xl border border-neutral-200 bg-white p-7 shadow-lg">
               <div className="mb-2 text-[16px] font-semibold">
