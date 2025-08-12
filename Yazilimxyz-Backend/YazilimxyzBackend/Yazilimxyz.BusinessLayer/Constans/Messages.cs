@@ -15,9 +15,16 @@
         public static string CategoryUpdated = "Kategori başarıyla güncellendi.";
         public static string CategoryDeleted = "Kategori başarıyla silindi.";
 
-        //Order Messages
-        public static string OrderCreate = "Siparişiniz  Oluşturuldu.";
-        public static string OrderNotCreate = "Siparişiniz  Oluşturulamadı.";
+        // Order Messages
+        public static string OrderAdded = "Sipariş başarıyla oluşturuldu.";
+        public static string OrderNotAdded = "Sipariş oluşturulamadı.";
+        public static string OrderUpdated = "Sipariş başarıyla güncellendi.";
+        public static string OrderNotUpdated = "Sipariş güncellenemedi.";
+        public static string OrderDeleted = "Sipariş başarıyla silindi.";
+        public static string OrderNotDeleted = "Sipariş silinemedi.";
+        public static string OrderNotFound = "Sipariş bulunamadı.";
+        public static string OrdersListed = "Siparişler başarıyla listelendi.";
+        public static string OrderRetrieved = "Sipariş başarıyla getirildi.";
 
         //OrderItem Messages
         public static string OrderItemAdded = "Sipariş kalemi başarıyla eklendi.";
