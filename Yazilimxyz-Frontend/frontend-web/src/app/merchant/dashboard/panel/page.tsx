@@ -60,45 +60,7 @@ export default function MerchantPanelPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      {/* İçerik alanı (Topbar layout'ta) */}
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Üst bölüm */}
-          <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
-            <h2 className="text-lg font-semibold">
-              Ürünler {me ? `— ${me.storeName}` : ""}
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Burada ürün listesi, ekleme/düzenleme formları ve diğer araçlar yer alacaktır.
-            </p>
 
-            {/* Küçük rozet kartlar (örnek) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-              <SmallBadgeCard title="Elbise" stock="120" />
-              <SmallBadgeCard title="Çizgili Gömlek" stock="98" />
-              <SmallBadgeCard title="Kısa Kollu Tişört" stock="75" />
-              <SmallBadgeCard title="Kot Ceket" stock="51" />
-            </div>
-          </section>
-
-          {/* Özet istatistik kartları */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Toplam Ürün" value={stats?.productCount ?? 0} />
-            <StatCard label="Düşük Stok" value={stats?.lowStockCount ?? 0} />
-            <StatCard label="Bugünkü Sipariş" value={stats?.ordersToday ?? 0} />
-            <StatCard label="Bekleyen Yorum" value={stats?.pendingReviews ?? 0} />
-          </div>
-
-          {/* Loading göstergesi */}
-          {loading && (
-            <div className="mt-6 text-sm text-slate-500">Veriler yükleniyor…</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function StatCard({ label, value }: { label: string; value: number | string }) {

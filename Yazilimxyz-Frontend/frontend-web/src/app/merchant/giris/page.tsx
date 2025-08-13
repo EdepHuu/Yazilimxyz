@@ -91,7 +91,7 @@ export default function MerchantLoginPage() {
       }
 
       setMsg('✅ Giriş başarılı. Yönlendiriliyor…');
-      setTimeout(() => router.push('/merchant/panel'), 600);
+      setTimeout(() => router.push('/merchant/dashboard/panel'), 600);
     } catch (err: unknown) {
       let apiMsg = 'Sunucuya ulaşılamadı.';
       if (axios.isAxiosError(err)) {
