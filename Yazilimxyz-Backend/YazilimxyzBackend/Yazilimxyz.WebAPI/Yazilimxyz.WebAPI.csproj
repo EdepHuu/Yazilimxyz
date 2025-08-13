@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Yazilimxyz.BusinessLayer\Yazilimxyz.BusinessLayer.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.CoreLayer\Yazilimxyz.CoreLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.DataAccessLayer\Yazilimxyz.DataAccessLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.EntityLayer\Yazilimxyz.EntityLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.InfrastructureLayer\Yazilimxyz.InfrastructureLayer.csproj" />

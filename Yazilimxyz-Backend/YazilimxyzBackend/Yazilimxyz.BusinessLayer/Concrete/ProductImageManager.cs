@@ -1,8 +1,13 @@
+
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.ProductImage;
+using Yazilimxyz.CoreLayer.Storage;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
 
@@ -12,154 +17,247 @@ namespace Yazilimxyz.BusinessLayer.Concrete
     {
         private readonly IProductImageRepository _productImageRepository;
         private readonly IMapper _mapper;
-		private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IFileStorage _storage;
 
-		public ProductImageManager(IProductImageRepository productImageRepository, IMapper mapper, IHttpContextAccessor httpContextAccessor)
-		{
-			_productImageRepository = productImageRepository;
-			_mapper = mapper;
-			_httpContextAccessor = httpContextAccessor;
-		}
+        public ProductImageManager(
+            IProductImageRepository productImageRepository,
+            IMapper mapper,
+            IHttpContextAccessor httpContextAccessor,
+            IFileStorage storage)
+        {
+            _productImageRepository = productImageRepository;
+            _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
+            _storage = storage;
+        }
 
-		public async Task<GetByIdProductImageDto?> GetByIdAsync(int id)
-		{
-			var image = await _productImageRepository.GetByIdAsync(id);
-			return _mapper.Map<GetByIdProductImageDto>(image);
-		}
+        public async Task<IDataResult<GetByIdProductImageDto>> GetByIdAsync(int id)
+        {
+            if (id <= 0)
+                return new ErrorDataResult<GetByIdProductImageDto>(null, "Id 0'dan büyük olmalıdır.");
 
-		public async Task<List<ResultProductImageDto>> GetAllAsync()
+            var image = await _productImageRepository.GetByIdAsync(id);
+            if (image == null)
+                return new ErrorDataResult<GetByIdProductImageDto>(null, Messages.ProductImageNotFound);
+
+            return new SuccessDataResult<GetByIdProductImageDto>(_mapper.Map<GetByIdProductImageDto>(image), Messages.ProductImagesListed);
+        }
+
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultProductImageDto>>> GetAllAsync()
         {
             var images = await _productImageRepository.GetAllAsync();
-            return _mapper.Map<List<ResultProductImageDto>>(images);
+            return new SuccessDataResult<List<ResultProductImageDto>>(_mapper.Map<List<ResultProductImageDto>>(images), Messages.ProductImagesListed);
         }
 
-        public async Task<List<ResultProductImageDto>> GetByProductIdAsync(int productId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultProductImageDto>>> GetByProductIdAsync(int productId)
         {
+            if (productId <= 0)
+                return new ErrorDataResult<List<ResultProductImageDto>>(null, "ProductId 0'dan büyük olmalıdır.");
+
             var images = await _productImageRepository.GetByProductIdAsync(productId);
-            return _mapper.Map<List<ResultProductImageDto>>(images);
+            return new SuccessDataResult<List<ResultProductImageDto>>(_mapper.Map<List<ResultProductImageDto>>(images), Messages.ProductImagesListed);
         }
 
-        public async Task<ResultProductImageDto?> GetMainImageAsync(int productId)
+        [CacheAspect]
+        public async Task<IDataResult<ResultProductImageDto>> GetMainImageAsync(int productId)
         {
+            if (productId <= 0)
+                return new ErrorDataResult<ResultProductImageDto>(null, "ProductId 0'dan büyük olmalıdır.");
+
             var mainImage = await _productImageRepository.GetMainImageAsync(productId);
-            return _mapper.Map<ResultProductImageDto>(mainImage);
+            if (mainImage == null)
+                return new ErrorDataResult<ResultProductImageDto>(null, Messages.ProductImageNotFound);
+
+            return new SuccessDataResult<ResultProductImageDto>(_mapper.Map<ResultProductImageDto>(mainImage), Messages.ProductMainImageSet);
         }
 
-		public async Task ReorderImagesAsync(int productId, List<int> imageIds)
-		{
-			await CheckProductOwnershipAsync(productId);
+        [CacheRemoveAspect("IProductImageService.Get")]
+        public async Task<IResult> ReorderImagesAsync(int productId, List<int> imageIds)
+        {
+            if (productId <= 0)
+                return new ErrorResult("ProductId 0'dan büyük olmalıdır.");
+            if (imageIds == null || !imageIds.Any())
+                return new ErrorResult("Resim ID listesi boş olamaz.");
+            if (imageIds.Any(id => id <= 0))
+                return new ErrorResult("Tüm resim ID'leri 0'dan büyük olmalıdır.");
+            if (imageIds.Count != imageIds.Distinct().Count())
+                return new ErrorResult("Resim ID listesinde tekrar eden değerler olamaz.");
 
-			// Reorder sadece main olmayanlar için geçerli
-			var allImages = await _productImageRepository.GetByProductIdAsync(productId);
-			var mainImage = allImages.FirstOrDefault(x => x.IsMain);
+            await CheckProductOwnershipAsync(productId);
 
-			// Main dışındaki resimler listede yoksa: geçersiz
-			var nonMainImageIds = allImages.Where(x => !x.IsMain).Select(x => x.Id).ToList();
-			if (!imageIds.All(id => nonMainImageIds.Contains(id)))
-				throw new Exception("Sıralama listesi yalnızca main olmayan resimleri içermelidir.");
+            var allImages = await _productImageRepository.GetByProductIdAsync(productId);
+            var nonMainImageIds = allImages.Where(x => !x.IsMain).Select(x => x.Id).ToList();
+            if (!imageIds.All(id => nonMainImageIds.Contains(id)))
+                return new ErrorResult("Sıralama listesi yalnızca main olmayan resimleri içermelidir.");
 
-			await _productImageRepository.ReorderImagesAsync(productId, imageIds);
-		}
+            await _productImageRepository.ReorderImagesAsync(productId, imageIds);
+            return new SuccessResult(Messages.ProductImagesReordered);
+        }
 
+        [CacheRemoveAspect("IProductImageService.Get")]
+        public async Task<IResult> CreateAsync(CreateProductImageDto dto)
+        {
+            if (dto == null)
+                return new ErrorResult("Veri gönderilmedi.");
+            if (dto.ProductId <= 0)
+                return new ErrorResult("ProductId 0'dan büyük olmalıdır.");
+            if (dto.Image == null || dto.Image.Length == 0)
+                return new ErrorResult("Geçerli bir resim dosyası yükleyiniz.");
+            if (!IsAllowedImage(dto.Image))
+                return new ErrorResult("Sadece JPEG/PNG/GIF türünde ve 10MB'dan küçük dosyalar kabul edilir.");
 
-		public async Task CreateAsync(CreateProductImageDto dto)
-		{
-			var product = await _productImageRepository.GetProductWithMerchantAsync(dto.ProductId);
-			if (product == null)
-				throw new Exception("Ürün bulunamadı.");
+            var product = await _productImageRepository.GetProductWithMerchantAsync(dto.ProductId);
+            if (product == null)
+                return new ErrorResult("Ürün bulunamadı.");
 
-			var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			if (string.IsNullOrEmpty(userId))
-				throw new UnauthorizedAccessException("Kullanıcı doğrulanamadı.");
+            var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return new ErrorResult("Kullanıcı doğrulanamadı.");
+            if (product.AppUserId != userId)
+                return new ErrorResult("Bu ürüne fotoğraf ekleme yetkiniz yok.");
 
-			if (product.AppUserId != userId)
-				throw new UnauthorizedAccessException("Bu ürüne fotoğraf ekleme yetkiniz yok.");
+            var existingImages = await _productImageRepository.GetByProductIdAsync(dto.ProductId);
+            if (existingImages.Count() >= 10)
+                return new ErrorResult(Messages.ProductImageLimit);
 
-			// Ürünün mevcut fotoğraflarını çek
-			var existingImages = await _productImageRepository.GetByProductIdAsync(dto.ProductId);
+            var subFolder = $"products/{dto.ProductId}";
+            using var stream = dto.Image.OpenReadStream();
+            var saved = await _storage.SaveAsync(stream, dto.Image.FileName, subFolder);
 
-			var image = _mapper.Map<ProductImage>(dto);
+            var image = new ProductImage
+            {
+                ProductId = dto.ProductId,
+                AltText = string.IsNullOrWhiteSpace(dto.AltText) ? "" : dto.AltText!,
+                ImageUrl = saved.RelativePath,
+                SortOrder = existingImages.Any() ? existingImages.Max(i => i.SortOrder) + 1 : 1,
+                IsMain = (await _productImageRepository.GetMainImageAsync(dto.ProductId)) == null
+            };
 
-			// ❗ Otomatik SortOrder ata
-			image.SortOrder = existingImages.Any()
-				? existingImages.Max(i => i.SortOrder) + 1
-				: 1;
+            await _productImageRepository.AddAsync(image);
+            return new SuccessResult(Messages.ProductImageAdded);
+        }
 
-			// ❗ Eğer ürünün hiç main fotoğrafı yoksa, bunu main yap
-			var existingMain = await _productImageRepository.GetMainImageAsync(dto.ProductId);
-			image.IsMain = existingMain == null;
+        [CacheRemoveAspect("IProductImageService.Get")]
+        public async Task<IResult> SetMainImageAsync(int imageId)
+        {
+            if (imageId <= 0)
+                return new ErrorResult("Resim ID'si 0'dan büyük olmalıdır.");
 
-			await _productImageRepository.AddAsync(image);
-		}
+            var selectedImage = await _productImageRepository.GetByIdAsync(imageId);
+            if (selectedImage == null)
+                return new ErrorResult(Messages.ProductImageNotFound);
 
-		public async Task SetMainImageAsync(int imageId)
-		{
-			var selectedImage = await _productImageRepository.GetByIdAsync(imageId);
-			if (selectedImage == null)
-				throw new Exception("Fotoğraf bulunamadı.");
+            await CheckProductOwnershipAsync(selectedImage.ProductId);
 
-			await CheckProductOwnershipAsync(selectedImage.ProductId);
+            var currentMain = await _productImageRepository.GetMainImageAsync(selectedImage.ProductId);
 
-			var currentMain = await _productImageRepository.GetMainImageAsync(selectedImage.ProductId);
+            if (currentMain != null && currentMain.Id != selectedImage.Id)
+            {
+                await _productImageRepository.ResetMainImageAsync(selectedImage.ProductId);
+                selectedImage.IsMain = true;
+                await _productImageRepository.SwapImageOrderAsync(currentMain.Id, selectedImage.Id);
+            }
+            else
+            {
+                await _productImageRepository.ResetMainImageAsync(selectedImage.ProductId);
+                selectedImage.IsMain = true;
+            }
 
-			if (currentMain != null && currentMain.Id != selectedImage.Id)
-			{
-				await _productImageRepository.ResetMainImageAsync(selectedImage.ProductId);
-				selectedImage.IsMain = true;
-				await _productImageRepository.SwapImageOrderAsync(currentMain.Id, selectedImage.Id);
-			}
-			else
-			{
-				await _productImageRepository.ResetMainImageAsync(selectedImage.ProductId);
-				selectedImage.IsMain = true;
-			}
+            await _productImageRepository.UpdateAsync(selectedImage);
+            return new SuccessResult(Messages.ProductMainImageSet);
+        }
 
-			await _productImageRepository.UpdateAsync(selectedImage);
-		}
+        [CacheRemoveAspect("IProductImageService.Get")]
+        public async Task<IResult> UpdateAsync(UpdateProductImageDto dto)
+        {
+            if (dto.Id <= 0)
+                return new ErrorResult("Id 0'dan büyük olmalıdır.");
+            if (dto.ProductId <= 0)
+                return new ErrorResult("ProductId 0'dan büyük olmalıdır.");
+            if (!string.IsNullOrWhiteSpace(dto.AltText) && dto.AltText!.Length > 255)
+                return new ErrorResult("Alt text maksimum 255 karakter olabilir.");
 
-		public async Task UpdateAsync(UpdateProductImageDto dto)
-		{
-			var image = await _productImageRepository.GetByIdAsync(dto.Id);
-			if (image == null)
-				throw new Exception("Fotoğraf bulunamadı.");
+            var image = await _productImageRepository.GetByIdAsync(dto.Id);
+            if (image == null)
+                return new ErrorResult(Messages.ProductImageNotFound);
 
-			await CheckProductOwnershipAsync(image.ProductId);
+            await CheckProductOwnershipAsync(image.ProductId);
+            if (dto.ProductId != image.ProductId)
+                return new ErrorResult("ProductId güncellenemez veya geçersiz.");
 
-			if (dto.ProductId != image.ProductId)
-				throw new Exception("ProductId güncellenemez veya geçersiz.");
+            if (dto.Image != null && dto.Image.Length > 0)
+            {
+                if (!IsAllowedImage(dto.Image))
+                    return new ErrorResult("Sadece JPEG/PNG/GIF türünde ve 10MB'dan küçük dosyalar kabul edilir.");
 
-			image.ImageUrl = dto.ImageUrl;
-			image.AltText = dto.AltText;
+                var subFolder = $"products/{dto.ProductId}";
+                using var stream = dto.Image.OpenReadStream();
+                var saved = await _storage.SaveAsync(stream, dto.Image.FileName, subFolder);
 
-			await _productImageRepository.UpdateAsync(image);
-		}
+                if (!string.IsNullOrWhiteSpace(image.ImageUrl))
+                    _ = _storage.DeleteAsync(image.ImageUrl);
 
-		public async Task DeleteAsync(int id)
-		{
-			var image = await _productImageRepository.GetByIdAsync(id);
-			if (image == null)
-			{
-				throw new Exception("Fotoğraf bulunamadı.");
-			}
+                image.ImageUrl = saved.RelativePath;
+            }
 
-			await CheckProductOwnershipAsync(image.ProductId);
+            image.AltText = dto.AltText ?? image.AltText;
 
-			await _productImageRepository.DeleteAsync(id);
-		}
+            await _productImageRepository.UpdateAsync(image);
+            return new SuccessResult(Messages.ProductImageUpdated);
+        }
 
+        [CacheRemoveAspect("IProductImageService.Get")]
+        public async Task<IResult> DeleteAsync(int id)
+        {
+            if (id <= 0)
+                return new ErrorResult("Id 0'dan büyük olmalıdır.");
 
-		private async Task CheckProductOwnershipAsync(int productId)
-		{
-			var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-			if (string.IsNullOrEmpty(userId))
-				throw new UnauthorizedAccessException("Kullanıcı doğrulanamadı.");
+            var image = await _productImageRepository.GetByIdAsync(id);
+            if (image == null)
+                return new ErrorResult(Messages.ProductImageNotFound);
 
-			var product = await _productImageRepository.GetProductWithMerchantAsync(productId);
-			if (product == null)
-				throw new Exception("Ürün bulunamadı.");
+            await CheckProductOwnershipAsync(image.ProductId);
 
-			if (product.AppUserId != userId)
-				throw new UnauthorizedAccessException("Bu ürüne işlem yapma yetkiniz yok.");
-		}
-	}
+            var siblings = await _productImageRepository.GetByProductIdAsync(image.ProductId);
+            if (image.IsMain && siblings.Count() > 1)
+                return new ErrorResult("Ana resim silinemez. Önce başka bir resmi ana resim yapınız.");
+
+            if (!string.IsNullOrWhiteSpace(image.ImageUrl))
+                _ = _storage.DeleteAsync(image.ImageUrl);
+
+            await _productImageRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.ProductImageDeleted);
+        }
+
+        private async Task CheckProductOwnershipAsync(int productId)
+        {
+            if (productId <= 0)
+                throw new Exception("ProductId 0'dan büyük olmalıdır.");
+
+            var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthorizedAccessException("Kullanıcı doğrulanamadı.");
+
+            var product = await _productImageRepository.GetProductWithMerchantAsync(productId);
+            if (product == null)
+                throw new Exception("Ürün bulunamadı.");
+
+            if (product.AppUserId != userId)
+                throw new UnauthorizedAccessException("Bu ürüne işlem yapma yetkiniz yok.");
+        }
+
+        private static bool IsAllowedImage(IFormFile file)
+        {
+            const long maxBytes = 10 * 1024 * 1024;
+            if (file.Length <= 0 || file.Length > maxBytes) return false;
+
+            var allowed = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+            return allowed.Contains(file.ContentType);
+        }
+    }
+
 }
+

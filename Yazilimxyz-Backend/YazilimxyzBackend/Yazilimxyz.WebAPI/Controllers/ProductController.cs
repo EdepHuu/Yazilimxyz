@@ -207,5 +207,33 @@ namespace Yazilimxyz.WebAPI.Controllers
 			await _productService.DeleteAsync(productId);
 			return Ok(new { message = "Ürün başarıyla silindi." });
 		}
+
+		[HttpPost("Filter")]
+		[AllowAnonymous]
+		[ProducesResponseType(typeof(PagedResult<ProductListItemDto>), StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		public async Task<IActionResult> SearchAsync([FromQuery] ProductFilterRequestDto req)
+		{
+			if (req.Page <= 0) req.Page = 1;
+			if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
+			if (req.MinPrice.HasValue && req.MaxPrice.HasValue && req.MinPrice > req.MaxPrice)
+				return BadRequest("MinPrice, MaxPrice'tan büyük olamaz.");
+
+			// normalize
+			req.MerchantIds = req.MerchantIds?.Distinct().ToArray();
+			req.Sizes = req.Sizes?
+				.Where(s => !string.IsNullOrWhiteSpace(s))
+				.Select(s => s.Trim())
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+			req.Colors = req.Colors?
+				.Where(c => !string.IsNullOrWhiteSpace(c))
+				.Select(c => c.Trim())
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+
+			var result = await _productService.FilterAsync(req);
+			return Ok(result);
+		}
 	}
 }

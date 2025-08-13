@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Yazilimxyz.BusinessLayer.Abstract;
-using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
@@ -33,6 +34,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<GetByIdProductDto>(product);
         }
 
+        [CacheAspect] // key, value
         public async Task<List<ResultProductDto>> GetAllAsync()
         {
             var products = await _productRepository.GetAllAsync();
@@ -87,7 +89,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return _mapper.Map<List<ResultProductDto>>(products);
         }
 
-		public async Task CreateAsync(CreateProductDto dto)
+
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task CreateAsync(CreateProductDto dto)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 			if (string.IsNullOrEmpty(userId))
@@ -125,7 +129,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			await _productRepository.AddAsync(product);
 		}
 
-		public async Task UpdateAsync(UpdateProductDto dto)
+
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task UpdateAsync(UpdateProductDto dto)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 			if (string.IsNullOrEmpty(userId))
@@ -170,7 +176,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			await _productRepository.UpdateAsync(product);
 		}
 
-		public async Task DeleteAsync(int id)
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task DeleteAsync(int id)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 			if (string.IsNullOrEmpty(userId))
@@ -196,6 +203,86 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			}
 
 			await _productRepository.DeleteAsync(id);
+		}
+
+		public async Task<PagedResult<ProductListItemDto>> FilterAsync(ProductFilterRequestDto req)
+		{
+			if (req.Page <= 0) req.Page = 1;
+			if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
+			var q = _productRepository.Query(); // IsActive + Include(Merchant, ProductImages, ProductVariants)
+
+			// Marka (Merchant)
+			if (req.MerchantIds is { Length: > 0 })
+				q = q.Where(p => req.MerchantIds!.Contains(p.MerchantId));
+
+			var hasSizes = req.Sizes is { Length: > 0 };
+			var hasColors = req.Colors is { Length: > 0 };
+
+			// Varyant filtreleri (aynı varyantta eşleşme + stok)
+			if (hasSizes && hasColors)
+			{
+				q = q.Where(p => p.ProductVariants
+					.Any(v => req.Sizes!.Contains(v.Size) && req.Colors!.Contains(v.Color) && v.Stock > 0));
+			}
+			else if (hasSizes)
+			{
+				q = q.Where(p => p.ProductVariants
+					.Any(v => req.Sizes!.Contains(v.Size) && v.Stock > 0));
+			}
+			else if (hasColors)
+			{
+				q = q.Where(p => p.ProductVariants
+					.Any(v => req.Colors!.Contains(v.Color) && v.Stock > 0));
+			}
+			else
+			{
+				// İstersen genel listede de stoklu varyant şartı koy:
+				// q = q.Where(p => p.ProductVariants.Any(v => v.Stock > 0));
+			}
+
+			// Fiyat (ürün bazlı)
+			if (req.MinPrice.HasValue) q = q.Where(p => p.BasePrice >= req.MinPrice.Value);
+			if (req.MaxPrice.HasValue) q = q.Where(p => p.BasePrice <= req.MaxPrice.Value);
+
+			// Sıralama
+			q = (req.SortBy?.ToLowerInvariant(), req.SortDesc) switch
+			{
+				("price", true) => q.OrderByDescending(p => p.BasePrice),
+				("price", false) => q.OrderBy(p => p.BasePrice),
+				("name", true) => q.OrderByDescending(p => p.Name),
+				("name", false) => q.OrderBy(p => p.Name),
+				_ => q.OrderByDescending(p => p.CreatedAt) // newest default
+			};
+
+			var total = await q.CountAsync();
+
+			var items = await q
+				.Skip((req.Page - 1) * req.PageSize)
+				.Take(req.PageSize)
+				.Select(p => new ProductListItemDto
+				{
+					Id = p.Id,
+					Name = p.Name,
+					Price = p.BasePrice,
+					CoverImageUrl = p.ProductImages
+						.OrderBy(i => i.SortOrder)
+						.Select(i => i.ImageUrl)
+						.FirstOrDefault(),
+					MerchantId = p.MerchantId,
+					MerchantName = p.Merchant.CompanyName
+					// İstersen ileride UI için mevcut beden/renkleri de döneriz:
+					// AvailableSizes = p.ProductVariants.Where(v => v.Stock > 0).Select(v => v.Size).Distinct(),
+					// AvailableColors = p.ProductVariants.Where(v => v.Stock > 0).Select(v => v.Color).Distinct(),
+				})
+				.ToListAsync();
+
+			return new PagedResult<ProductListItemDto>
+			{
+				Total = total,
+				Page = req.Page,
+				PageSize = req.PageSize,
+				Items = items
+			};
 		}
 	}
 }

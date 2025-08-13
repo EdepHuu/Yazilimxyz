@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
@@ -18,67 +21,141 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
-        public async Task<ResultOrderDto?> GetByIdAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultOrderDto>> GetByIdAsync(int id)
         {
             var order = await _orderRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultOrderDto>(order);
+            if (order == null)
+                return new ErrorDataResult<ResultOrderDto>(null, Messages.OrderNotFound);
+
+            return new SuccessDataResult<ResultOrderDto>(_mapper.Map<ResultOrderDto>(order), Messages.OrderRetrieved);
         }
 
-        public async Task<ResultOrderDto?> GetByOrderNumberAsync(string orderNumber)
+        [CacheAspect]
+        public async Task<IDataResult<ResultOrderDto>> GetByOrderNumberAsync(string orderNumber)
         {
             var order = await _orderRepository.GetByOrderNumberAsync(orderNumber);
-            return _mapper.Map<ResultOrderDto>(order);
+            if (order == null)
+                return new ErrorDataResult<ResultOrderDto>(null, Messages.OrderNotFound);
+
+            return new SuccessDataResult<ResultOrderDto>(_mapper.Map<ResultOrderDto>(order), Messages.OrderRetrieved);
         }
 
-        public async Task<ResultOrderWithItemsDto?> GetWithItemAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultOrderWithItemsDto>> GetWithItemAsync(int id)
         {
             var order = await _orderRepository.GetWithItemAsync(id);
-            return _mapper.Map<ResultOrderWithItemsDto>(order);
+            if (order == null)
+                return new ErrorDataResult<ResultOrderWithItemsDto>(null, Messages.OrderNotFound);
+
+            return new SuccessDataResult<ResultOrderWithItemsDto>(_mapper.Map<ResultOrderWithItemsDto>(order), Messages.OrderRetrieved);
         }
 
-        public async Task<List<ResultOrderDto>> GetAllAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderDto>>> GetAllAsync()
         {
             var orders = await _orderRepository.GetAllAsync();
-            return _mapper.Map<List<ResultOrderDto>>(orders);
+            return new SuccessDataResult<List<ResultOrderDto>>(_mapper.Map<List<ResultOrderDto>>(orders), Messages.OrdersListed);
         }
 
-        public async Task<List<ResultOrderDto>> GetByUserIdAsync(string userId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderDto>>> GetByUserIdAsync(string userId)
         {
             var orders = await _orderRepository.GetByUserIdAsync(userId);
-            return _mapper.Map<List<ResultOrderDto>>(orders);
+            return new SuccessDataResult<List<ResultOrderDto>>(_mapper.Map<List<ResultOrderDto>>(orders), Messages.OrdersListed);
         }
 
-        public async Task<List<ResultOrderDto>> GetByStatusAsync(OrderStatus status)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderDto>>> GetByStatusAsync(OrderStatus status)
         {
             var orders = await _orderRepository.GetByStatusAsync(status);
-            return _mapper.Map<List<ResultOrderDto>>(orders);
+            return new SuccessDataResult<List<ResultOrderDto>>(_mapper.Map<List<ResultOrderDto>>(orders), Messages.OrdersListed);
         }
 
-        public async Task<List<ResultOrderDto>> GetByPaymentStatusAsync(PaymentStatus status)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderDto>>> GetByPaymentStatusAsync(PaymentStatus status)
         {
             var orders = await _orderRepository.GetByPaymentStatusAsync(status);
-            return _mapper.Map<List<ResultOrderDto>>(orders);
+            return new SuccessDataResult<List<ResultOrderDto>>(_mapper.Map<List<ResultOrderDto>>(orders), Messages.OrdersListed);
         }
 
-        public async Task CreateAsync(CreateOrderDto dto)
+        [CacheRemoveAspect("IOrderService.Get")]
+        public async Task<IResult> CreateAsync(CreateOrderDto dto)
         {
-            var order = _mapper.Map<Order>(dto);
-            await _orderRepository.AddAsync(order);
-        }
-
-        public async Task UpdateAsync(UpdateOrderDto dto)
-        {
-            var order = await _orderRepository.GetByIdAsync(dto.Id);
-            if (order != null)
+            try
             {
-                _mapper.Map(dto, order);
-                await _orderRepository.UpdateAsync(order);
+                ValidateOrderDto(dto);
+                var order = _mapper.Map<Order>(dto);
+                await _orderRepository.AddAsync(order);
+                return new SuccessResult(Messages.OrderAdded);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"{Messages.OrderNotAdded} - {ex.Message}");
             }
         }
 
-        public async Task DeleteAsync(int id)
+        [CacheRemoveAspect("IOrderService.Get")]
+        public async Task<IResult> UpdateAsync(UpdateOrderDto dto)
         {
+            try
+            {
+                ValidateOrderDto(dto);
+
+                var order = await _orderRepository.GetByIdAsync(dto.Id);
+                if (order == null)
+                    return new ErrorResult(Messages.OrderNotFound);
+
+                _mapper.Map(dto, order);
+                await _orderRepository.UpdateAsync(order);
+                return new SuccessResult(Messages.OrderUpdated);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"{Messages.OrderNotUpdated} - {ex.Message}");
+            }
+        }
+
+        [CacheRemoveAspect("IOrderService.Get")]
+        public async Task<IResult> DeleteAsync(int id)
+        {
+            var existing = await _orderRepository.GetByIdAsync(id);
+            if (existing == null)
+                return new ErrorResult(Messages.OrderNotFound);
+
             await _orderRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.OrderDeleted);
+        }
+
+        private void ValidateOrderDto(dynamic dto)
+        {
+            if (dto == null)
+                throw new ArgumentException("Sipariş bilgileri boş olamaz.");
+
+            if (string.IsNullOrWhiteSpace(dto.UserId))
+                throw new ArgumentException("Kullanıcı ID zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(dto.OrderNumber))
+                throw new ArgumentException("Sipariş numarası zorunludur.");
+
+            if (dto.TotalAmount <= 0)
+                throw new ArgumentException("Toplam tutar sıfırdan büyük olmalıdır.");
+
+            if (dto.Status < OrderStatus.Pending || dto.Status > OrderStatus.Cancelled)
+                throw new ArgumentException("Geçersiz sipariş durumu.");
+
+            if (dto.PaymentStatus < PaymentStatus.Pending || dto.PaymentStatus > PaymentStatus.Refunded)
+                throw new ArgumentException("Geçersiz ödeme durumu.");
+
+            if (string.IsNullOrWhiteSpace(dto.ShippingAddressLine))
+                throw new ArgumentException("Teslimat adresi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(dto.ShippingCity))
+                throw new ArgumentException("Teslimat şehri zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(dto.ShippingDistrict))
+                throw new ArgumentException("Teslimat ilçesi zorunludur.");
         }
     }
+
 }

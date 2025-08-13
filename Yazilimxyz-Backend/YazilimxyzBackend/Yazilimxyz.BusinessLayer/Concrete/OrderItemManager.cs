@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
+using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
@@ -17,49 +20,99 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
-        public async Task<ResultOrderItemDto?> GetByIdAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultOrderItemDto>> GetByIdAsync(int id)
         {
             var item = await _orderItemRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultOrderItemDto?>(item);
+            if (item == null)
+                return new ErrorDataResult<ResultOrderItemDto>(null, Messages.OrderItemNotFound);
+
+            return new SuccessDataResult<ResultOrderItemDto>(_mapper.Map<ResultOrderItemDto>(item), Messages.OrderItemsListed);
         }
 
-        public async Task<List<ResultOrderItemDto>> GetAllAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderItemDto>>> GetAllAsync()
         {
             var items = await _orderItemRepository.GetAllAsync();
-            return _mapper.Map<List<ResultOrderItemDto>>(items);
+            return new SuccessDataResult<List<ResultOrderItemDto>>(_mapper.Map<List<ResultOrderItemDto>>(items), Messages.OrderItemsListed);
         }
 
-        public async Task<List<ResultOrderItemDto>> GetByOrderIdAsync(int orderId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderItemDto>>> GetByOrderIdAsync(int orderId)
         {
             var items = await _orderItemRepository.GetByOrderIdAsync(orderId);
-            return _mapper.Map<List<ResultOrderItemDto>>(items);
+            return new SuccessDataResult<List<ResultOrderItemDto>>(_mapper.Map<List<ResultOrderItemDto>>(items), Messages.OrderItemsListed);
         }
 
-        public async Task<List<ResultOrderItemDto>> GetByProductIdAsync(int productId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultOrderItemDto>>> GetByProductIdAsync(int productId)
         {
             var items = await _orderItemRepository.GetByProductIdAsync(productId);
-            return _mapper.Map<List<ResultOrderItemDto>>(items);
+            return new SuccessDataResult<List<ResultOrderItemDto>>(_mapper.Map<List<ResultOrderItemDto>>(items), Messages.OrderItemsListed);
         }
 
-        public async Task CreateAsync(CreateOrderItemDto dto)
+        [CacheRemoveAspect("IOrderItemService.Get")]
+        public async Task<IResult> CreateAsync(CreateOrderItemDto dto)
         {
+            if (dto == null)
+                return new ErrorResult("Veri boş olamaz.");
+
+            if (dto.OrderId <= 0)
+                return new ErrorResult("Geçersiz OrderId.");
+
+            if (dto.ProductId <= 0)
+                return new ErrorResult("Geçersiz ProductId.");
+
+            if (dto.Quantity <= 0)
+                return new ErrorResult("Miktar 1'den büyük olmalıdır.");
+
+            if (dto.UnitPrice < 0)
+                return new ErrorResult("Birim fiyat negatif olamaz.");
+
+            var expectedTotal = dto.Quantity * dto.UnitPrice;
+            if (dto.TotalPrice != expectedTotal)
+                return new ErrorResult("Toplam fiyat miktar * birim fiyat ile uyuşmuyor.");
+
             var item = _mapper.Map<OrderItem>(dto);
             await _orderItemRepository.AddAsync(item);
+
+            return new SuccessResult(Messages.OrderItemAdded);
         }
 
-        public async Task UpdateAsync(UpdateOrderItemDto dto)
+        [CacheRemoveAspect("IOrderItemService.Get")]
+        public async Task<IResult> UpdateAsync(UpdateOrderItemDto dto)
         {
+            if (dto == null)
+                return new ErrorResult("Veri boş olamaz.");
+
+            if (dto.OrderItemId <= 0)
+                return new ErrorResult("Geçersiz OrderItemId.");
+
+            if (dto.Quantity <= 0)
+                return new ErrorResult("Miktar 1'den büyük olmalıdır.");
+
+            if (dto.UnitPrice < 0)
+                return new ErrorResult("Birim fiyat negatif olamaz.");
+
             var item = await _orderItemRepository.GetByIdAsync(dto.OrderItemId);
-            if (item != null)
-            {
-                _mapper.Map(dto, item);
-                await _orderItemRepository.UpdateAsync(item);
-            }
+            if (item == null)
+                return new ErrorResult(Messages.OrderItemNotFound);
+
+            _mapper.Map(dto, item);
+            await _orderItemRepository.UpdateAsync(item);
+
+            return new SuccessResult(Messages.OrderItemUpdated);
         }
 
-        public async Task DeleteAsync(int id)
+        [CacheRemoveAspect("IOrderItemService.Get")]
+        public async Task<IResult> DeleteAsync(int id)
         {
+            var existing = await _orderItemRepository.GetByIdAsync(id);
+            if (existing == null)
+                return new ErrorResult(Messages.OrderItemNotFound);
+
             await _orderItemRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.OrderItemDeleted);
         }
     }
 }

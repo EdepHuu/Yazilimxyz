@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -9,30 +10,31 @@ using System.Text;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.Concrete;
 using Yazilimxyz.BusinessLayer.Mapping;
+using Yazilimxyz.CoreLayer.Storage;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
 using Yazilimxyz.InfrastructureLayer.SignalR.Hubs;
-// SignalR eklemeleri
+using Yazilimxyz.InfrastructureLayer.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
-#region DbContext
+// ---------- DbContext ----------
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer")));
-#endregion
 
-#region Identity
+// ---------- Identity ----------
 builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
-#endregion
 
-#region JWT
-var jwtKey = builder.Configuration["Jwt:Key"];
+builder.Services.AddHttpContextAccessor();
+
+// ---------- JWT ----------
+var jwtKey = builder.Configuration["Jwt:Key"]!;
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -70,9 +72,14 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
-#endregion
 
-#region CORS
+// ---------- Authorization ----------
+builder.Services.AddAuthorization(opts =>
+{
+    opts.AddPolicy("Admin", policy => policy.RequireClaim("IsAdmin", "true"));
+});
+
+// ---------- CORS ----------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -83,9 +90,14 @@ builder.Services.AddCors(options =>
               .SetIsOriginAllowed(_ => true);
     });
 });
-#endregion
 
-#region Dependency Injection
+// ---------- Upload limit (ör. 20 MB) ----------
+builder.Services.Configure<FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 20_000_000;
+});
+
+// ---------- DI: Services ----------
 builder.Services.AddScoped<IProductService, ProductManager>();
 builder.Services.AddScoped<ICategoryService, CategoryManager>();
 builder.Services.AddScoped<IOrderService, OrderManager>();
@@ -96,7 +108,10 @@ builder.Services.AddScoped<ISupportMessageService, SupportMessageManager>();
 builder.Services.AddScoped<IAuthService, AuthManager>();
 builder.Services.AddScoped<IAppUserService, AppUserManager>();
 builder.Services.AddScoped<IMerchantService, MerchantManager>();
+builder.Services.AddScoped<ICustomerService, CustomerManager>();
+builder.Services.AddScoped<ICustomerAddressService, CustomerAddressManager>();
 
+// ---------- DI: Repositories ----------
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -105,28 +120,24 @@ builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>(
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
 builder.Services.AddScoped<ISupportMessageRepository, SupportMessageRepository>();
 builder.Services.AddScoped<IAppUserRepository, AppUserRepository>();
-builder.Services.AddScoped<IAppAdminRepository, AppAdminRepository>();
 builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerAddressRepository, CustomerAddressRepository>();
 builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 
+// ---------- DI: Token & Storage ----------
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
-#endregion
+builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 
-#region AutoMapper
+// ---------- AutoMapper ----------
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-#endregion
 
-#region SignalR
+// ---------- SignalR ----------
 builder.Services.AddSignalR();
-#endregion
 
+// ---------- MVC & Swagger ----------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHttpContextAccessor();
-
-#region Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
@@ -146,21 +157,16 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
 });
-#endregion
 
 var app = builder.Build();
 
-#region Middleware Pipeline
+// ---------- Middleware Pipeline ----------
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -169,17 +175,61 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// SignalR Hubs
+// ---------- SignalR Hubs ----------
 app.MapHub<SupportHub>("/supporthub");
-// Ýleride notification gibi baþka hub eklenirse buraya eklenir:
 // app.MapHub<NotificationHub>("/notificationhub");
 
-#endregion
+// ---------- Seed Admin ----------
+using (var scope = app.Services.CreateScope())
+{
+    await SeedAdminAsync(scope.ServiceProvider, builder.Configuration);
+}
 
 app.Run();
+
+// ================== SEED ADMIN ==================
+static async Task SeedAdminAsync(IServiceProvider sp, IConfiguration cfg)
+{
+    var userMgr = sp.GetRequiredService<UserManager<AppUser>>();
+    var email = cfg["Admin:Email"] ?? "admin@yazilimxyz.com";
+    var pass = cfg["Admin:Password"] ?? "Admin_123!";
+    var name = cfg["Admin:Name"] ?? "System";
+    var last = cfg["Admin:LastName"] ?? "Admin";
+
+    var admin = await userMgr.FindByEmailAsync(email);
+    if (admin == null)
+    {
+        admin = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            Name = name,
+            LastName = last,
+            IsAdmin = true,
+            EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var create = await userMgr.CreateAsync(admin, pass);
+        if (!create.Succeeded)
+        {
+            var msg = string.Join(", ", create.Errors.Select(e => e.Description));
+            throw new Exception("Admin seed baþarýsýz: " + msg);
+        }
+    }
+    else if (!admin.IsAdmin)
+    {
+        admin.IsAdmin = true;
+        await userMgr.UpdateAsync(admin);
+    }
+}

@@ -1,6 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
+using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
 
@@ -16,68 +19,137 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _categoryRepository = categoryRepository;
             _mapper = mapper;
         }
-        
-        public async Task<List<ResultCategoryDto>> GetAllAsync()
+
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultCategoryDto>>> GetAllAsync()
         {
+            if (DateTime.Now.Hour == 1)
+                return new ErrorDataResult<List<ResultCategoryDto>>(Messages.TenanceTime);
+
             var categories = await _categoryRepository.GetAllAsync();
-            return _mapper.Map<List<ResultCategoryDto>>(categories);
+            var mapped = _mapper.Map<List<ResultCategoryDto>>(categories);
+            return new SuccessDataResult<List<ResultCategoryDto>>(mapped, Messages.CategoriesListed);
         }
 
-        public async Task<ResultCategoryDto?> GetByIdAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultCategoryDto>> GetByIdAsync(int id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultCategoryDto?>(category);
+            if (category == null)
+                return new ErrorDataResult<ResultCategoryDto>(Messages.CategoryNotFound);
+
+            var mapped = _mapper.Map<ResultCategoryDto>(category);
+            return new SuccessDataResult<ResultCategoryDto>(mapped);
         }
 
-        public async Task<List<ResultCategoryDto>> GetActiveAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultCategoryDto>>> GetActiveAsync()
         {
             var categories = await _categoryRepository.GetActiveAsync();
-            return _mapper.Map<List<ResultCategoryDto>>(categories);
+            var mapped = _mapper.Map<List<ResultCategoryDto>>(categories);
+            return new SuccessDataResult<List<ResultCategoryDto>>(mapped);
         }
 
-        public async Task<List<ResultCategoryDto>> GetParentCategoriesAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultCategoryDto>>> GetParentCategoriesAsync()
         {
             var categories = await _categoryRepository.GetParentCategoriesAsync();
-            return _mapper.Map<List<ResultCategoryDto>>(categories);
+            var mapped = _mapper.Map<List<ResultCategoryDto>>(categories);
+            return new SuccessDataResult<List<ResultCategoryDto>>(mapped);
         }
 
-        public async Task<List<ResultCategoryDto>> GetSubCategoriesAsync(int parentId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultCategoryDto>>> GetSubCategoriesAsync(int parentId)
         {
             var categories = await _categoryRepository.GetSubCategoriesAsync(parentId);
-            return _mapper.Map<List<ResultCategoryDto>>(categories);
+            var mapped = _mapper.Map<List<ResultCategoryDto>>(categories);
+            return new SuccessDataResult<List<ResultCategoryDto>>(mapped);
         }
 
-        public async Task<ResultCategoryWithSubDto?> GetWithSubCategoriesAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultCategoryWithSubDto>> GetWithSubCategoriesAsync(int id)
         {
-           var category = await _categoryRepository.GetWithSubCategoriesAsync(id);
-            return _mapper.Map<ResultCategoryWithSubDto?>(category);
+            var category = await _categoryRepository.GetWithSubCategoriesAsync(id);
+            if (category == null)
+                return new ErrorDataResult<ResultCategoryWithSubDto>(Messages.CategoryNotFound);
+
+            var mapped = _mapper.Map<ResultCategoryWithSubDto>(category);
+            return new SuccessDataResult<ResultCategoryWithSubDto>(mapped);
         }
 
-        public async Task<List<ResultCategoryHierarchyDto>> GetCategoryHierarchyAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultCategoryHierarchyDto>>> GetCategoryHierarchyAsync()
         {
             var categories = await _categoryRepository.GetCategoryHierarchyAsync();
-            return _mapper.Map<List<ResultCategoryHierarchyDto>>(categories);
+            var mapped = _mapper.Map<List<ResultCategoryHierarchyDto>>(categories);
+            return new SuccessDataResult<List<ResultCategoryHierarchyDto>>(mapped);
         }
 
-        public async Task CreateAsync(CreateCategoryDto dto)
+        [CacheRemoveAspect("ICategoryService.Get")]
+        public async Task<IResult> CreateAsync(CreateCategoryDto dto)
         {
+            if (dto == null)
+                return new ErrorResult("Geçersiz istek.");
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length < 2)
+                return new ErrorResult("Kategori adı en az 2 karakter olmalıdır.");
+
+            if (dto.SortOrder < 0)
+                return new ErrorResult("Sıralama değeri negatif olamaz.");
+
+            if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId < 0)
+                return new ErrorResult("Ana kategori Id negatif olamaz.");
+
+            // İsim kontrolü (veritabanında sorgu)
+            if (await _categoryRepository.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower()))
+                return new ErrorResult(Messages.CategoryNameAlreadyExists);
+
+            // Limit kontrolü
+            if (await _categoryRepository.CountAsync() >= 100)
+                return new ErrorResult(Messages.CategoryLimitExceeded);
+
             var category = _mapper.Map<Category>(dto);
             await _categoryRepository.AddAsync(category);
+            return new SuccessResult(Messages.CategoryAdded);
         }
 
-        public async Task UpdateAsync(UpdateCategoryDto dto)
+        [CacheRemoveAspect("ICategoryService.Get")]
+        public async Task<IResult> UpdateAsync(UpdateCategoryDto dto)
         {
-            var existingCategory = await _categoryRepository.GetByIdAsync(dto.Id);
-            if (existingCategory != null)
-            {
-                _mapper.Map(dto, existingCategory);
-                await _categoryRepository.UpdateAsync(existingCategory);
-            }
+            if (dto == null)
+                return new ErrorResult("Geçersiz istek.");
+
+            var existing = await _categoryRepository.GetByIdAsync(dto.Id);
+            if (existing == null)
+                return new ErrorResult(Messages.CategoryNotFound);
+
+            // İsim kontrolü (başka bir kategoriyle çakışmamalı)
+            if (await _categoryRepository.AnyAsync(c => c.Name.ToLower() == dto.Name.ToLower() && c.Id != dto.Id))
+                return new ErrorResult(Messages.CategoryNameAlreadyExists);
+
+            if (string.IsNullOrWhiteSpace(dto.Name) || dto.Name.Length < 2)
+                return new ErrorResult("Kategori adı en az 2 karakter olmalıdır.");
+
+            if (dto.SortOrder < 0)
+                return new ErrorResult("Sıralama değeri negatif olamaz.");
+
+            if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId < 0)
+                return new ErrorResult("Ana kategori Id negatif olamaz.");
+
+            _mapper.Map(dto, existing);
+            await _categoryRepository.UpdateAsync(existing);
+            return new SuccessResult(Messages.CategoryUpdated);
         }
 
-        public async Task DeleteAsync(int id)
+        [CacheRemoveAspect("ICategoryService.Get")]
+        public async Task<IResult> DeleteAsync(int id)
         {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null)
+                return new ErrorResult(Messages.CategoryNotFound);
+
             await _categoryRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.CategoryDeleted);
         }
     }
 }

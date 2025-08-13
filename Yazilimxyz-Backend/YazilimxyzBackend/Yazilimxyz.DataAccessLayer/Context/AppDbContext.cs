@@ -140,7 +140,12 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .WithMany(u => u.Orders)
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
-        }
-    }
+
+			modelBuilder.Entity<CustomerAddress>()
+				.HasIndex(x => new { x.CustomerId, x.IsDefault })
+				.HasFilter("[IsDefault] = 1")
+				.IsUnique();
+		}
+	}
 
 }
