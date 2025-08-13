@@ -1,19 +1,21 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.ProductVariant;
+﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.ProductVariant;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
     public interface IProductVariantService
     {
-        Task<ResultProductVariantDto?> GetByIdAsync(int id);
-        Task<List<ResultProductVariantDto>> GetAllAsync();
-        Task<List<ResultProductVariantDto>> GetByProductIdAsync(int productId);
-        Task<ResultProductVariantDto?> GetByProductAndOptionsAsync(int productId, string size, string color);
-        Task<List<ResultProductVariantDto>> GetInStockAsync(int productId);
-        Task<bool> IsInStockAsync(int variantId, int quantity);
-        Task UpdateStockAsync(int variantId, int quantity);
+        Task<IDataResult<ResultProductVariantDto>> GetByIdAsync(int id);
+        Task<IDataResult<List<ResultProductVariantDto>>> GetAllAsync();
+        Task<IDataResult<List<ResultProductVariantDto>>> GetByProductIdAsync(int productId);
+        Task<IDataResult<ResultProductVariantDto>> GetByProductAndOptionsAsync(int productId, string size, string color);
+        Task<IDataResult<List<ResultProductVariantDto>>> GetInStockAsync(int productId);
 
-        Task CreateAsync(CreateProductVariantDto dto);
-        Task UpdateAsync(UpdateProductVariantDto dto);
-        Task DeleteAsync(int id);
+        Task<IDataResult<bool>> IsInStockAsync(int variantId, int quantity);
+        Task<IResult> UpdateStockAsync(int variantId, int quantity);
+
+        Task<IResult> CreateAsync(CreateProductVariantDto dto);
+        Task<IResult> UpdateAsync(UpdateProductVariantDto dto);
+        Task<IResult> DeleteAsync(int id);
     }
 }
