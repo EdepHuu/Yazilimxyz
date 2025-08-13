@@ -1,4 +1,5 @@
-﻿using Yazilimxyz.BusinessLayer.DTOs.Merchant;
+﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.EntityLayer.Enums;
 
@@ -6,19 +7,20 @@ namespace Yazilimxyz.BusinessLayer.Abstract
 {
     public interface IProductService
     {
-        Task<GetByIdProductDto?> GetByIdAsync(int id);
-        Task<List<ResultProductDto>> GetAllAsync();
-        Task<List<ResultProductDto>> GetActiveAsync();
-        Task<List<ResultProductDto>> GetByCategoryIdAsync(int categoryId);
-        Task<List<ResultProductWithMerchantDto>> GetByMerchantIdAsync(int merchantId);
-        Task<List<ResultProductDto>> GetByGenderAsync(GenderType gender);
-        Task<ResultProductWithVariantsDto?> GetWithVariantsAsync(int id);
-        Task<ResultProductWithImagesDto?> GetWithImagesAsync(int id);
-        Task<ResultProductDetailedDto?> GetDetailedAsync(int id);
-        Task<List<ResultProductDto>> SearchAsync(string searchTerm);
-		Task<PagedResult<ProductListItemDto>> FilterAsync(ProductFilterRequestDto req);
-		Task CreateAsync(CreateProductDto dto);
-        Task UpdateAsync(UpdateProductDto dto);
-        Task DeleteAsync(int id);
+        Task<IDataResult<GetByIdProductDto>> GetByIdAsync(int id);
+        Task<IDataResult<List<ResultProductDto>>> GetAllAsync();
+        Task<IDataResult<List<ResultProductDto>>> GetActiveAsync();
+        Task<IDataResult<List<ResultProductDto>>> GetByCategoryIdAsync(int categoryId);
+        Task<IDataResult<List<ResultProductWithMerchantDto>>> GetByMerchantIdAsync(int merchantId);
+        Task<IDataResult<List<ResultProductDto>>> GetByGenderAsync(GenderType gender);
+        Task<IDataResult<ResultProductWithVariantsDto>> GetWithVariantsAsync(int id);
+        Task<IDataResult<ResultProductWithImagesDto>> GetWithImagesAsync(int id);
+        Task<IDataResult<ResultProductDetailedDto>> GetDetailedAsync(int id);
+        Task<IDataResult<List<ResultProductDto>>> SearchAsync(string searchTerm);
+        Task<IDataResult<PagedResult<ProductListItemDto>>> FilterAsync(ProductFilterRequestDto req);
+
+        Task<IResult> CreateAsync(CreateProductDto dto);
+        Task<IResult> UpdateAsync(UpdateProductDto dto);
+        Task<IResult> DeleteAsync(int id);
     }
 }

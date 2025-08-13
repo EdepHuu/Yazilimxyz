@@ -33,14 +33,6 @@
         public static string OrderItemNotFound = "Sipariş kalemi bulunamadı.";
         public static string OrderItemsListed = "Sipariş kalemleri başarıyla listelendi.";
 
-        //Product Messages
-        public static string ProductAdded = "Ürün eklendi";
-        public static string ProductDeleted = "Ürün Silindi";
-        public static string ProductUpdated = "Ürün Güncellendi";
-        public static string ProductNameInvalid = "Ürün ismi geçersiz";
-        public static string ProductsListed = "Ürünler listelendi";
-        public static string ProductCountOfCategoryError = "Bir kategoride en fazla 17 ürün olabilir";
-
         //User Messages
         public static string UserAdded = "Kullanıcı Eklendi";
         public static string UserDeleted = "Kullanıcı Silindi";
@@ -55,6 +47,21 @@
         public static string SuccessfulLogin = "Başarılı Giriş";
         public static string UserAlreadyExists = "Kullanıcı mevcut";
         public static string AccessTokenCreated = "Token oluşturuldu";
+
+        // Product Messages
+        public static string ProductAdded = "Ürün başarıyla eklendi.";
+        public static string ProductUpdated = "Ürün başarıyla güncellendi.";
+        public static string ProductDeleted = "Ürün başarıyla silindi.";
+        public static string ProductNotFound = "Ürün bulunamadı.";
+        public static string ProductsListed = "Ürünler listelendi.";
+        public static string ProductNameInvalid = "Ürün ismi geçersiz.";
+        public static string ProductCountOfCategoryError = "Bir kategoride en fazla 17 ürün olabilir.";
+
+        public const string InvalidGenderType = "Geçersiz cinsiyet türü.";
+        public const string InvalidProductPrice = "Ürün fiyatı sıfırdan büyük olmalıdır.";
+        public const string UnauthorizedProductUpdate = "Bu ürünü güncelleme yetkiniz yok.";
+        public const string UnauthorizedProductDelete = "Bu ürünü silme yetkiniz yok.";
+
 
         // ProductImage Messages
         public static string ProductImageLimit = "Bir ürüne yediden fazla resim eklenemez";
