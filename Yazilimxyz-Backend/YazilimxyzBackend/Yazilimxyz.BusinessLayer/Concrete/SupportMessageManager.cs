@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using SignalRNotificationApi.Models;
 using Core.Aspects.Autofac.Caching;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
