@@ -48,6 +48,7 @@ export default function MerchantSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
   const [form, setForm] = useState<MerchantProfile>({
     companyName: '',
     iban: '',
@@ -310,26 +311,41 @@ export default function MerchantSettingsPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowNewPwd(v => !v)}
+                  onClick={() => setShowNewPwd((v) => !v)}
                   aria-label={showNewPwd ? 'Şifreyi gizle' : 'Şifreyi göster'}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-md hover:bg-slate-200/60 focus:outline-none focus:ring-2 focus:ring-slate-400"
                 >
                   {showNewPwd ? (
                     // eye-off (çizgili)
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
                       <circle cx="12" cy="12" r="3" />
-                      <path d="M4 4L20 20" /> {/* şık kapatma çizgisi */}
+                      <path d="M4 4L20 20" />
                     </svg>
                   ) : (
                     // eye
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
                   )}
                 </button>
-
               </div>
             </Field>
           </div>

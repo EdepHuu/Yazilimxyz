@@ -33,14 +33,6 @@
         public static string OrderItemNotFound = "Sipariş kalemi bulunamadı.";
         public static string OrderItemsListed = "Sipariş kalemleri başarıyla listelendi.";
 
-        //Product Messages
-        public static string ProductAdded = "Ürün eklendi";
-        public static string ProductDeleted = "Ürün Silindi";
-        public static string ProductUpdated = "Ürün Güncellendi";
-        public static string ProductNameInvalid = "Ürün ismi geçersiz";
-        public static string ProductsListed = "Ürünler listelendi";
-        public static string ProductCountOfCategoryError = "Bir kategoride en fazla 17 ürün olabilir";
-
         //User Messages
         public static string UserAdded = "Kullanıcı Eklendi";
         public static string UserDeleted = "Kullanıcı Silindi";
@@ -56,6 +48,21 @@
         public static string UserAlreadyExists = "Kullanıcı mevcut";
         public static string AccessTokenCreated = "Token oluşturuldu";
 
+        // Product Messages
+        public static string ProductAdded = "Ürün başarıyla eklendi.";
+        public static string ProductUpdated = "Ürün başarıyla güncellendi.";
+        public static string ProductDeleted = "Ürün başarıyla silindi.";
+        public static string ProductNotFound = "Ürün bulunamadı.";
+        public static string ProductsListed = "Ürünler listelendi.";
+        public static string ProductNameInvalid = "Ürün ismi geçersiz.";
+        public static string ProductCountOfCategoryError = "Bir kategoride en fazla 17 ürün olabilir.";
+
+        public const string InvalidGenderType = "Geçersiz cinsiyet türü.";
+        public const string InvalidProductPrice = "Ürün fiyatı sıfırdan büyük olmalıdır.";
+        public const string UnauthorizedProductUpdate = "Bu ürünü güncelleme yetkiniz yok.";
+        public const string UnauthorizedProductDelete = "Bu ürünü silme yetkiniz yok.";
+
+
         // ProductImage Messages
         public static string ProductImageLimit = "Bir ürüne yediden fazla resim eklenemez";
         public static string ProductImageDeleted = "Resim silindi";
@@ -65,6 +72,27 @@
         public static string ProductImagesListed = "Ürün resimleri listelendi.";
         public static string ProductMainImageSet = "Ana resim başarıyla ayarlandı.";
         public static string ProductImagesReordered = "Resimler başarıyla yeniden sıralandı.";
+
+        // Product Variant
+        public const string ProductVariantNotFound = "Ürün varyantı bulunamadı.";
+        public const string ProductVariantsListed = "Ürün varyantları listelendi.";
+        public const string ProductVariantAdded = "Ürün varyantı başarıyla eklendi.";
+        public const string ProductVariantUpdated = "Ürün varyantı başarıyla güncellendi.";
+        public const string ProductVariantDeleted = "Ürün varyantı başarıyla silindi.";
+
+        public const string InvalidProductVariantId = "Varyant ID 0'dan büyük olmalıdır.";
+        public const string InvalidProductId = "Ürün ID 0'dan büyük olmalıdır.";
+        public const string InvalidProductVariantSize = "Beden alanı boş olamaz.";
+        public const string ProductVariantSizeTooLong = "Beden alanı maksimum 50 karakter olabilir.";
+        public const string InvalidProductVariantColor = "Renk alanı boş olamaz.";
+        public const string ProductVariantColorTooLong = "Renk alanı maksimum 50 karakter olabilir.";
+        public const string InvalidProductVariantStock = "Stok miktarı negatif olamaz.";
+        public const string ProductVariantStockTooHigh = "Stok miktarı 999,999'dan fazla olamaz.";
+        public const string DuplicateProductVariant = "Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.";
+
+        public const string ProductVariantOutOfStock = "Ürün varyantı stokta yeterli değil.";
+        public const string ProductVariantInStock = "Ürün varyantı stokta mevcut.";
+        public const string ProductVariantStockUpdated = "Ürün varyantı stok bilgisi güncellendi.";
 
 
         // CartItem Messages

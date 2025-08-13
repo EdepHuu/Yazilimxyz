@@ -1,19 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
+using SignalRNotificationApi.Models;
 using Yazilimxyz.EntityLayer.Entities;
+using System;
 
 namespace Yazilimxyz.DataAccessLayer.Context
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options): base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-
         }
 
         // DbSet Properties
@@ -70,7 +65,7 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(pi => pi.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Product → Merchant (yeni ilişki)
+            // Product → Merchant
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Merchant)
                 .WithMany()
@@ -91,22 +86,22 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(sm => sm.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-			// Merchant → AppUser
-			modelBuilder.Entity<Merchant>()
-	            .HasOne(m => m.AppUser)
-	            .WithOne(u => u.Merchant) // bu şekilde
-	            .HasForeignKey<Merchant>(m => m.AppUserId)
-	            .OnDelete(DeleteBehavior.Restrict);
+            // Merchant → AppUser
+            modelBuilder.Entity<Merchant>()
+                .HasOne(m => m.AppUser)
+                .WithOne(u => u.Merchant)
+                .HasForeignKey<Merchant>(m => m.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-			// Customer → AppUser
-			modelBuilder.Entity<Customer>()
-	            .HasOne(c => c.AppUser)
-	            .WithOne(u => u.Customer)
-	            .HasForeignKey<Customer>(c => c.AppUserId)
-	            .OnDelete(DeleteBehavior.Restrict);
+            // Customer → AppUser
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.AppUser)
+                .WithOne(u => u.Customer)
+                .HasForeignKey<Customer>(c => c.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-			// CustomerAddress → Customer
-			modelBuilder.Entity<CustomerAddress>()
+            // CustomerAddress → Customer
+            modelBuilder.Entity<CustomerAddress>()
                 .HasOne(ca => ca.Customer)
                 .WithMany(c => c.Addresses)
                 .HasForeignKey(ca => ca.CustomerId)
@@ -140,11 +135,11 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-			modelBuilder.Entity<CustomerAddress>()
-				.HasIndex(x => new { x.CustomerId, x.IsDefault })
-				.HasFilter("[IsDefault] = 1")
-				.IsUnique();
-		}
-	}
-
+            // CustomerAddress unique index
+            modelBuilder.Entity<CustomerAddress>()
+                .HasIndex(x => new { x.CustomerId, x.IsDefault })
+                .HasFilter("[IsDefault] = 1")
+                .IsUnique();
+        }
+    }
 }

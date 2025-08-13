@@ -1,8 +1,11 @@
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
@@ -15,274 +18,272 @@ namespace Yazilimxyz.BusinessLayer.Concrete
     {
         private readonly IProductRepository _productRepository;
         private readonly IMapper _mapper;
-		private readonly IMerchantRepository _merchantRepository;
-		private readonly IHttpContextAccessor _httpContextAccessor;
-		private readonly ICategoryRepository _categoryRepository;
+        private readonly IMerchantRepository _merchantRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ICategoryRepository _categoryRepository;
 
-		public ProductManager(IProductRepository productRepository, IMapper mapper, IMerchantRepository merchantRepository, IHttpContextAccessor httpContextAccessor , ICategoryRepository categoryRepository)
+        public ProductManager(
+            IProductRepository productRepository,
+            IMapper mapper,
+            IMerchantRepository merchantRepository,
+            IHttpContextAccessor httpContextAccessor,
+            ICategoryRepository categoryRepository)
         {
             _productRepository = productRepository;
             _mapper = mapper;
-			_merchantRepository = merchantRepository;
-			_httpContextAccessor = httpContextAccessor;
-			_categoryRepository = categoryRepository;
-		}
+            _merchantRepository = merchantRepository;
+            _httpContextAccessor = httpContextAccessor;
+            _categoryRepository = categoryRepository;
+        }
 
-        public async Task<GetByIdProductDto?> GetByIdAsync(int id)
+        public async Task<IDataResult<GetByIdProductDto>> GetByIdAsync(int id)
         {
             var product = await _productRepository.GetByIdAsync(id);
-            return _mapper.Map<GetByIdProductDto>(product);
+            if (product == null)
+                return new ErrorDataResult<GetByIdProductDto>(Messages.ProductNotFound);
+
+            return new SuccessDataResult<GetByIdProductDto>(_mapper.Map<GetByIdProductDto>(product));
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultProductDto>> GetAllAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultProductDto>>> GetAllAsync()
         {
             var products = await _productRepository.GetAllAsync();
-            return _mapper.Map<List<ResultProductDto>>(products);
+            return new SuccessDataResult<List<ResultProductDto>>(
+                _mapper.Map<List<ResultProductDto>>(products),
+                Messages.ProductsListed);
         }
 
-        public async Task<List<ResultProductDto>> GetActiveAsync()
+        public async Task<IDataResult<List<ResultProductDto>>> GetActiveAsync()
         {
             var products = await _productRepository.GetActiveAsync();
-            return _mapper.Map<List<ResultProductDto>>(products);
+            return new SuccessDataResult<List<ResultProductDto>>(
+                _mapper.Map<List<ResultProductDto>>(products),
+                Messages.ProductsListed);
         }
 
-        public async Task<List<ResultProductDto>> GetByCategoryIdAsync(int categoryId)
+        public async Task<IDataResult<List<ResultProductDto>>> GetByCategoryIdAsync(int categoryId)
         {
             var products = await _productRepository.GetByCategoryIdAsync(categoryId);
-            return _mapper.Map<List<ResultProductDto>>(products);
+            return new SuccessDataResult<List<ResultProductDto>>(
+                _mapper.Map<List<ResultProductDto>>(products),
+                Messages.ProductsListed);
         }
 
-        public async Task<List<ResultProductWithMerchantDto>> GetByMerchantIdAsync(int merchantId)
+        public async Task<IDataResult<List<ResultProductWithMerchantDto>>> GetByMerchantIdAsync(int merchantId)
         {
             var products = await _productRepository.GetByMerchantIdAsync(merchantId);
-            return _mapper.Map<List<ResultProductWithMerchantDto>>(products);
+            return new SuccessDataResult<List<ResultProductWithMerchantDto>>(
+                _mapper.Map<List<ResultProductWithMerchantDto>>(products),
+                Messages.ProductsListed);
         }
 
-        public async Task<List<ResultProductDto>> GetByGenderAsync(GenderType gender)
+        public async Task<IDataResult<List<ResultProductDto>>> GetByGenderAsync(GenderType gender)
         {
             var products = await _productRepository.GetByGenderAsync(gender);
-            return _mapper.Map<List<ResultProductDto>>(products);
+            return new SuccessDataResult<List<ResultProductDto>>(
+                _mapper.Map<List<ResultProductDto>>(products),
+                Messages.ProductsListed);
         }
 
-        public async Task<ResultProductWithVariantsDto?> GetWithVariantsAsync(int id)
+        public async Task<IDataResult<ResultProductWithVariantsDto>> GetWithVariantsAsync(int id)
         {
             var product = await _productRepository.GetWithVariantsAsync(id);
-            return _mapper.Map<ResultProductWithVariantsDto>(product);
+            if (product == null)
+                return new ErrorDataResult<ResultProductWithVariantsDto>(Messages.ProductNotFound);
+
+            return new SuccessDataResult<ResultProductWithVariantsDto>(_mapper.Map<ResultProductWithVariantsDto>(product));
         }
 
-        public async Task<ResultProductWithImagesDto?> GetWithImagesAsync(int id)
+        public async Task<IDataResult<ResultProductWithImagesDto>> GetWithImagesAsync(int id)
         {
             var product = await _productRepository.GetWithImagesAsync(id);
-            return _mapper.Map<ResultProductWithImagesDto>(product);
+            if (product == null)
+                return new ErrorDataResult<ResultProductWithImagesDto>(Messages.ProductNotFound);
+
+            return new SuccessDataResult<ResultProductWithImagesDto>(_mapper.Map<ResultProductWithImagesDto>(product));
         }
 
-        public async Task<ResultProductDetailedDto?> GetDetailedAsync(int id)
+        public async Task<IDataResult<ResultProductDetailedDto>> GetDetailedAsync(int id)
         {
             var product = await _productRepository.GetDetailedAsync(id);
-            return _mapper.Map<ResultProductDetailedDto>(product);
+            if (product == null)
+                return new ErrorDataResult<ResultProductDetailedDto>(Messages.ProductNotFound);
+
+            return new SuccessDataResult<ResultProductDetailedDto>(_mapper.Map<ResultProductDetailedDto>(product));
         }
 
-        public async Task<List<ResultProductDto>> SearchAsync(string searchTerm)
+        public async Task<IDataResult<List<ResultProductDto>>> SearchAsync(string searchTerm)
         {
             var products = await _productRepository.SearchAsync(searchTerm);
-            return _mapper.Map<List<ResultProductDto>>(products);
+            return new SuccessDataResult<List<ResultProductDto>>(
+                _mapper.Map<List<ResultProductDto>>(products),
+                Messages.ProductsListed);
         }
 
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task<IResult> CreateAsync(CreateProductDto dto)
+        {
+            var userId = _httpContextAccessor.HttpContext?.User
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return new ErrorResult(Messages.UserNotFound);
+
+            var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+            if (merchant == null)
+                return new ErrorResult(Messages.MerchantNotFound);
+
+            if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
+                return new ErrorResult(Messages.InvalidGenderType);
+
+            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
+            if (category == null)
+                return new ErrorResult(Messages.CategoryNotFound);
+
+            if (dto.BasePrice <= 0)
+                return new ErrorResult(Messages.InvalidProductPrice);
+
+            var product = _mapper.Map<Product>(dto);
+            product.AppUserId = merchant.AppUserId;
+            product.MerchantId = merchant.Id;
+            product.CreatedAt = DateTime.UtcNow;
+
+            await _productRepository.AddAsync(product);
+            return new SuccessResult(Messages.ProductAdded);
+        }
 
         [CacheRemoveAspect("IProductService.Get")]
-        public async Task CreateAsync(CreateProductDto dto)
-		{
-			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
-			if (string.IsNullOrEmpty(userId))
-			{
-				throw new Exception("Kullanıcı oturumu bulunamadı.");
-			}
+        public async Task<IResult> UpdateAsync(UpdateProductDto dto)
+        {
+            var userId = _httpContextAccessor.HttpContext?.User
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
-			if (merchant == null)
-			{
-				throw new Exception("Merchant bulunamadı.");
-			}
+            if (string.IsNullOrEmpty(userId))
+                return new ErrorResult(Messages.UserNotFound);
 
-			if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
-			{
-				throw new Exception("Geçersiz cinsiyet türü.");
-			}
+            var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+            if (merchant == null)
+                return new ErrorResult(Messages.MerchantNotFound);
 
-			var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
-			if (category == null)
-			{
-				throw new Exception("Belirtilen kategori bulunamadı.");
-			}
+            var product = await _productRepository.GetByIdAsync(dto.Id);
+            if (product == null)
+                return new ErrorResult(Messages.ProductNotFound);
 
-			if (dto.BasePrice <= 0)
-			{
-				throw new Exception("Ürün fiyatı sıfırdan büyük olmalıdır.");
-			}
+            if (product.AppUserId != merchant.AppUserId)
+                return new ErrorResult(Messages.UnauthorizedProductUpdate);
 
-			var product = _mapper.Map<Product>(dto);
-			product.AppUserId = merchant.AppUserId;
-			product.MerchantId = merchant.Id;
-			product.CreatedAt = DateTime.UtcNow;
+            if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
+                return new ErrorResult(Messages.InvalidGenderType);
 
-			await _productRepository.AddAsync(product);
-		}
+            if (dto.BasePrice <= 0)
+                return new ErrorResult(Messages.InvalidProductPrice);
 
+            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
+            if (category == null)
+                return new ErrorResult(Messages.CategoryNotFound);
+
+            _mapper.Map(dto, product);
+            await _productRepository.UpdateAsync(product);
+            return new SuccessResult(Messages.ProductUpdated);
+        }
 
         [CacheRemoveAspect("IProductService.Get")]
-        public async Task UpdateAsync(UpdateProductDto dto)
-		{
-			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
-			if (string.IsNullOrEmpty(userId))
-			{
-				throw new Exception("Kullanıcı oturumu bulunamadı.");
-			}
+        public async Task<IResult> DeleteAsync(int id)
+        {
+            var userId = _httpContextAccessor.HttpContext?.User
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
-			if (merchant == null)
-			{
-				throw new Exception("Merchant bulunamadı.");
-			}
+            if (string.IsNullOrEmpty(userId))
+                return new ErrorResult(Messages.UserNotFound);
 
-			var product = await _productRepository.GetByIdAsync(dto.Id);
-			if (product == null)
-			{
-				throw new Exception("Ürün bulunamadı.");
-			}
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+                return new ErrorResult(Messages.ProductNotFound);
 
-			if (product.AppUserId != merchant.AppUserId)
-			{
-				throw new UnauthorizedAccessException("Bu ürünü güncelleme yetkiniz yok.");
-			}
+            var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+            if (merchant == null)
+                return new ErrorResult(Messages.MerchantNotFound);
 
-			if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
-			{
-				throw new Exception("Geçersiz cinsiyet türü.");
-			}
+            if (product.AppUserId != merchant.AppUserId)
+                return new ErrorResult(Messages.UnauthorizedProductDelete);
 
-			if (dto.BasePrice <= 0)
-			{
-				throw new Exception("Ürün fiyatı sıfırdan büyük olmalıdır.");
-			}
+            await _productRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.ProductDeleted);
+        }
 
-			var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
-			if (category == null)
-			{
-				throw new Exception("Belirtilen kategori bulunamadı.");
-			}
+        public async Task<IDataResult<PagedResult<ProductListItemDto>>> FilterAsync(ProductFilterRequestDto req)
+        {
+            if (req.Page <= 0) req.Page = 1;
+            if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
 
-			_mapper.Map(dto, product); // DTO'dan mevcut entity'e map
-			await _productRepository.UpdateAsync(product);
-		}
+            var q = _productRepository.Query();
 
-        [CacheRemoveAspect("IProductService.Get")]
-        public async Task DeleteAsync(int id)
-		{
-			var userId = _httpContextAccessor.HttpContext?.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
-			if (string.IsNullOrEmpty(userId))
-			{
-				throw new Exception("Kullanıcı oturumu bulunamadı.");
-			}
+            if (req.MerchantIds is { Length: > 0 })
+                q = q.Where(p => req.MerchantIds.Contains(p.MerchantId));
 
-			var product = await _productRepository.GetByIdAsync(id);
-			if (product == null)
-			{
-				throw new Exception("Ürün bulunamadı.");
-			}
+            var hasSizes = req.Sizes is { Length: > 0 };
+            var hasColors = req.Colors is { Length: > 0 };
 
-			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
-			if (merchant == null)
-			{
-				throw new Exception("Merchant bulunamadı.");
-			}
+            if (hasSizes && hasColors)
+            {
+                q = q.Where(p => p.ProductVariants
+                    .Any(v => req.Sizes.Contains(v.Size) &&
+                              req.Colors.Contains(v.Color) &&
+                              v.Stock > 0));
+            }
+            else if (hasSizes)
+            {
+                q = q.Where(p => p.ProductVariants
+                    .Any(v => req.Sizes.Contains(v.Size) && v.Stock > 0));
+            }
+            else if (hasColors)
+            {
+                q = q.Where(p => p.ProductVariants
+                    .Any(v => req.Colors.Contains(v.Color) && v.Stock > 0));
+            }
 
-			if (product.AppUserId != merchant.AppUserId)
-			{
-				throw new UnauthorizedAccessException("Bu ürünü silme yetkiniz yok.");
-			}
+            if (req.MinPrice.HasValue) q = q.Where(p => p.BasePrice >= req.MinPrice.Value);
+            if (req.MaxPrice.HasValue) q = q.Where(p => p.BasePrice <= req.MaxPrice.Value);
 
-			await _productRepository.DeleteAsync(id);
-		}
+            q = (req.SortBy?.ToLowerInvariant(), req.SortDesc) switch
+            {
+                ("price", true) => q.OrderByDescending(p => p.BasePrice),
+                ("price", false) => q.OrderBy(p => p.BasePrice),
+                ("name", true) => q.OrderByDescending(p => p.Name),
+                ("name", false) => q.OrderBy(p => p.Name),
+                _ => q.OrderByDescending(p => p.CreatedAt)
+            };
 
-		public async Task<PagedResult<ProductListItemDto>> FilterAsync(ProductFilterRequestDto req)
-		{
-			if (req.Page <= 0) req.Page = 1;
-			if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
-			var q = _productRepository.Query(); // IsActive + Include(Merchant, ProductImages, ProductVariants)
+            var total = await q.CountAsync();
 
-			// Marka (Merchant)
-			if (req.MerchantIds is { Length: > 0 })
-				q = q.Where(p => req.MerchantIds!.Contains(p.MerchantId));
+            var items = await q
+                .Skip((req.Page - 1) * req.PageSize)
+                .Take(req.PageSize)
+                .Select(p => new ProductListItemDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.BasePrice,
+                    CoverImageUrl = p.ProductImages
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => i.ImageUrl)
+                        .FirstOrDefault(),
+                    MerchantId = p.MerchantId,
+                    MerchantName = p.Merchant.CompanyName
+                })
+                .ToListAsync();
 
-			var hasSizes = req.Sizes is { Length: > 0 };
-			var hasColors = req.Colors is { Length: > 0 };
+            var result = new PagedResult<ProductListItemDto>
+            {
+                Total = total,
+                Page = req.Page,
+                PageSize = req.PageSize,
+                Items = items
+            };
 
-			// Varyant filtreleri (aynı varyantta eşleşme + stok)
-			if (hasSizes && hasColors)
-			{
-				q = q.Where(p => p.ProductVariants
-					.Any(v => req.Sizes!.Contains(v.Size) && req.Colors!.Contains(v.Color) && v.Stock > 0));
-			}
-			else if (hasSizes)
-			{
-				q = q.Where(p => p.ProductVariants
-					.Any(v => req.Sizes!.Contains(v.Size) && v.Stock > 0));
-			}
-			else if (hasColors)
-			{
-				q = q.Where(p => p.ProductVariants
-					.Any(v => req.Colors!.Contains(v.Color) && v.Stock > 0));
-			}
-			else
-			{
-				// İstersen genel listede de stoklu varyant şartı koy:
-				// q = q.Where(p => p.ProductVariants.Any(v => v.Stock > 0));
-			}
+            return new SuccessDataResult<PagedResult<ProductListItemDto>>(result, Messages.ProductsListed);
+        }
+    }
 
-			// Fiyat (ürün bazlı)
-			if (req.MinPrice.HasValue) q = q.Where(p => p.BasePrice >= req.MinPrice.Value);
-			if (req.MaxPrice.HasValue) q = q.Where(p => p.BasePrice <= req.MaxPrice.Value);
-
-			// Sıralama
-			q = (req.SortBy?.ToLowerInvariant(), req.SortDesc) switch
-			{
-				("price", true) => q.OrderByDescending(p => p.BasePrice),
-				("price", false) => q.OrderBy(p => p.BasePrice),
-				("name", true) => q.OrderByDescending(p => p.Name),
-				("name", false) => q.OrderBy(p => p.Name),
-				_ => q.OrderByDescending(p => p.CreatedAt) // newest default
-			};
-
-			var total = await q.CountAsync();
-
-			var items = await q
-				.Skip((req.Page - 1) * req.PageSize)
-				.Take(req.PageSize)
-				.Select(p => new ProductListItemDto
-				{
-					Id = p.Id,
-					Name = p.Name,
-					Price = p.BasePrice,
-					CoverImageUrl = p.ProductImages
-						.OrderBy(i => i.SortOrder)
-						.Select(i => i.ImageUrl)
-						.FirstOrDefault(),
-					MerchantId = p.MerchantId,
-					MerchantName = p.Merchant.CompanyName
-					// İstersen ileride UI için mevcut beden/renkleri de döneriz:
-					// AvailableSizes = p.ProductVariants.Where(v => v.Stock > 0).Select(v => v.Size).Distinct(),
-					// AvailableColors = p.ProductVariants.Where(v => v.Stock > 0).Select(v => v.Color).Distinct(),
-				})
-				.ToListAsync();
-
-			return new PagedResult<ProductListItemDto>
-			{
-				Total = total,
-				Page = req.Page,
-				PageSize = req.PageSize,
-				Items = items
-			};
-		}
-	}
 }
