@@ -135,5 +135,17 @@
         public static string MerchantProfileRetrieved = "Satıcı profili başarıyla getirildi.";
         public static string MerchantAlreadyExists = "Bu satıcı zaten mevcut.";
         public static string InvalidMerchantId = "Geçersiz satıcı Id.";
+
+        // Support Messages
+        public const string InvalidSupportMessageId = "Mesaj ID'si 0'dan büyük olmalıdır.";
+        public const string SupportMessageNotFound = "Destek mesajı bulunamadı.";
+        public const string SenderIdRequired = "Gönderen ID boş olamaz.";
+        public const string ReceiverIdRequired = "Alıcı ID boş olamaz.";
+        public const string SenderReceiverSame = "Gönderen ve alıcı aynı kişi olamaz.";
+        public const string UserIdRequired = "Kullanıcı ID boş olamaz.";
+        public const string MessageContentRequired = "Mesaj içeriği boş olamaz.";
+        public const string MessageContentTooLong = "Mesaj içeriği 1000 karakterden uzun olamaz.";
+        public const string SupportMessageCreated = "Destek mesajı başarıyla oluşturuldu.";
+        public const string SupportMessageDeleted = "Destek mesajı başarıyla silindi.";
     }
 }
