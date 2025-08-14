@@ -3,14 +3,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.DTOs.Customer;
+using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.WebAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+	[Route("api/[controller]")]
+	[ApiController]
 	public class ProductController : ControllerBase
 	{
 		private readonly IProductService _productService;
@@ -40,19 +42,19 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(result);
 		}
 
-        [HttpGet("get-by-id/{productId}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetProductByIdAsync(int productId)
-        {
-            var result = await _productService.GetByIdAsync(productId);
-            if (!result.Success || result.Data == null)
-                return NotFound("Ürün bulunamadı.");
+		[HttpGet("get-by-id/{productId}")]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetProductByIdAsync(int productId)
+		{
+			var result = await _productService.GetByIdAsync(productId);
+			if (!result.Success || result.Data == null)
+				return NotFound("Ürün bulunamadı.");
 
-            return Ok(result.Data);
-        }
+			return Ok(result.Data);
+		}
 
 
-        [HttpGet("get-by-category/{categoryId}")]
+		[HttpGet("get-by-category/{categoryId}")]
 		[AllowAnonymous]
 		public async Task<IActionResult> GetByCategoryAsync(int categoryId)
 		{
@@ -84,43 +86,43 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(result);
 		}
 
-        [HttpGet("{productId}/images")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetProductWithImagesAsync(int productId)
-        {
-            var result = await _productService.GetWithImagesAsync(productId);
-            if (!result.Success || result.Data == null)
-                return NotFound();
+		[HttpGet("{productId}/images")]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetProductWithImagesAsync(int productId)
+		{
+			var result = await _productService.GetWithImagesAsync(productId);
+			if (!result.Success || result.Data == null)
+				return NotFound();
 
-            return Ok(result.Data);
-        }
-
-
-        [HttpGet("{productId}/variants")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetProductWithVariantsAsync(int productId)
-        {
-            var result = await _productService.GetWithVariantsAsync(productId);
-            if (!result.Success || result.Data == null)
-                return NotFound();
-
-            return Ok(result.Data);
-        }
+			return Ok(result.Data);
+		}
 
 
-        [HttpGet("{productId}/detailed")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetProductDetailedAsync(int productId)
-        {
-            var result = await _productService.GetDetailedAsync(productId);
-            if (!result.Success || result.Data == null)
-                return NotFound();
+		[HttpGet("{productId}/variants")]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetProductWithVariantsAsync(int productId)
+		{
+			var result = await _productService.GetWithVariantsAsync(productId);
+			if (!result.Success || result.Data == null)
+				return NotFound();
 
-            return Ok(result.Data);
-        }
+			return Ok(result.Data);
+		}
 
 
-        [HttpPost("create")]
+		[HttpGet("{productId}/detailed")]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetProductDetailedAsync(int productId)
+		{
+			var result = await _productService.GetDetailedAsync(productId);
+			if (!result.Success || result.Data == null)
+				return NotFound();
+
+			return Ok(result.Data);
+		}
+
+
+		[HttpPost("create")]
 		[Authorize(Roles = "Merchant,AppAdmin")]
 		public async Task<IActionResult> CreateProductAsync([FromBody] CreateProductDto dto)
 		{
@@ -144,53 +146,53 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(new { message = "Ürün başarıyla eklendi." });
 		}
 
-        [HttpPut("update")]
-        [Authorize(Roles = "Merchant,AppAdmin")]
-        public async Task<IActionResult> UpdateProductAsync([FromBody] UpdateProductDto dto)
-        {
-            // ... (mevcut validasyonlar)
-            var category = await _categoryService.GetByIdAsync(dto.CategoryId);
-            if (category == null) return BadRequest("Kategori bulunamadı.");
+		[HttpPut("update")]
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> UpdateProductAsync([FromBody] UpdateProductDto dto)
+		{
+			// ... (mevcut validasyonlar)
+			var category = await _categoryService.GetByIdAsync(dto.CategoryId);
+			if (category == null) return BadRequest("Kategori bulunamadı.");
 
-            var existingResult = await _productService.GetDetailedAsync(dto.Id);
-            if (!existingResult.Success || existingResult.Data == null)
-                return NotFound("Güncellenecek ürün bulunamadı.");
+			var existingResult = await _productService.GetDetailedAsync(dto.Id);
+			if (!existingResult.Success || existingResult.Data == null)
+				return NotFound("Güncellenecek ürün bulunamadı.");
 
-            var existing = existingResult.Data; // <<— DTO
+			var existing = existingResult.Data; // <<— DTO
 
-            var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
+			var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
 
-            if (User.IsInRole("Merchant") && existing.MerchantId != merchant.Id)
-                return StatusCode(StatusCodes.Status403Forbidden, "Sadece kendi ürününüzü güncelleyebilirsiniz.");
+			if (User.IsInRole("Merchant") && existing.MerchantId != merchant.Id)
+				return StatusCode(StatusCodes.Status403Forbidden, "Sadece kendi ürününüzü güncelleyebilirsiniz.");
 
-            await _productService.UpdateAsync(dto);
-            return Ok(new { message = "Ürün başarıyla güncellendi." });
-        }
-
-
-        [HttpDelete("delete/{productId}")]
-        [Authorize(Roles = "Merchant,AppAdmin")]
-        public async Task<IActionResult> DeleteProductAsync(int productId)
-        {
-            var existingResult = await _productService.GetDetailedAsync(productId);
-            if (!existingResult.Success || existingResult.Data == null)
-                return NotFound("Silinecek ürün bulunamadı.");
-
-            var existing = existingResult.Data; // <<— DTO
-
-            var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
-
-            if (User.IsInRole("Merchant") && existing.MerchantId != merchant.Id)
-                return StatusCode(StatusCodes.Status403Forbidden, "Sadece kendi ürününüzü güncelleyebilirsiniz.");
-
-            await _productService.DeleteAsync(productId);
-            return Ok(new { message = "Ürün başarıyla silindi." });
-        }
+			await _productService.UpdateAsync(dto);
+			return Ok(new { message = "Ürün başarıyla güncellendi." });
+		}
 
 
-        [HttpPost("Filter")]
+		[HttpDelete("delete/{productId}")]
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> DeleteProductAsync(int productId)
+		{
+			var existingResult = await _productService.GetDetailedAsync(productId);
+			if (!existingResult.Success || existingResult.Data == null)
+				return NotFound("Silinecek ürün bulunamadı.");
+
+			var existing = existingResult.Data; // <<— DTO
+
+			var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
+
+			if (User.IsInRole("Merchant") && existing.MerchantId != merchant.Id)
+				return StatusCode(StatusCodes.Status403Forbidden, "Sadece kendi ürününüzü güncelleyebilirsiniz.");
+
+			await _productService.DeleteAsync(productId);
+			return Ok(new { message = "Ürün başarıyla silindi." });
+		}
+
+
+		[HttpPost("Filter")]
 		[AllowAnonymous]
 		[ProducesResponseType(typeof(PagedResult<ProductListItemDto>), StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -216,6 +218,43 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var result = await _productService.FilterAsync(req);
 			return Ok(result);
+		}
+
+		// CUSTOMER – public ürün detay
+		[HttpGet("{id:int}")]
+		[AllowAnonymous]
+		[ProducesResponseType(typeof(CustomerProductDetailDto), StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetPublicDetail(int id)
+		{
+			if (id <= 0) return BadRequest("Geçersiz ürün id.");
+			var res = await _productService.GetPublicProductDetailAsync(id);
+			if (!res.Success) return NotFound(res.Message);
+			return Ok(res.Data);
+		}
+
+		// MERCHANT – kendi ürün listesi
+		[HttpGet("my")]
+		[Authorize(Roles = "Merchant")]
+		[ProducesResponseType(typeof(PagedResult<MerchantProductListItemDto>), StatusCodes.Status200OK)]
+		public async Task<IActionResult> MyProducts([FromQuery] MerchantProductListQueryDto q)
+		{
+			q ??= new MerchantProductListQueryDto();
+			var res = await _productService.GetMyProductsAsync(q);
+			if (!res.Success) return BadRequest(res.Message);
+			return Ok(res.Data);
+		}
+
+
+		// MERCHANT – kendi ürün detay
+		[HttpGet("my/{id:int}")]
+		[Authorize(Roles = "Merchant")]
+		[ProducesResponseType(typeof(MerchantProductDetailDto), StatusCodes.Status200OK)]
+		public async Task<IActionResult> MyProductDetail(int id)
+		{
+			if (id <= 0) return BadRequest("Geçersiz ürün id.");
+			var res = await _productService.GetMyProductDetailAsync(id);
+			if (!res.Success) return NotFound(res.Message);
+			return Ok(res.Data);
 		}
 	}
 }
