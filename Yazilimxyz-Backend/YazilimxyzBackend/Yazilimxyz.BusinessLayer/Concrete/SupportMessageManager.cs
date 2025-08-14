@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
-using SignalRNotificationApi.Models;
 using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
+using SignalRNotificationApi.Models;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
 using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;
 using Yazilimxyz.DataAccessLayer.Abstract;
@@ -20,135 +22,113 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
-        [CacheAspect] // key, value
-        public async Task<ResultSupportMessageDto?> GetByIdAsync(int id)
+        [CacheAspect]
+        public async Task<IDataResult<ResultSupportMessageDto>> GetByIdAsync(int id)
         {
-            // Validation kontrolü
             if (id <= 0)
-            {
-                throw new ArgumentException("Invalid message ID. ID must be greater than 0.", nameof(id));
-            }
+                return new ErrorDataResult<ResultSupportMessageDto>(Messages.InvalidSupportMessageId);
 
             var message = await _supportMessageRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultSupportMessageDto>(message);
+            if (message == null)
+                return new ErrorDataResult<ResultSupportMessageDto>(Messages.SupportMessageNotFound);
+
+            return new SuccessDataResult<ResultSupportMessageDto>(_mapper.Map<ResultSupportMessageDto>(message));
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultSupportMessageDto>> GetAllAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultSupportMessageDto>>> GetAllAsync()
         {
             var messages = await _supportMessageRepository.GetAllAsync();
-            return _mapper.Map<List<ResultSupportMessageDto>>(messages);
+            return new SuccessDataResult<List<ResultSupportMessageDto>>(_mapper.Map<List<ResultSupportMessageDto>>(messages));
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultSupportMessageDto>> GetConversationAsync(string senderId, string receiverId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultSupportMessageDto>>> GetConversationAsync(string senderId, string receiverId)
         {
-            // Validation kontrolları
             if (string.IsNullOrWhiteSpace(senderId))
-            {
-                throw new ArgumentException("Sender ID cannot be null or empty.", nameof(senderId));
-            }
+                return new ErrorDataResult<List<ResultSupportMessageDto>>(Messages.SenderIdRequired);
 
             if (string.IsNullOrWhiteSpace(receiverId))
-            {
-                throw new ArgumentException("Receiver ID cannot be null or empty.", nameof(receiverId));
-            }
+                return new ErrorDataResult<List<ResultSupportMessageDto>>(Messages.ReceiverIdRequired);
 
             if (senderId == receiverId)
-            {
-                throw new ArgumentException("Sender and receiver cannot be the same user.");
-            }
+                return new ErrorDataResult<List<ResultSupportMessageDto>>(Messages.SenderReceiverSame);
 
             var messages = await _supportMessageRepository.GetConversationAsync(senderId, receiverId);
-            return _mapper.Map<List<ResultSupportMessageDto>>(messages);
+            return new SuccessDataResult<List<ResultSupportMessageDto>>(_mapper.Map<List<ResultSupportMessageDto>>(messages));
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultSupportMessageDto>> GetUserMessagesAsync(string userId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultSupportMessageDto>>> GetUserMessagesAsync(string userId)
         {
-            // Validation kontrolü
             if (string.IsNullOrWhiteSpace(userId))
-            {
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
-            }
+                return new ErrorDataResult<List<ResultSupportMessageDto>>(Messages.UserIdRequired);
 
             var messages = await _supportMessageRepository.GetUserMessagesAsync(userId);
-            return _mapper.Map<List<ResultSupportMessageDto>>(messages);
+            return new SuccessDataResult<List<ResultSupportMessageDto>>(_mapper.Map<List<ResultSupportMessageDto>>(messages));
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultSupportMessageDto>> GetSupportMessagesAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultSupportMessageDto>>> GetSupportMessagesAsync()
         {
             var messages = await _supportMessageRepository.GetSupportMessagesAsync();
-            return _mapper.Map<List<ResultSupportMessageDto>>(messages);
+            return new SuccessDataResult<List<ResultSupportMessageDto>>(_mapper.Map<List<ResultSupportMessageDto>>(messages));
         }
 
-        [CacheAspect] // key, value
-        public async Task<ResultSupportMessageDto?> GetLatestMessageAsync(string userId)
+        [CacheAspect]
+        public async Task<IDataResult<ResultSupportMessageDto>> GetLatestMessageAsync(string userId)
         {
-            // Validation kontrolü
             if (string.IsNullOrWhiteSpace(userId))
-            {
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
-            }
+                return new ErrorDataResult<ResultSupportMessageDto>(Messages.UserIdRequired);
 
             var message = await _supportMessageRepository.GetLatestMessageAsync(userId);
-            return _mapper.Map<ResultSupportMessageDto>(message);
+            if (message == null)
+                return new ErrorDataResult<ResultSupportMessageDto>(Messages.SupportMessageNotFound);
+
+            return new SuccessDataResult<ResultSupportMessageDto>(_mapper.Map<ResultSupportMessageDto>(message));
         }
 
-        [CacheAspect] // key, value
-        public async Task<List<ResultAppUserDto>> GetConversationPartnersAsync(string userId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultAppUserDto>>> GetConversationPartnersAsync(string userId)
         {
-            // Validation kontrolü
             if (string.IsNullOrWhiteSpace(userId))
-            {
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
-            }
+                return new ErrorDataResult<List<ResultAppUserDto>>(Messages.UserIdRequired);
 
             var partners = await _supportMessageRepository.GetConversationPartnersAsync(userId);
-            return _mapper.Map<List<ResultAppUserDto>>(partners);
+            return new SuccessDataResult<List<ResultAppUserDto>>(_mapper.Map<List<ResultAppUserDto>>(partners));
         }
 
         [CacheRemoveAspect("ISupportMessageService.Get")]
-        public async Task CreateAsync(CreateSupportMessageDto dto)
+        public async Task<IResult> CreateAsync(CreateSupportMessageDto dto)
         {
-            // Validation kontrolları
             if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto), "Support message DTO cannot be null.");
-            }
+                return new ErrorResult(Messages.SupportMessageNotFound);
 
             if (string.IsNullOrWhiteSpace(dto.Message))
-            {
-                throw new ArgumentException("Message content is required.", nameof(dto.Message));
-            }
+                return new ErrorResult(Messages.MessageContentRequired);
 
             if (dto.Message.Length > 1000)
-            {
-                throw new ArgumentException("Message content cannot exceed 1000 characters.", nameof(dto.Message));
-            }
+                return new ErrorResult(Messages.MessageContentTooLong);
 
             var message = _mapper.Map<SupportMessage>(dto);
             await _supportMessageRepository.AddAsync(message);
+
+            return new SuccessResult(Messages.SupportMessageCreated);
         }
 
         [CacheRemoveAspect("ISupportMessageService.Get")]
-        public async Task DeleteAsync(int id)
+        public async Task<IResult> DeleteAsync(int id)
         {
-            // Validation kontrolları
             if (id <= 0)
-            {
-                throw new ArgumentException("Invalid message ID. ID must be greater than 0.", nameof(id));
-            }
+                return new ErrorResult(Messages.InvalidSupportMessageId);
 
-            // Mesajın var olup olmadığını kontrol et
             var existingMessage = await _supportMessageRepository.GetByIdAsync(id);
             if (existingMessage == null)
-            {
-                throw new InvalidOperationException($"Support message with ID {id} not found.");
-            }
+                return new ErrorResult(Messages.SupportMessageNotFound);
 
             await _supportMessageRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.SupportMessageDeleted);
         }
     }
+
 }

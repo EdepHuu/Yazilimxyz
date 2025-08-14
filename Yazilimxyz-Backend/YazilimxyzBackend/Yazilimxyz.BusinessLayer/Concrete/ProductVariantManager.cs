@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Core.Aspects.Autofac.Caching;
+using Core.Utilities.Results;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.ProductVariant;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.EntityLayer.Entities;
@@ -20,252 +22,194 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _productRepository = productRepository;
         }
 
-        public async Task<ResultProductVariantDto?> GetByIdAsync(int id)
+        public async Task<IDataResult<ResultProductVariantDto>> GetByIdAsync(int id)
         {
             if (id <= 0)
-            {
-                throw new Exception("Id 0'dan büyük olmalıdır.");
-            }
+                return new ErrorDataResult<ResultProductVariantDto>(Messages.InvalidProductVariantId);
 
             var variant = await _productVariantRepository.GetByIdAsync(id);
-            return _mapper.Map<ResultProductVariantDto>(variant);
+            if (variant == null)
+                return new ErrorDataResult<ResultProductVariantDto>(Messages.ProductVariantNotFound);
+
+            return new SuccessDataResult<ResultProductVariantDto>(_mapper.Map<ResultProductVariantDto>(variant), Messages.ProductVariantsListed);
         }
 
-        [CacheAspect] // key, value - Tüm varyantlar cache'lenir
-        public async Task<List<ResultProductVariantDto>> GetAllAsync()
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultProductVariantDto>>> GetAllAsync()
         {
             var variants = await _productVariantRepository.GetAllAsync();
-            return _mapper.Map<List<ResultProductVariantDto>>(variants);
+            return new SuccessDataResult<List<ResultProductVariantDto>>(_mapper.Map<List<ResultProductVariantDto>>(variants), Messages.ProductVariantsListed);
         }
 
-        [CacheAspect] // Ürüne göre varyantlar cache'lenir
-        public async Task<List<ResultProductVariantDto>> GetByProductIdAsync(int productId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultProductVariantDto>>> GetByProductIdAsync(int productId)
         {
             if (productId <= 0)
-            {
-                throw new Exception("ProductId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorDataResult<List<ResultProductVariantDto>>(Messages.InvalidProductId);
 
             var variants = await _productVariantRepository.GetByProductIdAsync(productId);
-            return _mapper.Map<List<ResultProductVariantDto>>(variants);
+            return new SuccessDataResult<List<ResultProductVariantDto>>(_mapper.Map<List<ResultProductVariantDto>>(variants), Messages.ProductVariantsListed);
         }
 
-        [CacheAspect] // Spesifik varyant cache'lenir
-        public async Task<ResultProductVariantDto?> GetByProductAndOptionsAsync(int productId, string size, string color)
+        [CacheAspect]
+        public async Task<IDataResult<ResultProductVariantDto>> GetByProductAndOptionsAsync(int productId, string size, string color)
         {
             if (productId <= 0)
-            {
-                throw new Exception("ProductId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorDataResult<ResultProductVariantDto>(Messages.InvalidProductId);
 
             if (string.IsNullOrWhiteSpace(size))
-            {
-                throw new Exception("Beden alanı boş olamaz.");
-            }
+                return new ErrorDataResult<ResultProductVariantDto>(Messages.InvalidProductVariantSize);
 
             if (string.IsNullOrWhiteSpace(color))
-            {
-                throw new Exception("Renk alanı boş olamaz.");
-            }
+                return new ErrorDataResult<ResultProductVariantDto>(Messages.InvalidProductVariantColor);
 
             var variant = await _productVariantRepository.GetByProductAndOptionsAsync(productId, size, color);
-            return _mapper.Map<ResultProductVariantDto>(variant);
+            if (variant == null)
+                return new ErrorDataResult<ResultProductVariantDto>(Messages.ProductVariantNotFound);
+
+            return new SuccessDataResult<ResultProductVariantDto>(_mapper.Map<ResultProductVariantDto>(variant), Messages.ProductVariantsListed);
         }
 
-        [CacheAspect] // Stokta olan varyantlar cache'lenir
-        public async Task<List<ResultProductVariantDto>> GetInStockAsync(int productId)
+        [CacheAspect]
+        public async Task<IDataResult<List<ResultProductVariantDto>>> GetInStockAsync(int productId)
         {
             if (productId <= 0)
-            {
-                throw new Exception("ProductId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorDataResult<List<ResultProductVariantDto>>(Messages.InvalidProductId);
 
             var variants = await _productVariantRepository.GetInStockAsync(productId);
-            return _mapper.Map<List<ResultProductVariantDto>>(variants);
+            return new SuccessDataResult<List<ResultProductVariantDto>>(_mapper.Map<List<ResultProductVariantDto>>(variants), Messages.ProductVariantsListed);
         }
 
-        public async Task<bool> IsInStockAsync(int variantId, int quantity)
+        public async Task<IDataResult<bool>> IsInStockAsync(int variantId, int quantity)
         {
             if (variantId <= 0)
-            {
-                throw new Exception("VariantId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorDataResult<bool>(Messages.InvalidProductVariantId);
 
             if (quantity <= 0)
-            {
-                throw new Exception("Miktar 0'dan büyük olmalıdır.");
-            }
+                return new ErrorDataResult<bool>(Messages.ProductVariantOutOfStock);
 
-            return await _productVariantRepository.IsInStockAsync(variantId, quantity);
+            var inStock = await _productVariantRepository.IsInStockAsync(variantId, quantity);
+            return inStock
+                ? new SuccessDataResult<bool>(true, Messages.ProductVariantInStock)
+                : new ErrorDataResult<bool>(false, Messages.ProductVariantOutOfStock);
         }
 
-        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir - stok güncellemesi
-        public async Task UpdateStockAsync(int variantId, int quantity)
+        [CacheRemoveAspect("IProductVariantService.Get")]
+        public async Task<IResult> UpdateStockAsync(int variantId, int quantity)
         {
             if (variantId <= 0)
-            {
-                throw new Exception("VariantId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantId);
 
             if (quantity < 0)
-            {
-                throw new Exception("Stok miktarı negatif olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantStock);
 
             if (quantity > 999999)
-            {
-                throw new Exception("Stok miktarı 999,999'dan fazla olamaz.");
-            }
+                return new ErrorResult(Messages.ProductVariantStockTooHigh);
 
             var variant = await _productVariantRepository.GetByIdAsync(variantId);
             if (variant == null)
-            {
-                throw new Exception("Varyant bulunamadı.");
-            }
+                return new ErrorResult(Messages.ProductVariantNotFound);
 
             await _productVariantRepository.UpdateStockAsync(variantId, quantity);
+            return new SuccessResult(Messages.ProductVariantStockUpdated);
         }
 
-        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir
-        public async Task CreateAsync(CreateProductVariantDto dto)
+        [CacheRemoveAspect("IProductVariantService.Get")]
+        public async Task<IResult> CreateAsync(CreateProductVariantDto dto)
         {
-            // Validation
             if (dto.ProductId <= 0)
-            {
-                throw new Exception("ProductId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorResult(Messages.InvalidProductId);
 
             if (string.IsNullOrWhiteSpace(dto.Size))
-            {
-                throw new Exception("Beden alanı boş olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantSize);
 
             if (dto.Size.Length > 50)
-            {
-                throw new Exception("Beden alanı maksimum 50 karakter olabilir.");
-            }
+                return new ErrorResult(Messages.ProductVariantSizeTooLong);
 
             if (string.IsNullOrWhiteSpace(dto.Color))
-            {
-                throw new Exception("Renk alanı boş olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantColor);
 
             if (dto.Color.Length > 50)
-            {
-                throw new Exception("Renk alanı maksimum 50 karakter olabilir.");
-            }
+                return new ErrorResult(Messages.ProductVariantColorTooLong);
 
             if (dto.Stock < 0)
-            {
-                throw new Exception("Stok miktarı negatif olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantStock);
 
             if (dto.Stock > 999999)
-            {
-                throw new Exception("Stok miktarı 999,999'dan fazla olamaz.");
-            }
+                return new ErrorResult(Messages.ProductVariantStockTooHigh);
 
-            // Product var mı kontrol et
             var product = await _productRepository.GetByIdAsync(dto.ProductId);
             if (product == null)
-            {
-                throw new Exception("Belirtilen ürün bulunamadı.");
-            }
+                return new ErrorResult(Messages.ProductNotFound);
 
-            // Aynı ürün için aynı beden ve renk kombinasyonu var mı kontrol et
             var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size, dto.Color);
             if (existingVariant != null)
-            {
-                throw new Exception("Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.");
-            }
+                return new ErrorResult(Messages.DuplicateProductVariant);
 
             var variant = _mapper.Map<ProductVariant>(dto);
             await _productVariantRepository.AddAsync(variant);
+
+            return new SuccessResult(Messages.ProductVariantAdded);
         }
 
-        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir
-        public async Task UpdateAsync(UpdateProductVariantDto dto)
+        [CacheRemoveAspect("IProductVariantService.Get")]
+        public async Task<IResult> UpdateAsync(UpdateProductVariantDto dto)
         {
-            // Validation
             if (dto.Id <= 0)
-            {
-                throw new Exception("Id 0'dan büyük olmalıdır.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantId);
 
             if (dto.ProductId <= 0)
-            {
-                throw new Exception("ProductId 0'dan büyük olmalıdır.");
-            }
+                return new ErrorResult(Messages.InvalidProductId);
 
             if (string.IsNullOrWhiteSpace(dto.Size))
-            {
-                throw new Exception("Beden alanı boş olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantSize);
 
             if (dto.Size.Length > 50)
-            {
-                throw new Exception("Beden alanı maksimum 50 karakter olabilir.");
-            }
+                return new ErrorResult(Messages.ProductVariantSizeTooLong);
 
             if (string.IsNullOrWhiteSpace(dto.Color))
-            {
-                throw new Exception("Renk alanı boş olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantColor);
 
             if (dto.Color.Length > 50)
-            {
-                throw new Exception("Renk alanı maksimum 50 karakter olabilir.");
-            }
+                return new ErrorResult(Messages.ProductVariantColorTooLong);
 
             if (dto.Stock < 0)
-            {
-                throw new Exception("Stok miktarı negatif olamaz.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantStock);
 
             if (dto.Stock > 999999)
-            {
-                throw new Exception("Stok miktarı 999,999'dan fazla olamaz.");
-            }
+                return new ErrorResult(Messages.ProductVariantStockTooHigh);
 
             var variant = await _productVariantRepository.GetByIdAsync(dto.Id);
             if (variant == null)
-            {
-                throw new Exception("Varyant bulunamadı.");
-            }
+                return new ErrorResult(Messages.ProductVariantNotFound);
 
-            // Product var mı kontrol et
             var product = await _productRepository.GetByIdAsync(dto.ProductId);
             if (product == null)
-            {
-                throw new Exception("Belirtilen ürün bulunamadı.");
-            }
+                return new ErrorResult(Messages.ProductNotFound);
 
-            // Aynı ürün için aynı beden ve renk kombinasyonu var mı kontrol et (kendisi hariç)
             var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size, dto.Color);
             if (existingVariant != null && existingVariant.Id != dto.Id)
-            {
-                throw new Exception("Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.");
-            }
+                return new ErrorResult(Messages.DuplicateProductVariant);
 
             _mapper.Map(dto, variant);
             await _productVariantRepository.UpdateAsync(variant);
+
+            return new SuccessResult(Messages.ProductVariantUpdated);
         }
 
-        [CacheRemoveAspect("IProductVariantService.Get")] // Cache temizlenir
-        public async Task DeleteAsync(int id)
+        [CacheRemoveAspect("IProductVariantService.Get")]
+        public async Task<IResult> DeleteAsync(int id)
         {
             if (id <= 0)
-            {
-                throw new Exception("Id 0'dan büyük olmalıdır.");
-            }
+                return new ErrorResult(Messages.InvalidProductVariantId);
 
             var variant = await _productVariantRepository.GetByIdAsync(id);
             if (variant == null)
-            {
-                throw new Exception("Varyant bulunamadı.");
-            }
+                return new ErrorResult(Messages.ProductVariantNotFound);
 
             await _productVariantRepository.DeleteAsync(id);
+            return new SuccessResult(Messages.ProductVariantDeleted);
         }
     }
+
 }

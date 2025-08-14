@@ -73,6 +73,27 @@
         public static string ProductMainImageSet = "Ana resim başarıyla ayarlandı.";
         public static string ProductImagesReordered = "Resimler başarıyla yeniden sıralandı.";
 
+        // Product Variant
+        public const string ProductVariantNotFound = "Ürün varyantı bulunamadı.";
+        public const string ProductVariantsListed = "Ürün varyantları listelendi.";
+        public const string ProductVariantAdded = "Ürün varyantı başarıyla eklendi.";
+        public const string ProductVariantUpdated = "Ürün varyantı başarıyla güncellendi.";
+        public const string ProductVariantDeleted = "Ürün varyantı başarıyla silindi.";
+
+        public const string InvalidProductVariantId = "Varyant ID 0'dan büyük olmalıdır.";
+        public const string InvalidProductId = "Ürün ID 0'dan büyük olmalıdır.";
+        public const string InvalidProductVariantSize = "Beden alanı boş olamaz.";
+        public const string ProductVariantSizeTooLong = "Beden alanı maksimum 50 karakter olabilir.";
+        public const string InvalidProductVariantColor = "Renk alanı boş olamaz.";
+        public const string ProductVariantColorTooLong = "Renk alanı maksimum 50 karakter olabilir.";
+        public const string InvalidProductVariantStock = "Stok miktarı negatif olamaz.";
+        public const string ProductVariantStockTooHigh = "Stok miktarı 999,999'dan fazla olamaz.";
+        public const string DuplicateProductVariant = "Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.";
+
+        public const string ProductVariantOutOfStock = "Ürün varyantı stokta yeterli değil.";
+        public const string ProductVariantInStock = "Ürün varyantı stokta mevcut.";
+        public const string ProductVariantStockUpdated = "Ürün varyantı stok bilgisi güncellendi.";
+
 
         // CartItem Messages
         public static string CartItemAdded = "Sepete ürün başarıyla eklendi.";
@@ -114,5 +135,17 @@
         public static string MerchantProfileRetrieved = "Satıcı profili başarıyla getirildi.";
         public static string MerchantAlreadyExists = "Bu satıcı zaten mevcut.";
         public static string InvalidMerchantId = "Geçersiz satıcı Id.";
+
+        // Support Messages
+        public const string InvalidSupportMessageId = "Mesaj ID'si 0'dan büyük olmalıdır.";
+        public const string SupportMessageNotFound = "Destek mesajı bulunamadı.";
+        public const string SenderIdRequired = "Gönderen ID boş olamaz.";
+        public const string ReceiverIdRequired = "Alıcı ID boş olamaz.";
+        public const string SenderReceiverSame = "Gönderen ve alıcı aynı kişi olamaz.";
+        public const string UserIdRequired = "Kullanıcı ID boş olamaz.";
+        public const string MessageContentRequired = "Mesaj içeriği boş olamaz.";
+        public const string MessageContentTooLong = "Mesaj içeriği 1000 karakterden uzun olamaz.";
+        public const string SupportMessageCreated = "Destek mesajı başarıyla oluşturuldu.";
+        public const string SupportMessageDeleted = "Destek mesajı başarıyla silindi.";
     }
 }
