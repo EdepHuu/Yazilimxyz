@@ -139,10 +139,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         };
         await api.put(PRODUCT_UPDATE, payload);
       }
-      for (const id of deletedVariantIds) { await api.delete(`/api/ProductVariants/${id}`); }
+      for (const id of deletedVariantIds) { await api.delete(VARIANT_DELETE(id)); }
       for (const id of Array.from(dirtyVariants)) {
         const v = variants.find((x) => x.id === id);
-        if (v) await api.put(`/api/ProductVariants/${id}`, v);
+        if (v) await api.put(VARIANT_UPDATE(id), v);
       }
       for (const nv of newVariants) { await api.post(VARIANT_CREATE, nv); }
 
@@ -158,7 +158,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     } catch { setSaveMsg('❌ Kaydetme hatası.'); } finally { setSaveBusy(false); }
   };
 
-  const markVariantDirty = (id: number) => setDirtyVariants(s => new Set([...Array.from(s), id]));
   const addVariant = () => {
     if (!detail) return;
     const tmpId = Math.floor(Math.random() * -1_000_000_000);
@@ -174,117 +173,202 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     catch { alert('Görsel silinemedi.'); }
   };
 
-  if (loading) return <div className="text-slate-600 text-sm">Yükleniyor…</div>;
+  if (loading) return <div className="text-slate-600 text-sm px-4">Yükleniyor…</div>;
 
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-2xl font-semibold text-slate-800">Ürün Detay</h1>
-        <a href="/merchant/dashboard/urunler" className="text-sm text-slate-700 hover:underline">‹ Ürün listesine dön</a>
-      </div>
+    <div className="w-full">
+      <div className="max-w-[1400px] pl-6 pr-8">
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-2xl font-semibold text-slate-800">Ürün Detay</h1>
+          <a href="/merchant/dashboard/urunler" className="text-sm text-slate-700 hover:underline">‹ Ürün listesine dön</a>
+        </div>
 
-      {msg && <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{msg}</div>}
+        {msg && (
+          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {msg}
+          </div>
+        )}
 
-      {detail && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-6">
-          {/* Genel Bilgi */}
-          <section>
-            <div className="text-xs font-semibold text-slate-500 mb-2">GENEL BİLGİ</div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="block text-xs text-slate-500 mb-1">Ad</label>
-                <input value={detail.name} onChange={(e) => { setDetail({ ...detail, name: e.target.value }); setDirtyProduct(true); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs text-slate-500 mb-1">Açıklama</label>
-                <textarea value={detail.description ?? ''} onChange={(e) => { setDetail({ ...detail, description: e.target.value }); setDirtyProduct(true); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">Fiyat</label>
-                <input type="number" value={detail.price ?? detail.basePrice ?? 0} onChange={(e) => { const v = Number(e.target.value) || 0; setDetail({ ...detail, price: v, basePrice: v }); setDirtyProduct(true); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">Kategori Id</label>
-                <input type="number" value={detail.categoryId ?? 0} onChange={(e) => { setDetail({ ...detail, categoryId: Number(e.target.value) || null }); setDirtyProduct(true); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">Cinsiyet</label>
-                <select value={detail.gender ?? 0} onChange={(e) => { setDetail({ ...detail, gender: Number(e.target.value) }); setDirtyProduct(true); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none">
-                  <option value={0}>Belirsiz</option><option value={1}>Erkek</option><option value={2}>Kadın</option><option value={3}>Unisex</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 mt-6">
-                <input id="isActive" type="checkbox" checked={detail.isActive} onChange={(e) => { setDetail({ ...detail, isActive: e.target.checked }); setDirtyProduct(true); }} />
-                <label htmlFor="isActive" className="text-sm text-slate-700">Aktif</label>
-              </div>
-            </div>
-          </section>
-
-          {/* Görseller */}
-          <section>
-            <div className="text-xs font-semibold text-slate-500 mb-2">GÖRSELLER</div>
-            <div className="space-y-2">
-              {images.map((img, idx) => (
-                <div key={img.id} className="flex items-center gap-3 border border-slate-200 rounded-xl p-2">
-                  <img src={img.imageUrl} alt={img.altText ?? ''} className="h-12 w-12 rounded object-cover" />
-                  <div className="flex-1">
-                    <div className="text-[13px] text-slate-700 break-all">{img.imageUrl}</div>
-                    <div className="text-xs text-slate-500">Sıra: {idx + 1}</div>
-                  </div>
-                  <button className={'px-2 py-1 rounded border text-xs ' + (img.isMain ? 'bg-emerald-100 border-emerald-300' : 'border-slate-300')} onClick={() => { setImages(l => l.map(x => ({ ...x, isMain: x.id === img.id }))); setImagesDirty(true); }}>
-                    {img.isMain ? 'Ana Görsel' : 'Ana yap'}
-                  </button>
-                  <button className="px-2 py-1 rounded bg-red-600/90 text-white text-xs" onClick={() => deleteImage(img)}>Sil</button>
+        {detail && (
+          <div
+            className="
+              w-full max-w-[1100px]
+              bg-white rounded-2xl shadow-sm border border-slate-200
+              p-5 space-y-6
+              md:sticky md:top-4
+              md:h-[calc(100vh-120px)]
+              overflow-y-auto
+              scrollbar-thin
+            "
+          >
+            {/* GENEL BİLGİ */}
+            <section>
+              <div className="text-xs font-semibold text-slate-500 mb-2">GENEL BİLGİ</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs text-slate-500 mb-1">Ad</label>
+                  <input
+                    value={detail.name}
+                    onChange={(e) => { setDetail({ ...detail, name: e.target.value }); setDirtyProduct(true); }}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  />
                 </div>
-              ))}
-              {images.length === 0 && <div className="text-sm text-slate-500">Bu ürüne ait görsel yok.</div>}
-            </div>
-          </section>
-
-          {/* Varyantlar */}
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-semibold text-slate-500">VARYANTLAR</div>
-              <button onClick={addVariant} className="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-xs hover:opacity-90">+ Varyant Ekle</button>
-            </div>
-
-            <div className="space-y-3">
-              {variants.map((v) => (
-                <div key={v.id} className="border border-slate-200 rounded-xl p-3">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Beden</label>
-                      <input value={v.size ?? ''} onChange={(e) => { const next = { ...v, size: e.target.value }; setVariants(l => l.map(x => x.id === v.id ? next : x)); if (v.id > 0) setDirtyVariants(s => new Set([...Array.from(s), v.id])); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Renk</label>
-                      <input value={v.color ?? ''} onChange={(e) => { const next = { ...v, color: e.target.value }; setVariants(l => l.map(x => x.id === v.id ? next : x)); if (v.id > 0) setDirtyVariants(s => new Set([...Array.from(s), v.id])); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Stok</label>
-                      <input type="number" value={v.stock} onChange={(e) => { const next = { ...v, stock: Number(e.target.value) || 0 }; setVariants(l => l.map(x => x.id === v.id ? next : x)); if (v.id > 0) setDirtyVariants(s => new Set([...Array.from(s), v.id])); }} className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-xs text-slate-500">{v.id < 0 ? 'Yeni' : `ID: ${v.id}`}</div>
-                    <button onClick={() => removeVariant(v)} className="px-3 py-1.5 rounded-lg bg-red-600/90 text-white text-xs">Sil</button>
-                  </div>
+                <div className="col-span-2">
+                  <label className="block text-xs text-slate-500 mb-1">Açıklama</label>
+                  <textarea
+                    value={detail.description ?? ''}
+                    onChange={(e) => { setDetail({ ...detail, description: e.target.value }); setDirtyProduct(true); }}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 min-h-24"
+                  />
                 </div>
-              ))}
-              {variants.length === 0 && <div className="text-sm text-slate-500">Bu ürüne ait varyant bulunamadı.</div>}
-            </div>
-          </section>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Fiyat</label>
+                  <input
+                    type="number"
+                    value={detail.price ?? detail.basePrice ?? 0}
+                    onChange={(e) => {
+                      const v = Number(e.target.value) || 0;
+                      setDetail({ ...detail, price: v, basePrice: v }); setDirtyProduct(true);
+                    }}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Kategori Id</label>
+                  <input
+                    type="number"
+                    value={detail.categoryId ?? 0}
+                    onChange={(e) => { setDetail({ ...detail, categoryId: Number(e.target.value) || null }); setDirtyProduct(true); }}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Cinsiyet</label>
+                  <select
+                    value={detail.gender ?? 0}
+                    onChange={(e) => { setDetail({ ...detail, gender: Number(e.target.value) }); setDirtyProduct(true); }}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value={0}>Belirsiz</option>
+                    <option value={1}>Erkek</option>
+                    <option value={2}>Kadın</option>
+                    <option value={3}>Unisex</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 mt-6">
+                  <input
+                    id="isActive"
+                    type="checkbox"
+                    checked={detail.isActive}
+                    onChange={(e) => { setDetail({ ...detail, isActive: e.target.checked }); setDirtyProduct(true); }}
+                  />
+                  <label htmlFor="isActive" className="text-sm text-slate-700">Aktif</label>
+                </div>
+              </div>
+            </section>
 
-          <div className="pt-2 border-t border-slate-200">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-slate-600">{saveBusy ? 'İşleniyor…' : saveMsg}</div>
-              <button onClick={saveAll} disabled={saveBusy} className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm hover:opacity-90 disabled:opacity-50">Kaydet</button>
+            {/* GÖRSELLER */}
+            <section>
+              <div className="text-xs font-semibold text-slate-500 mb-2">GÖRSELLER</div>
+              <div className="space-y-2">
+                {images.map((img, idx) => (
+                  <div key={img.id} className="flex items-center gap-3 border border-slate-200 rounded-xl p-2">
+                    <img src={img.imageUrl} alt={img.altText ?? ''} className="h-12 w-12 rounded object-cover" />
+                    <div className="flex-1">
+                      <div className="text-[13px] text-slate-700 break-all">{img.imageUrl}</div>
+                      <div className="text-xs text-slate-500">Sıra: {idx + 1}</div>
+                    </div>
+                    <button
+                      className={'px-2 py-1 rounded border text-xs ' + (img.isMain ? 'bg-emerald-100 border-emerald-300' : 'border-slate-300')}
+                      onClick={() => { setImages(l => l.map(x => ({ ...x, isMain: x.id === img.id }))); setImagesDirty(true); }}
+                    >
+                      {img.isMain ? 'Ana Görsel' : 'Ana yap'}
+                    </button>
+                    <button className="px-2 py-1 rounded bg-red-600/90 text-white text-xs" onClick={() => deleteImage(img)}>Sil</button>
+                  </div>
+                ))}
+                {images.length === 0 && <div className="text-sm text-slate-500">Bu ürüne ait görsel yok.</div>}
+              </div>
+            </section>
+
+            {/* VARYANTLAR */}
+            <section>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-semibold text-slate-500">VARYANTLAR</div>
+                <button onClick={addVariant} className="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-xs hover:opacity-90">+ Varyant Ekle</button>
+              </div>
+
+              <div className="space-y-3">
+                {variants.map((v) => (
+                  <div key={v.id} className="border border-slate-200 rounded-xl p-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">Beden</label>
+                        <input
+                          value={v.size ?? ''}
+                          onChange={(e) => {
+                            const next = { ...v, size: e.target.value };
+                            setVariants(l => l.map(x => x.id === v.id ? next : x));
+                            if (v.id > 0) setDirtyVariants(s => new Set([...Array.from(s), v.id]));
+                          }}
+                          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">Renk</label>
+                        <input
+                          value={v.color ?? ''}
+                          onChange={(e) => {
+                            const next = { ...v, color: e.target.value };
+                            setVariants(l => l.map(x => x.id === v.id ? next : x));
+                            if (v.id > 0) setDirtyVariants(s => new Set([...Array.from(s), v.id]));
+                          }}
+                          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">Stok</label>
+                        <input
+                          type="number"
+                          value={v.stock}
+                          onChange={(e) => {
+                            const next = { ...v, stock: Number(e.target.value) || 0 };
+                            setVariants(l => l.map(x => x.id === v.id ? next : x));
+                            if (v.id > 0) setDirtyVariants(s => new Set([...Array.from(s), v.id]));
+                          }}
+                          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-xs text-slate-500">{v.id < 0 ? 'Yeni' : `ID: ${v.id}`}</div>
+                      <button onClick={() => removeVariant(v)} className="px-3 py-1.5 rounded-lg bg-red-600/90 text-white text-xs">Sil</button>
+                    </div>
+                  </div>
+                ))}
+                {variants.length === 0 && <div className="text-sm text-slate-500">Bu ürüne ait varyant bulunamadı.</div>}
+              </div>
+            </section>
+
+            <div className="pt-2 border-t border-slate-200 pb-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm text-slate-600">{saveBusy ? 'İşleniyor…' : saveMsg}</div>
+                <button
+                  onClick={saveAll}
+                  disabled={saveBusy}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm hover:opacity-90 disabled:opacity-50"
+                >
+                  Kaydet
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="mt-4"><a href="/merchant/dashboard/urunler" className="text-sm text-slate-700 hover:underline">‹ Ürün listesine dön</a></div>
+        <div className="mt-4 mb-8">
+          <a href="/merchant/dashboard/urunler" className="text-sm text-slate-700 hover:underline">‹ Ürün listesine dön</a>
+        </div>
+      </div>
     </div>
   );
 }
