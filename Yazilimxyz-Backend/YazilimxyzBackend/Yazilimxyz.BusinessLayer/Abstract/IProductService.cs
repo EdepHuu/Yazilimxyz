@@ -1,4 +1,5 @@
 ﻿using Core.Utilities.Results;
+using Yazilimxyz.BusinessLayer.DTOs.Customer;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.EntityLayer.Enums;
@@ -18,8 +19,10 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IDataResult<ResultProductDetailedDto>> GetDetailedAsync(int id);
         Task<IDataResult<List<ResultProductDto>>> SearchAsync(string searchTerm);
         Task<IDataResult<PagedResult<ProductListItemDto>>> FilterAsync(ProductFilterRequestDto req);
-
-        Task<IResult> CreateAsync(CreateProductDto dto);
+		Task<IDataResult<PagedResult<MerchantProductListItemDto>>> GetMyProductsAsync(MerchantProductListQueryDto q);
+		Task<IDataResult<MerchantProductDetailDto>> GetMyProductDetailAsync(int productId);
+		Task<IDataResult<CustomerProductDetailDto>> GetPublicProductDetailAsync(int productId);
+		Task<IResult> CreateAsync(CreateProductDto dto);
         Task<IResult> UpdateAsync(UpdateProductDto dto);
         Task<IResult> DeleteAsync(int id);
     }

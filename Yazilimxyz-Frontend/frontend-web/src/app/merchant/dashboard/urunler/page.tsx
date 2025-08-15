@@ -107,7 +107,6 @@ async function loadCategoryDict(api: AxiosInstance): Promise<Record<number, stri
 /* ========== Sayfa ========== */
 export default function MerchantProductsListPage() {
   const router = useRouter();
-
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [apiTotal, setApiTotal] = useState<number>(0);
@@ -269,10 +268,7 @@ export default function MerchantProductsListPage() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
           <input
             value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => { setQ(e.target.value); setPage(1); }}
             placeholder="Ürün adı veya kategori ara…"
             className="w-full sm:w-80 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
           />
@@ -280,17 +276,10 @@ export default function MerchantProductsListPage() {
             <label className="text-sm text-slate-600">Sayfa boyutu</label>
             <select
               value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setPage(1);
-              }}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
               className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none"
             >
-              {[10, 20, 50].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
+              {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
         </div>

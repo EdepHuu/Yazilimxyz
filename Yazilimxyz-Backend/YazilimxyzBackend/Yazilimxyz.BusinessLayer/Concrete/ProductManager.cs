@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.Constans;
+using Yazilimxyz.BusinessLayer.DTOs.Customer;
+using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.DataAccessLayer.Abstract;
 using Yazilimxyz.DataAccessLayer.Concrete;
@@ -284,6 +286,192 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
             return new SuccessDataResult<PagedResult<ProductListItemDto>>(result, Messages.ProductsListed);
         }
-    }
+		// MERCHANT – kendi ürün listesi
+		public async Task<IDataResult<PagedResult<MerchantProductListItemDto>>> GetMyProductsAsync(MerchantProductListQueryDto q)
+		{
+			q ??= new();
+			if (q.Page <= 0) q.Page = 1;
+			if (q.PageSize <= 0 || q.PageSize > 100) q.PageSize = 10;
 
+			// Giriş yapan merchant
+			var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+				return new ErrorDataResult<PagedResult<MerchantProductListItemDto>>(Messages.UserNotFound);
+
+			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+			if (merchant is null)
+				return new ErrorDataResult<PagedResult<MerchantProductListItemDto>>(Messages.MerchantNotFound);
+
+			// Sorgu
+			var query = _productRepository
+				.Query() // IQueryable<Product>
+				.Where(p => p.MerchantId == merchant.Id);
+
+			// Arama: ürün adı veya kategori adı
+			if (!string.IsNullOrWhiteSpace(q.Keyword))
+			{
+				var term = q.Keyword.Trim();
+				query = query.Where(p =>
+					p.Name.Contains(term) ||
+					p.Category.Name.Contains(term));
+			}
+
+			// Kategori filtresi
+			if (q.CategoryId.HasValue)
+				query = query.Where(p => p.CategoryId == q.CategoryId.Value);
+
+			// Sıralama (EF tarafından çevrilebilir olmalı -> SUM’ı direkt kullan)
+			query = (q.SortBy?.ToLowerInvariant(), q.SortDesc) switch
+			{
+				("price", true) => query.OrderByDescending(p => p.BasePrice),
+				("price", false) => query.OrderBy(p => p.BasePrice),
+
+				("name", true) => query.OrderByDescending(p => p.Name),
+				("name", false) => query.OrderBy(p => p.Name),
+
+				("stock", true) => query.OrderByDescending(p => p.ProductVariants.Sum(v => (int?)v.Stock) ?? 0),
+				("stock", false) => query.OrderBy(p => p.ProductVariants.Sum(v => (int?)v.Stock) ?? 0),
+
+				("createdat", _) => q.SortDesc
+										? query.OrderByDescending(p => p.CreatedAt)
+										: query.OrderBy(p => p.CreatedAt),
+
+				_ => query.OrderByDescending(p => p.CreatedAt)
+			};
+
+			var total = await query.CountAsync();
+
+			// Sayfalama + Projeksiyon
+			var items = await query
+				.Skip((q.Page - 1) * q.PageSize)
+				.Take(q.PageSize)
+				.Select(p => new MerchantProductListItemDto
+				{
+					Id = p.Id,
+					Name = p.Name,
+					CategoryName = p.Category.Name,
+					Price = p.BasePrice,
+					CoverImageUrl = p.ProductImages
+						.OrderBy(i => i.SortOrder)
+						.Select(i => i.ImageUrl)
+						.FirstOrDefault(),
+					TotalStock = p.ProductVariants.Sum(v => (int?)v.Stock) ?? 0,
+					IsActive = p.IsActive && ((p.ProductVariants.Sum(v => (int?)v.Stock) ?? 0) > 0),
+					CreatedAt = p.CreatedAt
+				})
+				.ToListAsync();
+
+			var result = new PagedResult<MerchantProductListItemDto>
+			{
+				Total = total,
+				Page = q.Page,
+				PageSize = q.PageSize,
+				Items = items
+			};
+
+			return new SuccessDataResult<PagedResult<MerchantProductListItemDto>>(result);
+		}
+
+		// MERCHANT – kendi ürün detay
+		public async Task<IDataResult<MerchantProductDetailDto>> GetMyProductDetailAsync(int productId)
+		{
+			// kullanıcı
+			var userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+				return new ErrorDataResult<MerchantProductDetailDto>(Messages.UserNotFound);
+
+			// ürün (owner check)
+			var p = await _productRepository.Query()
+				.Include(x => x.Category)
+				.Include(x => x.ProductImages)
+				.Include(x => x.ProductVariants)
+				.Where(x => x.Id == productId && x.AppUserId == userId)
+				.FirstOrDefaultAsync();
+
+			if (p is null)
+				return new ErrorDataResult<MerchantProductDetailDto>(Messages.ProductNotFound);
+
+			var dto = new MerchantProductDetailDto
+			{
+				Id = p.Id,
+				Name = p.Name,
+				Description = p.Description,
+				Gender = p.Gender.ToString(),
+				CategoryName = p.Category.Name,
+				Price = p.BasePrice,
+				IsActive = p.IsActive,
+				TotalStock = p.ProductVariants.Sum(v => v.Stock),
+				Images = p.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
+				Variants = p.ProductVariants
+					.OrderBy(v => v.Size).ThenBy(v => v.Color)
+					.Select(v => new ProductVariantRowDto { Id = v.Id, Size = v.Size, Color = v.Color, Stock = v.Stock })
+					.ToList()
+			};
+
+			// matrix (Size -> Colors)
+			dto.Matrix = p.ProductVariants
+				.GroupBy(v => v.Size)
+				.Select(g => new SizeNodeDto
+				{
+					Size = g.Key,
+					SizeTotalStock = g.Sum(x => x.Stock),
+					Colors = g.OrderBy(x => x.Color)
+							  .Select(x => new ColorStockDto { Color = x.Color, Stock = x.Stock })
+							  .ToList()
+				})
+				.OrderBy(x => x.Size)
+				.ToList();
+
+			return new SuccessDataResult<MerchantProductDetailDto>(dto);
+		}
+
+		// CUSTOMER – public ürün detay
+		public async Task<IDataResult<CustomerProductDetailDto>> GetPublicProductDetailAsync(int productId)
+		{
+			var p = await _productRepository.Query()
+				.Include(x => x.Category)
+				.Include(x => x.ProductImages)
+				.Include(x => x.ProductVariants)
+				.Where(x => x.Id == productId && x.IsActive) // sadece aktif
+				.FirstOrDefaultAsync();
+
+			if (p is null)
+				return new ErrorDataResult<CustomerProductDetailDto>(Messages.ProductNotFound);
+
+			var totalStock = p.ProductVariants.Sum(v => v.Stock);
+
+			var dto = new CustomerProductDetailDto
+			{
+				Id = p.Id,
+				Name = p.Name,
+				Description = p.Description,
+				Gender = p.Gender.ToString(),
+				CategoryName = p.Category.Name,
+				Price = p.BasePrice,
+				IsActive = p.IsActive,
+				Images = p.ProductImages.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl).ToList(),
+			};
+
+			// satılabilir kombinasyonlar (stok > 0)
+			var sellables = p.ProductVariants.Where(v => v.Stock > 0).ToList();
+
+			dto.AvailableSizes = sellables.Select(v => v.Size).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s).ToList();
+			dto.AvailableColors = sellables.Select(v => v.Color).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(c => c).ToList();
+
+			dto.SizeColorMatrix = sellables
+				.GroupBy(v => v.Size)
+				.Select(g => new SizeNodeDto
+				{
+					Size = g.Key,
+					SizeTotalStock = g.Sum(x => x.Stock),
+					Colors = g.OrderBy(x => x.Color)
+							  .Select(x => new ColorStockDto { Color = x.Color, Stock = x.Stock })
+							  .ToList()
+				})
+				.OrderBy(x => x.Size)
+				.ToList();
+
+			return new SuccessDataResult<CustomerProductDetailDto>(dto);
+		}
+	}
 }
