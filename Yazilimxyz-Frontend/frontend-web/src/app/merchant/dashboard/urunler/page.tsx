@@ -1,55 +1,117 @@
-// src/app/merchant/(dashboard)/urunler/page.tsx
+// src/app/merchant/dashboard/urunler/page.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+
+/* ========== Tipler ========== */
+type ApiEnvelope<T> = { data: T; success?: boolean; message?: string };
 
 type MerchantSelf = {
-  id: number;                 // Merchant Id (profile’dan gelecek)
+  id: number;
   companyName: string;
   iban: string;
   taxNumber: string;
   companyAddress: string;
   phone: string;
 };
-type ApiResponse<T> = { data: T; success?: boolean; message?: string };
 
-type Product = {
+type ProductListItem = {
   id: number;
   name: string;
-  price: number;
-  stock: number;
   isActive: boolean;
-  imageUrl?: string | null;
+  price?: number | null;
+  basePrice?: number | null;
+  categoryId?: number | null;
   categoryName?: string | null;
-  createdAt?: string | null;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-const PROFILE = '/api/merchant/profile';
-const PRODUCTS_BY_MERCHANT = (merchantId: number) => `/api/merchant/${merchantId}/products`;
+type Variant = {
+  id: number;
+  productId: number;
+  size?: string | null;
+  color?: string | null;
+  stock: number;
+};
 
-// helpers
-function isObj(x: unknown): x is Record<string, unknown> {
+type ProductRow = {
+  id: number;
+  name: string;
+  isActive: boolean;
+  categoryName?: string | null;
+  price?: number | null;
+  stockTotal: number;
+  imageUrl?: string | null;
+};
+
+type MainImageDto = { imageUrl?: string | null; image?: string | null };
+type ProductDetailed = { id: number; categoryId?: number | null; price?: number | null; basePrice?: number | null };
+
+type Category = {
+  id: number;
+  name?: string | null;
+  description?: string | null;
+};
+
+/* ========== Endpointler ========== */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+const PROFILE = '/api/Merchant/profile';
+const PRODUCTS_BY_MERCHANT = (merchantId: number) => `/api/Product/get-by-merchant/${merchantId}`;
+const VARIANTS_BY_PRODUCT = (productId: number) => `/api/ProductVariants/by-product/${productId}`;
+const IMAGE_MAIN_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}/main`; // fotoğraf altyapısı sonra güncellenecek
+const PRODUCT_DETAILED = (productId: number) => `/api/Product/${productId}/detailed`;
+const CATEGORY_LIST = '/api/Category';
+
+/* ========== Helpers ========== */
+function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null;
 }
+
 function unwrap<T>(raw: unknown): T {
-  return isObj(raw) && 'data' in raw ? (raw as ApiResponse<T>).data : (raw as T);
-}
-function getMsg(raw: unknown): string | undefined {
-  if (typeof raw === 'string') return raw;
-  if (isObj(raw) && typeof raw.message === 'string') return raw.message;
-  return undefined;
+  if (isObject(raw) && 'data' in raw) {
+    return (raw as ApiEnvelope<T>).data;
+  }
+  return raw as T;
 }
 
-export default function MerchantProductsPage() {
+function isCategoryArray(x: unknown): x is Category[] {
+  return Array.isArray(x) && x.every((c) => isObject(c) && typeof (c as Category).id === 'number');
+}
+
+function hasCategoryItems(x: unknown): x is { items: Category[] } {
+  return (
+    isObject(x) &&
+    'items' in x &&
+    isCategoryArray((x as { items: unknown }).items)
+  );
+}
+
+const sumStocks = (vs: Variant[]) =>
+  vs.reduce((s, v) => s + (Number.isFinite(v.stock) ? v.stock : 0), 0);
+
+/** Kategori sözlüğü {id -> name} */
+async function loadCategoryDict(api: AxiosInstance): Promise<Record<number, string>> {
+  const res = await api.get<ApiEnvelope<Category[] | { items: Category[] }> | Category[] | { items: Category[] }>(
+    CATEGORY_LIST
+  );
+  const raw = unwrap<Category[] | { items: Category[] }>(res.data);
+
+  const arr: Category[] = isCategoryArray(raw) ? raw : hasCategoryItems(raw) ? raw.items : [];
+  const dict: Record<number, string> = {};
+  for (const c of arr) dict[c.id] = String(c.name ?? '');
+  return dict;
+}
+
+/* ========== Sayfa ========== */
+export default function MerchantProductsListPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<ProductRow[]>([]);
+  const [apiTotal, setApiTotal] = useState<number>(0);
   const [msg, setMsg] = useState<string | null>(null);
-
-  const [products, setProducts] = useState<Product[]>([]);
 
   // UI state
   const [q, setQ] = useState('');
@@ -67,31 +129,85 @@ export default function MerchantProductsPage() {
     return inst;
   }, []);
 
-  // fetch products for current merchant
+  const getData = async <T,>(path: string) => {
+    const res = await api.get<ApiEnvelope<T> | T>(path);
+    return unwrap<T>(res.data);
+  };
+
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setMsg(null);
-        // 1) self profile -> merchantId
-        const meRes = await api.get<ApiResponse<MerchantSelf> | MerchantSelf>(PROFILE);
-        const me = unwrap<MerchantSelf>(meRes.data);
-        if (!me?.id) throw new Error('Merchant kimliği bulunamadı.');
 
-        // 2) products by merchant
-        const prRes = await api.get<ApiResponse<Product[]> | Product[]>(
-          PRODUCTS_BY_MERCHANT(me.id)
+        // 1) Merchant
+        const me = await getData<MerchantSelf>(PROFILE);
+
+        // 2) Ürün listesi
+        const base = await getData<ProductListItem[]>(PRODUCTS_BY_MERCHANT(me.id));
+        setApiTotal(base.length);
+
+        // 3) Kategori sözlüğü
+        const catDict = await loadCategoryDict(api);
+
+        // 4) Zenginleştirme (stok, görsel, kategori adı)
+        const enriched: ProductRow[] = await Promise.all(
+          base.map(async (p) => {
+            let stockTotal = 0;
+            let imageUrl: string | null = null;
+
+            try {
+              const [vs, main] = await Promise.all([
+                getData<Variant[]>(VARIANTS_BY_PRODUCT(p.id)),
+                getData<MainImageDto>(IMAGE_MAIN_BY_PRODUCT(p.id)),
+              ]);
+              stockTotal = sumStocks(vs);
+              imageUrl = main.imageUrl ?? main.image ?? null;
+            } catch {
+              /* görsel/variant hatası listeyi engellemesin */
+            }
+
+            // kategori adı
+            let catName: string | null = null;
+            let catId = typeof p.categoryId === 'number' ? p.categoryId : null;
+
+            if (catId == null) {
+              try {
+                const det = await getData<ProductDetailed>(PRODUCT_DETAILED(p.id));
+                catId = typeof det.categoryId === 'number' ? det.categoryId : null;
+              } catch {
+                /* yoksa boş bırak */
+              }
+            }
+
+            if (catId != null && catDict[catId]) catName = catDict[catId];
+            else if (p.categoryName) catName = p.categoryName ?? null;
+
+            const price = p.price ?? p.basePrice ?? null;
+
+            return {
+              id: p.id,
+              name: p.name,
+              isActive: Boolean(p.isActive),
+              categoryName: catName,
+              price,
+              stockTotal,
+              imageUrl,
+            };
+          })
         );
-        const list = unwrap<Product[]>(prRes.data);
+
         if (!alive) return;
-        setProducts(Array.isArray(list) ? list : []);
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          const code = err.response?.status;
-          if (code === 401) return router.replace('/merchant/giris');
-          setMsg(getMsg(err.response?.data) || `Hata: ${code ?? ''}`);
-        } else if (err instanceof Error) {
-          setMsg(err.message);
+        setRows(enriched);
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const code = error.response?.status;
+          if (code === 401) {
+            router.replace('/merchant/giris');
+            return;
+          }
+          const m = (error.response?.data as { message?: string } | undefined)?.message;
+          setMsg(m ?? `Hata: ${code ?? ''}`);
         } else {
           setMsg('Beklenmeyen bir hata oluştu.');
         }
@@ -99,33 +215,34 @@ export default function MerchantProductsPage() {
         if (alive) setLoading(false);
       }
     })();
+
     return () => {
       alive = false;
     };
   }, [api, router]);
 
-  // filter + paginate (client-side)
+  // filtre + sayfalama
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = term
-      ? products.filter((p) => {
-          const name = (p.name || '').toLowerCase();
-          const cat = (p.categoryName || '').toLowerCase();
-          return name.includes(term) || cat.includes(term);
-        })
-      : products;
+      ? rows.filter(
+          (r) =>
+            (r.name || '').toLowerCase().includes(term) ||
+            (r.categoryName || '').toLowerCase().includes(term)
+        )
+      : rows;
 
     const total = base.length;
     const maxPage = Math.max(1, Math.ceil(total / pageSize));
     const safePage = Math.min(page, maxPage);
     const start = (safePage - 1) * pageSize;
-    const items = base.slice(start, start + pageSize);
-
-    return { items, total, maxPage, page: safePage };
-  }, [products, q, page, pageSize]);
-
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(filtered.maxPage, p + 1));
+    return {
+      items: base.slice(start, start + pageSize),
+      total,
+      maxPage,
+      page: safePage,
+    };
+  }, [rows, q, page, pageSize]);
 
   if (loading) return <div className="text-slate-600 text-sm">Yükleniyor…</div>;
 
@@ -134,12 +251,18 @@ export default function MerchantProductsPage() {
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-2xl font-semibold text-slate-800">Ürünler</h1>
         <a
-          href="/merchant/urunler/yeni"
+          href="/merchant/dashboard/urunler/urunyeni"
           className="rounded-2xl px-4 py-2.5 bg-slate-800 text-white text-[15px] border border-slate-300 hover:opacity-90"
         >
           + Yeni Ürün
         </a>
       </div>
+
+      {msg && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          {msg}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
         {/* toolbar */}
@@ -172,18 +295,17 @@ export default function MerchantProductsPage() {
           </div>
         </div>
 
-        {/* table */}
+        {/* tablo */}
         <div className="overflow-x-auto">
           <table className="min-w-full text-[15px]">
             <thead>
               <tr className="text-left text-slate-500">
                 <th className="py-2.5 px-3">Ürün</th>
-                <th className="py-2.5 px-3">Kategori</th>
+                <th className="py-2.5 px-3">Kategori (Ad)</th>
                 <th className="py-2.5 px-3">Fiyat</th>
-                <th className="py-2.5 px-3">Stok</th>
+                <th className="py-2.5 px-3">Toplam Stok</th>
                 <th className="py-2.5 px-3">Durum</th>
-                <th className="py-2.5 px-3">Oluşturma</th>
-                <th className="py-2.5 px-3"></th>
+                <th className="py-2.5 px-3" />
               </tr>
             </thead>
             <tbody>
@@ -193,8 +315,14 @@ export default function MerchantProductsPage() {
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-md bg-slate-200 overflow-hidden flex items-center justify-center">
                         {p.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
+                          <Image
+                            src={p.imageUrl}
+                            alt={p.name}
+                            width={40}
+                            height={40}
+                            className="h-full w-full object-cover"
+                            unoptimized
+                          />
                         ) : (
                           <span className="text-xs text-slate-500">img</span>
                         )}
@@ -204,37 +332,32 @@ export default function MerchantProductsPage() {
                   </td>
                   <td className="py-3 px-3 text-slate-700">{p.categoryName ?? '-'}</td>
                   <td className="py-3 px-3 text-slate-700">
-                    {Number.isFinite(p.price) ? `${p.price.toLocaleString('tr-TR')} ₺` : '-'}
+                    {p.price != null ? `${p.price.toLocaleString('tr-TR')} ₺` : '-'}
                   </td>
-                  <td className="py-3 px-3">{p.stock}</td>
+                  <td className="py-3 px-3">{p.stockTotal}</td>
                   <td className="py-3 px-3">
                     <span
                       className={
                         'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ' +
-                        (p.isActive
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-200 text-slate-600')
+                        (p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600')
                       }
                     >
                       {p.isActive ? 'Aktif' : 'Pasif'}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-slate-600">
-                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString('tr-TR') : '-'}
-                  </td>
                   <td className="py-3 px-3 text-right">
-                    <a
-                      href={`/merchant/urunler/${p.id}`}
+                    <button
+                      onClick={() => router.push(`/merchant/dashboard/urunler/urundetay/${p.id}`)}
                       className="text-slate-700 hover:text-slate-900 underline-offset-2 hover:underline text-sm"
                     >
                       Düzenle
-                    </a>
+                    </button>
                   </td>
                 </tr>
               ))}
               {filtered.items.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-500">
+                  <td colSpan={6} className="py-10 text-center text-slate-500">
                     Kayıt bulunamadı.
                   </td>
                 </tr>
@@ -243,14 +366,14 @@ export default function MerchantProductsPage() {
           </table>
         </div>
 
-        {/* pagination */}
+        {/* sayfalama */}
         <div className="flex items-center justify-between mt-4 text-sm text-slate-600">
           <div>
-            Toplam <strong>{filtered.total}</strong> ürün
+            Toplam <strong>{q ? filtered.total : apiTotal}</strong> ürün
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={goPrev}
+              onClick={() => setPage((p0) => Math.max(1, p0 - 1))}
               disabled={filtered.page <= 1}
               className="px-3 py-1.5 rounded-lg border border-slate-300 disabled:opacity-50"
             >
@@ -260,7 +383,7 @@ export default function MerchantProductsPage() {
               {filtered.page} / {filtered.maxPage}
             </span>
             <button
-              onClick={goNext}
+              onClick={() => setPage((p0) => Math.min(filtered.maxPage, p0 + 1))}
               disabled={filtered.page >= filtered.maxPage}
               className="px-3 py-1.5 rounded-lg border border-slate-300 disabled:opacity-50"
             >
@@ -269,13 +392,6 @@ export default function MerchantProductsPage() {
           </div>
         </div>
       </div>
-
-      {/* hata mesajı */}
-      {msg && (
-        <div className="mt-4 text-sm text-red-600">
-          {msg}
-        </div>
-      )}
     </div>
   );
 }
