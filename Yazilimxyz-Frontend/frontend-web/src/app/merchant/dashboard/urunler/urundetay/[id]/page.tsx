@@ -177,6 +177,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="w-full">
+      {/* Ürünler listesi sayfasındaki hizaya benzer: sola yaslı, geniş; sağda nefes payı var */}
       <div className="max-w-[1400px] pl-6 pr-8">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-2xl font-semibold text-slate-800">Ürün Detay</h1>
@@ -190,6 +191,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         )}
 
         {detail && (
+          /* Sola yaslı geniş kart: sticky; içerik kart içinde scroll */
           <div
             className="
               w-full max-w-[1100px]
