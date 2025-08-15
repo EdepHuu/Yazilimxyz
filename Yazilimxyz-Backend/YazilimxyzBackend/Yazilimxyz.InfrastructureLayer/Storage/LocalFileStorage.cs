@@ -15,30 +15,56 @@ namespace Yazilimxyz.InfrastructureLayer.Storage
 
 		public async Task<FileSaveResult> SaveAsync(Stream stream, string originalFileName, string subFolder)
 		{
+			// --- subFolder güvenliği (../ vb. engelle)
+			var safeSub = (subFolder ?? string.Empty)
+				.Replace('\\', '/')
+				.Trim()
+				.TrimStart('/')
+				.TrimEnd('/');
+
+			if (safeSub.Split('/').Any(seg => seg == ".." || seg == "." || string.IsNullOrWhiteSpace(seg)))
+				throw new InvalidOperationException("Geçersiz alt klasör yolu.");
+
 			var webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
-			var uploadsRoot = Path.Combine(webRoot, "uploads", subFolder ?? string.Empty);
-			Directory.CreateDirectory(uploadsRoot);
+			var uploads = Path.Combine(webRoot, "uploads");
+			var targetDir = Path.Combine(uploads, safeSub);
+
+			Directory.CreateDirectory(targetDir);
 
 			var ext = Path.GetExtension(originalFileName);
-			var finalName = $"{Guid.NewGuid():N}{ext}".ToLowerInvariant();
-			var fullPath = Path.Combine(uploadsRoot, finalName);
+			if (string.IsNullOrWhiteSpace(ext)) ext = ".bin"; // güvenli varsayılan
+			var fileName = $"{Guid.NewGuid():N}{ext}".ToLowerInvariant();
 
+			var fullPath = Path.Combine(targetDir, fileName);
 			using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
 				await stream.CopyToAsync(fs);
 
-			var relative = $"/uploads/{subFolder}/{finalName}".Replace("\\", "/");
+			var relative = $"/uploads/{safeSub}/{fileName}".Replace("\\", "/");
+
 			return new FileSaveResult
 			{
-				FileName = finalName,
-				RelativePath = relative,
-				PublicUrl = relative // base URL'yi controller tarafında birleştiririz
+				FileName = fileName,
+				RelativePath = relative,     // ör: /uploads/merchant/5/products/12/abc.webp
+				PublicUrl = relative        // dışarıda base URL ile birleştirilebilir
 			};
 		}
 
 		public Task<bool> DeleteAsync(string relativePath)
 		{
+			if (string.IsNullOrWhiteSpace(relativePath))
+				return Task.FromResult(false);
+
+			// absolute URL geldiyse kırp
+			var pathPart = relativePath;
+			var idx = relativePath.IndexOf("/uploads/", StringComparison.OrdinalIgnoreCase);
+			if (idx >= 0) pathPart = relativePath.Substring(idx);
+
 			var webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
-			var fullPath = Path.Combine(webRoot, relativePath.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString()));
+			var fullPath = Path.Combine(
+				webRoot,
+				pathPart.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString())
+			);
+
 			if (File.Exists(fullPath))
 			{
 				File.Delete(fullPath);
