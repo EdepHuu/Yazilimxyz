@@ -23,17 +23,15 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<Category, ResultCategoryDto>()
 				.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count))
 				.ForMember(dest => dest.SubCategoryCount, opt => opt.MapFrom(src => src.SubCategories.Count));
-			CreateMap<CreateCategoryDto, Category>().ReverseMap();
-			CreateMap<UpdateCategoryDto, Category>().ReverseMap();
-			CreateMap<GetByIdCategoryDto, Category>().ReverseMap();
 
-            CreateMap<Category, ResultCategoryWithSubDto>()
+			CreateMap<Category, ResultCategoryWithSubDto>()
 				.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count))
 				.ForMember(dest => dest.SubCategoryCount, opt => opt.MapFrom(src => src.SubCategories.Count))
 				.ForMember(dest => dest.SubCategories, opt => opt.MapFrom(src => src.SubCategories));
 
 			CreateMap<Category, ResultCategoryHierarchyDto>()
-			.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count));
+				.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count));
+
 			// AutoMapper, Category'nin SubCategories ve ParentCategory özelliklerini 
 			// ResultCategoryHierarchyDto'nun aynı isimli özelliklerine otomatik olarak eşleştirecektir.
 			// Bu nedenle, SubCategories ve ParentCategory için ForMember kullanmaya gerek yoktur.

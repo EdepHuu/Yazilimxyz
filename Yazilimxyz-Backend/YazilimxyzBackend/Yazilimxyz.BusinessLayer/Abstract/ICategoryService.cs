@@ -5,7 +5,7 @@ namespace Yazilimxyz.BusinessLayer.Abstract
 {
     public interface ICategoryService
     {
-        Task<IDataResult<List<ResultCategoryDto>>> GetAllAsync();
+        Task<IDataResult<List<ResultCategoryDto>>> GetAllWithRelationsAsync();
         Task<IDataResult<ResultCategoryDto>> GetByIdAsync(int id);
         Task<IDataResult<List<ResultCategoryDto>>> GetActiveAsync();
         Task<IDataResult<List<ResultCategoryDto>>> GetParentCategoriesAsync();

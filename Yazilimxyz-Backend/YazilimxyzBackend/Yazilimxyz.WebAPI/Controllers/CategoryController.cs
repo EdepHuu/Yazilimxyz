@@ -20,7 +20,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		[HttpGet]
 		public async Task<IActionResult> GetAll()
 		{
-			var categories = await _categoryService.GetAllAsync();
+			var categories = await _categoryService.GetAllWithRelationsAsync();
 			return Ok(categories);
 		}
 
@@ -72,50 +72,50 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(new { message = "Kategori başarıyla silindi." });
 		}
 
-		//// GET: api/Category/active
-		//[HttpGet("active")]
-		//public async Task<IActionResult> GetActive()
-		//{
-		//	var categories = await _categoryService.GetActiveAsync();
-		//	return Ok(categories);
-		//}
+		// GET: api/Category/active
+		[HttpGet("active")]
+		public async Task<IActionResult> GetActive()
+		{
+			var categories = await _categoryService.GetActiveAsync();
+			return Ok(categories);
+		}
 
-		//// GET: api/Category/hierarchy
-		//[HttpGet("hierarchy")]
-		//public async Task<IActionResult> GetCategoryHierarchy()
-		//{
-		//	var categories = await _categoryService.GetCategoryHierarchyAsync();
-		//	return Ok(categories);
-		//}
+		// GET: api/Category/hierarchy
+		[HttpGet("hierarchy")]
+		public async Task<IActionResult> GetCategoryHierarchy()
+		{
+			var categories = await _categoryService.GetCategoryHierarchyAsync();
+			return Ok(categories);
+		}
 
-		//// GET: api/Category/parents
-		//[HttpGet("parents")]
-		//public async Task<IActionResult> GetParentCategories()
-		//{
-		//	var categories = await _categoryService.GetParentCategoriesAsync();
-		//	return Ok(categories);
-		//}
+		// GET: api/Category/parents
+		[HttpGet("parents")]
+		public async Task<IActionResult> GetParentCategories()
+		{
+			var categories = await _categoryService.GetParentCategoriesAsync();
+			return Ok(categories);
+		}
 
-		//// GET: api/Category/subcategories/{parentId}
-		//[HttpGet("subcategories/{parentId}")]
-		//public async Task<IActionResult> GetSubCategories(int parentId)
-		//{
-		//	var categories = await _categoryService.GetSubCategoriesAsync(parentId);
-		//	return Ok(categories);
-		//}
+		// GET: api/Category/subcategories/{parentId}
+		[HttpGet("subcategories/{parentId}")]
+		public async Task<IActionResult> GetSubCategories(int parentId)
+		{
+			var categories = await _categoryService.GetSubCategoriesAsync(parentId);
+			return Ok(categories);
+		}
 
-		//// GET: api/Category/withsubcategories/{id}
-		//[HttpGet("withsubcategories/{id}")]
-		//public async Task<IActionResult> GetWithSubCategories(int id)
-		//{
-		//	var category = await _categoryService.GetWithSubCategoriesAsync(id);
+		// GET: api/Category/withsubcategories/{id}
+		[HttpGet("withsubcategories/{id}")]
+		public async Task<IActionResult> GetWithSubCategories(int id)
+		{
+			var category = await _categoryService.GetWithSubCategoriesAsync(id);
 
-		//	if (category == null)
-		//	{
-		//		return NotFound();
-		//	}
+			if (category == null)
+			{
+				return NotFound();
+			}
 
-		//	return Ok(category);
-		//}
+			return Ok(category);
+		}
 	}
 }
