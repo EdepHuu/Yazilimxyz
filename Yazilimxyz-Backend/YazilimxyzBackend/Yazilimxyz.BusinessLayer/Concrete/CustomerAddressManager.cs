@@ -147,18 +147,32 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 		}
 
 		[CacheRemoveAspect("ICustomerAddressService.Get")]
-        public async Task<IResult> DeleteAsync(int id)
-        {
-            if (id <= 0)
-                return new ErrorResult(Messages.InvalidAddressId);
+		public async Task<IResult> DeleteAsync(int id)
+		{
+			if (id <= 0)
+				return new ErrorResult("Geçersiz adres ID.");
 
-            var existing = await _customerAddressRepository.GetByIdAsync(id);
-            if (existing == null)
-                return new ErrorResult(Messages.CustomerAddressNotFound);
+			var address = await _customerAddressRepository.GetByIdAsync(id);
+			if (address == null)
+				return new ErrorResult("Adres bulunamadı.");
 
-            await _customerAddressRepository.DeleteAsync(id);
+			bool wasDefault = address.IsDefault;
+			int customerId = address.CustomerId;
 
-            return new SuccessResult(Messages.CustomerAddressDeleted);
-        }
-    }
+			await _customerAddressRepository.DeleteAsync(id);
+
+			if (wasDefault)
+			{
+				var latestAddress = await _customerAddressRepository.GetLatestByCustomerIdAsync(customerId);
+
+				if (latestAddress != null)
+				{
+					latestAddress.IsDefault = true;
+					await _customerAddressRepository.UpdateAsync(latestAddress);
+				}
+			}
+
+			return new SuccessResult("Adres başarıyla silindi.");
+		}
+	}
 }

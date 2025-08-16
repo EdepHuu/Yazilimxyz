@@ -181,10 +181,15 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 
 
 			// CustomerAddress
-			CreateMap<ResultCustomerAddressDto, CustomerAddress>().ReverseMap();
-			CreateMap<CreateCustomerAddressDto, CustomerAddress>().ReverseMap();
 			CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
-			CreateMap<GetByIdCustomerAddressDto, CustomerAddress>().ReverseMap();
+			CreateMap<CustomerAddress, GetByIdCustomerAddressDto>()
+				.ForMember(dest => dest.CustomerFullName, opt => opt.MapFrom(src => src.Customer.AppUser.Name));
+
+			CreateMap<CustomerAddress, ResultCustomerAddressDto>()
+				.ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.AppUser.Name));
+
+			CreateMap<CreateMyCustomerAddressDto, CustomerAddress>().ReverseMap();
+
 
 			// AppUser
 			CreateMap<ResultAppUserDto, AppUser>().ReverseMap();

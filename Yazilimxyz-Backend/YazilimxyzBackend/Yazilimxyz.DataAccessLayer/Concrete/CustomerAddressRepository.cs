@@ -10,21 +10,21 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Concrete
 {
-    public class CustomerAddressRepository : Repository<CustomerAddress>, ICustomerAddressRepository
-    {
-        public CustomerAddressRepository(AppDbContext context) : base(context)
-        {
-        }
+	public class CustomerAddressRepository : Repository<CustomerAddress>, ICustomerAddressRepository
+	{
+		public CustomerAddressRepository(AppDbContext context) : base(context)
+		{
+		}
 
-        public async Task<IEnumerable<CustomerAddress>> GetByCustomerIdAsync(int customerId)
-        {
-            return await _dbSet.Where(a => a.CustomerId == customerId).ToListAsync();
-        }
+		public async Task<IEnumerable<CustomerAddress>> GetByCustomerIdAsync(int customerId)
+		{
+			return await _dbSet.Where(a => a.CustomerId == customerId).ToListAsync();
+		}
 
-        public async Task<CustomerAddress?> GetDefaultAddressAsync(int customerId)
-        {
-            return await _dbSet.FirstOrDefaultAsync(a => a.CustomerId == customerId && a.IsDefault);
-        }
+		public async Task<CustomerAddress?> GetDefaultAddressAsync(int customerId)
+		{
+			return await _dbSet.FirstOrDefaultAsync(a => a.CustomerId == customerId && a.IsDefault);
+		}
 
 		public async Task SetDefaultAddressAsync(int customerId, int addressId)
 		{
@@ -45,6 +45,14 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 				.ExecuteUpdateAsync(s => s.SetProperty(x => x.IsDefault, true));
 
 			await tx.CommitAsync();
+		}
+
+		public async Task<CustomerAddress?> GetLatestByCustomerIdAsync(int customerId)
+		{
+			return await _dbSet
+				.Where(a => a.CustomerId == customerId)
+				.OrderByDescending(a => a.CreatedAt)
+				.FirstOrDefaultAsync();
 		}
 	}
 }

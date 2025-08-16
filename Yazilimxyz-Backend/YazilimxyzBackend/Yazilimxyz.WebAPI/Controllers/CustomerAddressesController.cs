@@ -215,22 +215,24 @@ namespace Yazilimxyz.WebAPI.Controllers
 		[Authorize(Roles = "Customer,AppAdmin")]
 		public async Task<IActionResult> DeleteAddress(int id)
 		{
-			if (id <= 0) return Bad("Id 0'dan büyük olmalıdır.");
+			if (id <= 0)
+				return BadRequest("Id 0'dan büyük olmalıdır.");
 
 			var addr = await _addressService.GetByIdAsync(id);
-			if (!addr.Success || addr.Data is null) return NotF(addr.Message);
+			if (!addr.Success || addr.Data is null)
+				return NotFound(addr.Message);
 
 			if (!User.IsInRole("AppAdmin"))
 			{
 				var (ok, myId) = await GetCurrentCustomerIdAsync();
-				if (!ok) return Bad("Müşteri profili bulunamadı.");
-				if (myId != addr.Data.CustomerId) return Forb("Bu adreste işlem yapma yetkiniz yok.");
+				if (!ok) return BadRequest("Müşteri profili bulunamadı.");
+				if (myId != addr.Data.CustomerId) return Forbid("Bu adreste işlem yapma yetkiniz yok.");
 			}
 
-			var res = await _addressService.DeleteAsync(id);
-			if (!res.Success) return Bad(res.Message);
+			var result = await _addressService.DeleteAsync(id);
+			if (!result.Success) return BadRequest(result.Message);
 
-			return NoContent();
+			return Ok(new { message = result.Message });
 		}
 
 		// -------------------------------------------------
