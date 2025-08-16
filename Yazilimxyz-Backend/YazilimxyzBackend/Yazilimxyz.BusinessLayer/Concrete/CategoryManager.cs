@@ -20,29 +20,29 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             _mapper = mapper;
         }
 
-        [CacheAspect]
-        public async Task<IDataResult<List<ResultCategoryDto>>> GetAllAsync()
-        {
-            if (DateTime.Now.Hour == 1)
-                return new ErrorDataResult<List<ResultCategoryDto>>(Messages.TenanceTime);
+		[CacheAspect]
+		public async Task<IDataResult<List<ResultCategoryDto>>> GetAllWithRelationsAsync()
+		{
+			if (DateTime.Now.Hour == 1)
+				return new ErrorDataResult<List<ResultCategoryDto>>(Messages.TenanceTime);
 
-            var categories = await _categoryRepository.GetAllAsync();
-            var mapped = _mapper.Map<List<ResultCategoryDto>>(categories);
-            return new SuccessDataResult<List<ResultCategoryDto>>(mapped, Messages.CategoriesListed);
-        }
+			var categories = await _categoryRepository.GetAllWithRelationsAsync(); // Artık Include'lu geliyor
+			var mapped = _mapper.Map<List<ResultCategoryDto>>(categories);
+			return new SuccessDataResult<List<ResultCategoryDto>>(mapped, Messages.CategoriesListed);
+		}
 
-        [CacheAspect]
-        public async Task<IDataResult<ResultCategoryDto>> GetByIdAsync(int id)
-        {
-            var category = await _categoryRepository.GetByIdAsync(id);
-            if (category == null)
-                return new ErrorDataResult<ResultCategoryDto>(Messages.CategoryNotFound);
+		[CacheAspect]
+		public async Task<IDataResult<ResultCategoryDto>> GetByIdAsync(int id)
+		{
+			var category = await _categoryRepository.GetByIdWithRelationsAsync(id);
+			if (category == null)
+				return new ErrorDataResult<ResultCategoryDto>(Messages.CategoryNotFound);
 
-            var mapped = _mapper.Map<ResultCategoryDto>(category);
-            return new SuccessDataResult<ResultCategoryDto>(mapped);
-        }
+			var mapped = _mapper.Map<ResultCategoryDto>(category);
+			return new SuccessDataResult<ResultCategoryDto>(mapped);
+		}
 
-        [CacheAspect]
+		[CacheAspect]
         public async Task<IDataResult<List<ResultCategoryDto>>> GetActiveAsync()
         {
             var categories = await _categoryRepository.GetActiveAsync();
@@ -97,7 +97,13 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (dto.SortOrder < 0)
                 return new ErrorResult("Sıralama değeri negatif olamaz.");
 
-            if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId < 0)
+			var parentExists = await _categoryRepository.AnyAsync(c => c.Id == dto.ParentCategoryId);
+			if (!parentExists)
+			{
+				return new ErrorResult("Geçersiz ParentCategoryId. Böyle bir üst kategori bulunamadı.");
+			}
+
+			if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId < 0)
                 return new ErrorResult("Ana kategori Id negatif olamaz.");
 
             // İsim kontrolü (veritabanında sorgu)

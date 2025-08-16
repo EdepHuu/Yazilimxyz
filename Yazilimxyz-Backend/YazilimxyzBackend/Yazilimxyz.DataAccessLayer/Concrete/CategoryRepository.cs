@@ -22,41 +22,69 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
         {
             return await _dbSet.CountAsync();
         }
-        public async Task<IEnumerable<Category>> GetActiveAsync()
-        {
-            return await _dbSet.Where(c => c.IsActive).OrderBy(c => c.SortOrder).ToListAsync();
-        }
 
-        public async Task<IEnumerable<Category>> GetCategoryHierarchyAsync()
-        {
-            return await _dbSet
-                .Include(c => c.SubCategories.Where(sc => sc.IsActive))
-                .Where(c => c.ParentCategoryId == null && c.IsActive)
-                .OrderBy(c => c.SortOrder)
-                .ToListAsync();
-        }
+		public async Task<IEnumerable<Category>> GetAllWithRelationsAsync()
+		{
+			return await _dbSet
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.ToListAsync();
+		}
 
-        public async Task<IEnumerable<Category>> GetParentCategoriesAsync()
-        {
-            return await _dbSet
-                 .Where(c => c.ParentCategoryId == null && c.IsActive)
-                 .OrderBy(c => c.SortOrder)
-                 .ToListAsync();
-        }
+		public async Task<Category?> GetByIdWithRelationsAsync(int id)
+		{
+			return await _dbSet
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.FirstOrDefaultAsync(c => c.Id == id);
+		}
 
-        public async Task<IEnumerable<Category>> GetSubCategoriesAsync(int parentId)
-        {
-            return await _dbSet
-                .Where(c => c.ParentCategoryId == parentId && c.IsActive)
-                .OrderBy(c => c.SortOrder)
-                .ToListAsync();
-        }
+		public async Task<IEnumerable<Category>> GetActiveAsync()
+		{
+			return await _dbSet
+				.Where(c => c.IsActive)
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.OrderBy(c => c.SortOrder)
+				.ToListAsync();
+		}
 
-        public async Task<Category?> GetWithSubCategoriesAsync(int id)
-        {
-            return await _dbSet
-                .Include(c => c.SubCategories.Where(sc => sc.IsActive))
-                .FirstOrDefaultAsync(c => c.Id == id);
-        }
-    }
+		public async Task<IEnumerable<Category>> GetParentCategoriesAsync()
+		{
+			return await _dbSet
+				.Where(c => c.ParentCategoryId == null && c.IsActive)
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.OrderBy(c => c.SortOrder)
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<Category>> GetSubCategoriesAsync(int parentId)
+		{
+			return await _dbSet
+				.Where(c => c.ParentCategoryId == parentId && c.IsActive)
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.OrderBy(c => c.SortOrder)
+				.ToListAsync();
+		}
+
+		public async Task<Category?> GetWithSubCategoriesAsync(int id)
+		{
+			return await _dbSet
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.FirstOrDefaultAsync(c => c.Id == id);
+		}
+
+		public async Task<IEnumerable<Category>> GetCategoryHierarchyAsync()
+		{
+			return await _dbSet
+				.Where(c => c.ParentCategoryId == null && c.IsActive)
+				.Include(c => c.Products)
+				.Include(c => c.SubCategories.Where(sc => sc.IsActive))
+				.OrderBy(c => c.SortOrder)
+				.ToListAsync();
+		}
+	}
 }

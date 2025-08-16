@@ -8,14 +8,11 @@
         public string ImageUrl { get; set; }
         public bool IsActive { get; set; }
         public int SortOrder { get; set; }
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public int ProductCount { get; set; }
 
         // Alt kategorilerin listesi
         public List<ResultCategoryHierarchyDto> SubCategories { get; set; } = new();
-
-        // Üst kategorinin bilgisi
-        public ResultCategoryHierarchyDto ParentCategory { get; set; }
     }
 }
