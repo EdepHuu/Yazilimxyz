@@ -26,7 +26,14 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Product>> GetByCategoryIdAsync(int categoryId)
+		public async Task<IEnumerable<Product>> GetAllWithImagesAsync()
+		{
+			return await _dbSet
+				.Include(p => p.ProductImages)
+				.ToListAsync();
+		}
+
+		public async Task<IEnumerable<Product>> GetByCategoryIdAsync(int categoryId)
         {
             return await _dbSet
                 .Include(p => p.ProductImages)
@@ -71,7 +78,9 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
         public async Task<Product?> GetWithVariantsAsync(int id)
         {
             return await _dbSet
-                .Include(p => p.ProductVariants)
+                .Include(p => p.Merchant.AppUser.Name)
+                .Include(p => p.Category)
+				.Include(p => p.ProductVariants)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 

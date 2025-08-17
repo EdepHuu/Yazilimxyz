@@ -83,8 +83,7 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<UpdateProductImageDto, ProductImage>().ReverseMap();
 
 			CreateMap<ProductImage, ResultProductImageDto>()
-				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
-				.ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedAt));
+				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name));
 
 
 			CreateMap<ProductImage, GetByIdProductImageDto>()
@@ -150,7 +149,6 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			// ReverseMap gereksiz ve riskli: UI'dan geri map istenmiyor.
 			CreateMap<Merchant, GetByIdMerchantDto>()
 				.ForMember(d => d.AppUser, o => o.MapFrom(s => s.AppUser))            // EKLEDİM
-				.ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.AppUser.CreatedAt))  // EKLEDİM (AppUser’dan)
 				.ForMember(d => d.UpdatedDate, o => o.Ignore());                           // EKLEDİM (entity’de yoksa)
 
 			// AppUser -> ResultAppUserDto map’i lazım (GetByIdMerchantDto için)

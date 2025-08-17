@@ -8,8 +8,7 @@
         public int SortOrder { get; set; }
         public int ProductId { get; set; }
         public string ProductName { get; set; } // İlişkili ürün adı
-        public DateTime CreatedDate { get; set; } // BaseEntity'den gelen
+        public DateTime CreatedAt { get; set; } // BaseEntity'den gelen
         public DateTime? UpdatedDate { get; set; } // BaseEntity'den gelen
-        public bool IsActive { get; set; } // BaseEntity'den gelen
     }
 }

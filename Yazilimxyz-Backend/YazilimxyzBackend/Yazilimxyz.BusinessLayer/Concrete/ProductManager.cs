@@ -50,7 +50,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         [CacheAspect]
         public async Task<IDataResult<List<ResultProductDto>>> GetAllAsync()
         {
-            var products = await _productRepository.GetAllAsync();
+            var products = await _productRepository.GetAllWithImagesAsync();
             return new SuccessDataResult<List<ResultProductDto>>(
                 _mapper.Map<List<ResultProductDto>>(products),
                 Messages.ProductsListed);
@@ -156,41 +156,41 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         }
 
         [CacheRemoveAspect("IProductService.Get")]
-        public async Task<IResult> UpdateAsync(UpdateProductDto dto)
-        {
-            var userId = _httpContextAccessor.HttpContext?.User
-                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+		public async Task<IResult> UpdateAsync(UpdateProductDto dto)
+		{
+			var userId = _httpContextAccessor.HttpContext?.User
+				.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(userId))
-                return new ErrorResult(Messages.UserNotFound);
+			if (string.IsNullOrEmpty(userId))
+				return new ErrorResult("Kullanıcı bilgisi alınamadı.");
 
-            var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
-            if (merchant == null)
-                return new ErrorResult(Messages.MerchantNotFound);
+			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+			if (merchant == null)
+				return new ErrorResult("Satıcı bulunamadı.");
 
-            var product = await _productRepository.GetByIdAsync(dto.Id);
-            if (product == null)
-                return new ErrorResult(Messages.ProductNotFound);
+			var product = await _productRepository.GetByIdAsync(dto.Id);
+			if (product == null)
+				return new ErrorResult("Güncellenmek istenen ürün bulunamadı.");
 
-            if (product.AppUserId != merchant.AppUserId)
-                return new ErrorResult(Messages.UnauthorizedProductUpdate);
+			if (product.AppUserId != merchant.AppUserId)
+				return new ErrorResult("Bu ürünü güncelleme yetkiniz bulunmamaktadır.");
 
-            if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
-                return new ErrorResult(Messages.InvalidGenderType);
+			if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
+				return new ErrorResult("Geçersiz bir cinsiyet türü gönderildi.");
 
-            if (dto.BasePrice <= 0)
-                return new ErrorResult(Messages.InvalidProductPrice);
+			if (dto.BasePrice <= 0)
+				return new ErrorResult("Ürün fiyatı 0 veya daha düşük olamaz.");
 
-            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
-            if (category == null)
-                return new ErrorResult(Messages.CategoryNotFound);
+			var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
+			if (category == null)
+				return new ErrorResult($"Kategori bulunamadı. (Kategori ID: {dto.CategoryId})");
 
-            _mapper.Map(dto, product);
-            await _productRepository.UpdateAsync(product);
-            return new SuccessResult(Messages.ProductUpdated);
-        }
+			_mapper.Map(dto, product);
+			await _productRepository.UpdateAsync(product);
+			return new SuccessResult("Ürün başarıyla güncellendi.");
+		}
 
-        [CacheRemoveAspect("IProductService.Get")]
+		[CacheRemoveAspect("IProductService.Get")]
         public async Task<IResult> DeleteAsync(int id)
         {
             var userId = _httpContextAccessor.HttpContext?.User

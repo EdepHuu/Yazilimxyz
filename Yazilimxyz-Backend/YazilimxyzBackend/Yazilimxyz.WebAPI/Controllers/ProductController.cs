@@ -45,41 +45,6 @@ namespace Yazilimxyz.WebAPI.Controllers
             return Ok(result);
         }
 
-        [HttpGet("get-by-id/{productId}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetProductByIdAsync(int productId)
-        {
-            var result = await _productService.GetByIdAsync(productId);
-            if (!result.Success || result.Data == null)
-                return NotFound("Ürün bulunamadı.");
-
-            return Ok(result.Data);
-        }
-
-        [HttpGet("get-by-category/{categoryId}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetByCategoryAsync(int categoryId)
-        {
-            var result = await _productService.GetByCategoryIdAsync(categoryId);
-            return Ok(result);
-        }
-
-        [HttpGet("get-by-merchant/{merchantId}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetByMerchantAsync(int merchantId)
-        {
-            var result = await _productService.GetByMerchantIdAsync(merchantId);
-            return Ok(result);
-        }
-
-        [HttpGet("get-by-gender/{gender}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetByGenderAsync(GenderType gender)
-        {
-            var result = await _productService.GetByGenderAsync(gender);
-            return Ok(result);
-        }
-
         [HttpGet("search")]
         [AllowAnonymous]
         public async Task<IActionResult> SearchAsync([FromQuery] string term)
@@ -139,35 +104,42 @@ namespace Yazilimxyz.WebAPI.Controllers
             return Ok(new { message = "Ürün başarıyla eklendi." });
         }
 
-        [HttpPut("update")]
-        [Authorize(Roles = "Merchant,AppAdmin")]
-        public async Task<IActionResult> UpdateProductAsync([FromBody] UpdateProductDto dto)
-        {
-            // (mevcut validasyonlar)
-            var category = await _categoryService.GetByIdAsync(dto.CategoryId);
-            if (category == null)
-                return BadRequest("Kategori bulunamadı.");
+		[HttpPut("update")]
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> UpdateProductAsync([FromBody] UpdateProductDto dto)
+		{
+			// 1. Kategori kontrolü
+			var category = await _categoryService.GetByIdAsync(dto.CategoryId);
+			if (category == null)
+				return BadRequest(new { message = "Kategori bulunamadı." });
 
-            var existingResult = await _productService.GetDetailedAsync(dto.Id);
-            if (!existingResult.Success || existingResult.Data == null)
-                return NotFound("Güncellenecek ürün bulunamadı.");
+			// 2. Ürün var mı
+			var existingResult = await _productService.GetDetailedAsync(dto.Id);
+			if (!existingResult.Success || existingResult.Data == null)
+				return NotFound(new { message = "Güncellenecek ürün bulunamadı." });
 
-            var existing = existingResult.Data; // DTO
+			var existing = existingResult.Data;
 
-            // develop tarafında kontrol satırları varsa derleme hatasına düşmemesi için merchant'ı al
-            if (User.IsInRole("Merchant"))
-            {
-                var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
-                if (merchant != null && existing.MerchantId != merchant.Id)
-                    return StatusCode(StatusCodes.Status403Forbidden, "Sadece kendi ürününüzü güncelleyebilirsiniz.");
-            }
+			// 3. Sadece merchant ise sahiplik kontrolü
+			if (User.IsInRole("Merchant"))
+			{
+				var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+				var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
 
-            await _productService.UpdateAsync(dto);
-            return Ok(new { message = "Ürün başarıyla güncellendi." });
-        }
+				if (merchant != null && existing.MerchantId != merchant.Id)
+					return StatusCode(StatusCodes.Status403Forbidden,
+						new { message = "Sadece kendi ürününüzü güncelleyebilirsiniz." });
+			}
 
-        [HttpDelete("delete/{productId}")]
+			// 4. Servisten dönen sonucu kontrol et
+			var result = await _productService.UpdateAsync(dto);
+			if (!result.Success)
+				return BadRequest(new { message = result.Message });
+
+			return Ok(new { message = result.Message });
+		}
+
+		[HttpDelete("delete/{productId}")]
         [Authorize(Roles = "Merchant,AppAdmin")]
         public async Task<IActionResult> DeleteProductAsync(int productId)
         {
@@ -253,12 +225,53 @@ namespace Yazilimxyz.WebAPI.Controllers
             return Ok(res.Data);
         }
 
-		[HttpGet("filter-options")]
-		[ProducesResponseType(typeof(ProductFilterOptionsDto), StatusCodes.Status200OK)]
-		public async Task<IActionResult> GetFilterOptions()
-		{
-			var result = await _productService.GetFilterOptionsAsync();
-			return Ok(result);
-		}
-	}
+        [HttpGet("filter-options")]
+        [ProducesResponseType(typeof(ProductFilterOptionsDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFilterOptions()
+        {
+            var result = await _productService.GetFilterOptionsAsync();
+            return Ok(result);
+        }
+
+        //Kontrol edilmesi lazım. İsteğe bağlı eklenebilir.
+
+        /*
+
+        //[HttpGet("get-by-id/{productId}")]
+		//[AllowAnonymous]
+		//public async Task<IActionResult> GetProductByIdAsync(int productId)
+		//{
+		//    var result = await _productService.GetByIdAsync(productId);
+		//    if (!result.Success || result.Data == null)
+		//        return NotFound("Ürün bulunamadı.");
+
+		//    return Ok(result.Data);
+		//}
+
+		//[HttpGet("get-by-category/{categoryId}")]
+		//[AllowAnonymous]
+		//public async Task<IActionResult> GetByCategoryAsync(int categoryId)
+		//{
+		//    var result = await _productService.GetByCategoryIdAsync(categoryId);
+		//    return Ok(result);
+		//}
+
+		//[HttpGet("get-by-merchant/{merchantId}")]
+		//[AllowAnonymous]
+		//public async Task<IActionResult> GetByMerchantAsync(int merchantId)
+		//{
+		//    var result = await _productService.GetByMerchantIdAsync(merchantId);
+		//    return Ok(result);
+		//}
+
+		//[HttpGet("get-by-gender/{gender}")]
+		//[AllowAnonymous]
+		//public async Task<IActionResult> GetByGenderAsync(GenderType gender)
+		//{
+		//    var result = await _productService.GetByGenderAsync(gender);
+		//    return Ok(result);
+		//}
+
+		*/
+    }
 }
