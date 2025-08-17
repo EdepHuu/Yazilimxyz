@@ -25,5 +25,6 @@ namespace Yazilimxyz.BusinessLayer.Abstract
 		Task<IResult> CreateAsync(CreateProductDto dto);
         Task<IResult> UpdateAsync(UpdateProductDto dto);
         Task<IResult> DeleteAsync(int id);
-    }
+		Task<ProductFilterOptionsDto> GetFilterOptionsAsync();
+	}
 }

@@ -252,5 +252,13 @@ namespace Yazilimxyz.WebAPI.Controllers
             if (!res.Success) return NotFound(res.Message);
             return Ok(res.Data);
         }
-    }
+
+		[HttpGet("filter-options")]
+		[ProducesResponseType(typeof(ProductFilterOptionsDto), StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetFilterOptions()
+		{
+			var result = await _productService.GetFilterOptionsAsync();
+			return Ok(result);
+		}
+	}
 }
