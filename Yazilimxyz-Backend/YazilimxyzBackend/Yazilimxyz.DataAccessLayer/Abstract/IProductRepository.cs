@@ -19,5 +19,6 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task<Product?> GetDetailedAsync(int id);
         Task<IEnumerable<Product>> SearchAsync(string searchTerm);
 		IQueryable<Product> Query(); // AsNoTracking temel sorgu (istersen)
+		Task<IEnumerable<Product>> GetAllWithImagesAsync();
 	}
 }

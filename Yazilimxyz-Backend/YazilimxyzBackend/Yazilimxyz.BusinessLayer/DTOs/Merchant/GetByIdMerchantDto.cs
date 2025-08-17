@@ -12,7 +12,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Merchant
         public string TaxNumber { get; set; }
         public string CompanyAddress { get; set; }
         public string Phone { get; set; }
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedDate { get; set; }
     }
 }

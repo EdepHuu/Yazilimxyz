@@ -8,8 +8,7 @@
         public string Size { get; set; }
         public string Color { get; set; }
         public int Stock { get; set; }
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedDate { get; set; }
-        public bool IsActive { get; set; }
     }
 }

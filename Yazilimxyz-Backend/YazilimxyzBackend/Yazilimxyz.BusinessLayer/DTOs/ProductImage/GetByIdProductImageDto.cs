@@ -10,7 +10,7 @@
         public string ProductName { get; set; }
         public string ProductCode { get; set; } // Ürün kodu
         public decimal? ProductPrice { get; set; } // Ürün fiyatı
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public bool IsActive { get; set; }
     }

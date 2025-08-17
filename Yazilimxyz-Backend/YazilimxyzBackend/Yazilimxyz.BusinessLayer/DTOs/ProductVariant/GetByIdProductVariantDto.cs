@@ -17,7 +17,7 @@
         public int Stock { get; set; }
 
         // Base Entity bilgileri
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public bool IsActive { get; set; }
 
