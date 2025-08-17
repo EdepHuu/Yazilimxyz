@@ -1,54 +1,88 @@
 "use client";
 
-import { FavoriteIcon, SearchIcon, ShopIcon, UserIcon } from "@/components/customer/icons/icon";
+import {
+  FavoriteIcon,
+  SearchIcon,
+  ShopIcon,
+  UserIcon,
+} from "@/components/customer/icons/icon";
+import { fetchListCategory } from "@/lib/customerApi";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const navLinks = ["Tüm Kategoriler", "Kadın", "Erkek", "Çocuk", "Outlet"];
 
+interface CategoryNameProps {
+  description: string;
+  id: number;
+  imageUrl: string;
+  name: string;
+}
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [categoryName, setCategoryName] = useState<CategoryNameProps[]>([]);
   const toggleMenu = () => {
     setIsOpen((prev) => !prev);
   };
+
+  useEffect(() => {
+    async function getListCategory() {
+      try {
+        const fetchedListCategory = await fetchListCategory();
+        const fetchData = fetchedListCategory.data;
+        console.log("category", fetchData);
+
+        setCategoryName(fetchData);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    getListCategory();
+  }, []);
+
   return (
     <>
-      <nav className="container hidden md:flex h-16 items-center justify-between">
-        <div className="flex space-x-2 md:space-x-4 lg:space-x-8">
-          {navLinks.map((link, index) => (
+     <nav className="fixed top-0 left-0 w-full z-50 bg-white shadow flex flex-col h-20 py-2 items-center justify-between">
+      <div className="container">
+          <div className="flex justify-between w-full">
+          <div className="text-xl font-bold tracking-wide text-gray-800">
+            ShopEase
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div className="relative w-full">
+              <div className="absolute inset-y-0 right-0 pr-2 flex items-center ">
+                <SearchIcon className="w-3 h-3 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="arama yap"
+                className="w-full pl-2 pr-8 py-2 border-none bg-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+              />
+            </div>
+            <Link href="/customer/giris">
+              <UserIcon />
+            </Link>
+            <Link href="/customer/sepet">
+              <ShopIcon />
+            </Link>
+          </div>
+        </div>
+
+        <div className="flex justify-between w-full pt-2 space-x-2 md:space-x-4 lg:space-x-8">
+          {categoryName.map((link) => (
             <Link
-              key={index}
-              href={`/customer/${link.toLowerCase().replace(/\s+/g, "-")}`}
+              key={link.id}
+              href={`/customer/${link.name.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <span className="heading-sm-3 md:heading-md-4 cursor-pointer">
-                {link}
+                {link.name}
               </span>
             </Link>
           ))}
         </div>
-
-        <div className="text-xl font-bold tracking-wide text-gray-800">
-          ShopEase
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="relative w-full">
-            <div className="absolute inset-y-0 right-0 pr-2 flex items-center ">
-              <SearchIcon className="w-3 h-3 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="arama yap"
-              className="w-full pl-2 pr-8 py-2 border-none bg-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-            />
-          </div>
-          <Link href="/customer/giris">
-            <UserIcon />
-          </Link>
-          <Link href="/customer/sepet">
-            <ShopIcon />
-          </Link>
-        </div>
+      </div>
       </nav>
 
       <nav className="mb-30 md:hidden flex flex-col">
@@ -92,15 +126,17 @@ export default function Navbar() {
                 ShopEase
               </div>
               <div className="flex flex-col gap-4 mt-12">
-                {navLinks.map((link, index) => (
+                {categoryName.map((link, index) => (
                   <Link
                     key={index}
-                    href={`/customer/${link.toLowerCase().replace(/\s+/g, "-")}`}
+                    href={`/customer/${link.name
+                      .toLowerCase()
+                      .replace(/\s+/g, "-")}`}
                     onClick={() => setIsOpen(false)}
                     className="bg-gray-200 p-3 rounded-xl"
                   >
                     <span className="text-md font-semibold text-gray-800 hover:underline">
-                      {link}
+                      {link.name}
                     </span>
                   </Link>
                 ))}

@@ -32,7 +32,7 @@ export default function RootLayout({
       >
         <CartProvider>
           {!isAdminRoute && <Navbar />}
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pt-20">{children}</main>
           {!isAdminRoute && <Footer />}
         </CartProvider>
       </body>
