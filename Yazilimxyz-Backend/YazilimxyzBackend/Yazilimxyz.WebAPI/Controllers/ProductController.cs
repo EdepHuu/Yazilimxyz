@@ -189,7 +189,7 @@ namespace Yazilimxyz.WebAPI.Controllers
             return Ok(new { message = "Ürün başarıyla silindi." });
         }
 
-        [HttpPost("Filter")]
+        [HttpGet("Filter")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(PagedResult<ProductListItemDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
