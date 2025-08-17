@@ -2,7 +2,8 @@
 import Accordion from "@/components/customer/Accordion";
 import ProductCard from "@/components/customer/ProductCard";
 import { SearchGrayIcon } from "@/components/customer/icons/icon";
-import React, { useState } from "react";
+import { fetchListProduct } from "@/lib/customerApi";
+import React, { useEffect, useState } from "react";
 
 interface SizeOption {
   id: number;
@@ -28,64 +29,75 @@ interface PriceOption {
   max: number;
 }
 
-const products = [
-  {
-    id: 1,
-    title: "Loose Straight Jean",
-    colors: "Açık mavi",
-    price: 1000,
-    image: "/product-img-1.jpg",
-  },
-  {
-    id: 2,
-    title: "Loose Straight Jean",
-    colors: "Koyu mavi",
-    price: 1050,
-    image: "/product-img-2.jpg",
-  },
-  {
-    id: 3,
-    title: "Siyah Deri Kol Çantası",
-    colors: "Siyah",
-    price: 980,
-    image: "/product-img-3.jpg",
-  },
-  {
-    id: 4,
-    title: "Kırmızı Güneş Gözlüğü",
-    colors: "Kırmızı",
-    price: 1100,
-    image: "/product-img-4.jpg",
-  },
-  {
-    id: 5,
-    title: "Turuncu Sweatshirt",
-    colors: "Turuncu",
-    price: 950,
-    image: "/product-img-5.jpg",
-  },
-  {
-    id: 6,
-    title: "Lacivert Pileli Uzun Etek",
-    colors: "Lacivert",
-    price: 1020,
-    image: "/product-img-6.jpg",
-  },
-  {
-    id: 7,
-    title: "Beyaz Spor Ayakkabı",
-    colors: "Beyaz",
-    price: 1080,
-    image: "/product-img-7.jpg",
-  },
-  {
-    id: 8,
-    title: "Oversize Bej Kaban",
-    colors: "Bej",
-    price: 990,
-    image: "/product-img-8.jpg",
-  },
-];
+interface Product {
+  id: number;
+    name: string;
+    description: string;
+    basePrice: number;
+    gender: number;
+    isActive: boolean;
+    mainPhoto: string;
+}
+
+
+// const products = [
+//   {
+//     id: 1,
+//     title: "Loose Straight Jean",
+//     colors: "Açık mavi",
+//     price: 1000,
+//     image: "/product-img-1.jpg",
+//   },
+//   {
+//     id: 2,
+//     title: "Loose Straight Jean",
+//     colors: "Koyu mavi",
+//     price: 1050,
+//     image: "/product-img-2.jpg",
+//   },
+//   {
+//     id: 3,
+//     title: "Siyah Deri Kol Çantası",
+//     colors: "Siyah",
+//     price: 980,
+//     image: "/product-img-3.jpg",
+//   },
+//   {
+//     id: 4,
+//     title: "Kırmızı Güneş Gözlüğü",
+//     colors: "Kırmızı",
+//     price: 1100,
+//     image: "/product-img-4.jpg",
+//   },
+//   {
+//     id: 5,
+//     title: "Turuncu Sweatshirt",
+//     colors: "Turuncu",
+//     price: 950,
+//     image: "/product-img-5.jpg",
+//   },
+//   {
+//     id: 6,
+//     title: "Lacivert Pileli Uzun Etek",
+//     colors: "Lacivert",
+//     price: 1020,
+//     image: "/product-img-6.jpg",
+//   },
+//   {
+//     id: 7,
+//     title: "Beyaz Spor Ayakkabı",
+//     colors: "Beyaz",
+//     price: 1080,
+//     image: "/product-img-7.jpg",
+//   },
+//   {
+//     id: 8,
+//     title: "Oversize Bej Kaban",
+//     colors: "Bej",
+//     price: 990,
+//     image: "/product-img-8.jpg",
+//   },
+// ];
 
 const sizes: SizeOption[] = [
   { id: 1, label: "XS" },
@@ -134,6 +146,8 @@ function UrunlerPage() {
   const [selectedPriceId, setSelectedPriceId] = useState<number | null>(null);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [products, setProduct] = useState<Product[]>([]);
+  // const [filtered, setFiltered]= useState();
 
   const toggleColor = (id: number) => {
     setSelectedColors((prev) =>
@@ -150,7 +164,7 @@ function UrunlerPage() {
   const handleManualInput = (type: "min" | "max", value: string) => {
     if (type === "min") setMinPrice(value);
     if (type === "max") setMaxPrice(value);
-    setSelectedPriceId(null); 
+    setSelectedPriceId(null);
   };
 
   const handleApply = () => {
@@ -161,6 +175,34 @@ function UrunlerPage() {
       console.log("Manuel aralık:", minPrice, "-", maxPrice);
     }
   };
+
+  useEffect(() => {
+    async function getListProduct() {
+      try {
+        const fetchedListProduct = await fetchListProduct();
+        const fetchData = fetchedListProduct.data;
+        console.log("product",fetchData)
+        setProduct(fetchData);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    getListProduct();
+  }, []);
+
+  //  useEffect(() => {
+  //   async function getListFilter() {
+  //     try {
+  //       const fetchedListFilter = await fetchListFilter();
+  //       const fetchData = fetchedListFilter.data;
+  //       console.log("filter",fetchData)
+  //       setFiltered(fetchData);
+  //     } catch (err) {
+  //       console.log(err);
+  //     }
+  //   }
+  //   getListFilter();
+  // }, []);
 
   return (
     <>

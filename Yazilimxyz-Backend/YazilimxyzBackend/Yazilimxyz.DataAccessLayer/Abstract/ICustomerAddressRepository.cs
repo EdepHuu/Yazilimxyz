@@ -12,5 +12,6 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task<IEnumerable<CustomerAddress>> GetByCustomerIdAsync(int customerId);
         Task<CustomerAddress?> GetDefaultAddressAsync(int customerId);
         Task SetDefaultAddressAsync(int customerId, int addressId);
-    }
+		Task<CustomerAddress?> GetLatestByCustomerIdAsync(int customerId);
+	}
 }
