@@ -36,21 +36,21 @@ function ProductCard({ product }: ProductCardProps) {
     router.push("/customer/sepetim");
   };
 
+  const imageUrl = product.mainPhoto
+    ? `${API_BASE}${product.mainPhoto}`
+    : "/placeholder-image.jpg";
+
   return (
     <div className="group flex flex-col p-2">
       <Link href={`/customer/urunDetay/${product.id}`}>
         <div className="overflow-hidden">
-          {/* <Image
-            src={
-              product.mainPhoto
-                ? `${API_BASE}${product.mainPhoto}`
-                : "/placeholder-image.jpg"
-            }
+          <img
+            src={imageUrl}
             alt={product.name}
             width={442}
             height={442}
-            className="w-full h-[320px] object-fill"
-          /> */}
+            className="w-full h-[320px] object-cover"
+          />
 
           <div className="flex justify-between items-center p-2">
             <div>

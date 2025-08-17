@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
-import { fetchListProductDetail } from "@/lib/customerApi";
+import { API_BASE, fetchListProductDetail } from "@/lib/customerApi";
 // const products = [
 //   {
 //     id: 1,
@@ -194,21 +194,21 @@ export default function ProductDetailPage() {
 
     router.push("/customer/sepetim");
   };
-
+  
   return (
     <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8">
       <div className="flex-1">
-        <div className="grid grid-cols-2 gap-4">
-          {/* {product.images.map((img, index) => (
-            <Image
+        <div className="grid  gap-4">
+           {product.images.map((img, index) => (
+            <img
               key={index}
-              src={img}
+              src={img ? `${API_BASE}${img}` : "/placeholder-image.jpg"}
               alt={product.description}
               width={500}
               height={600}
-              className="rounded"
+             className={`rounded object-cover ${index === 0 ? "w-full h-[500px]" : "w-50 h-52"}`}
             />
-          ))} */}
+          ))} 
         </div>
       </div>
       <div className="flex-1 flex flex-col gap-4">
