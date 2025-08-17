@@ -274,5 +274,5 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 		*/
     }
-	}
 }
+
