@@ -57,8 +57,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (dto == null)
                 return new ErrorResult("Veri boş olamaz.");
 
-            if (dto.OrderId <= 0)
-                return new ErrorResult("Geçersiz OrderId.");
 
             if (dto.ProductId <= 0)
                 return new ErrorResult("Geçersiz ProductId.");

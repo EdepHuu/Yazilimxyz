@@ -104,14 +104,11 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<GetByIdOrderDto, Order>().ReverseMap();
 
             CreateMap<Order, ResultOrderWithItemsDto>()
-				.ForMember(dest => dest.StatusText, opt => opt.MapFrom(src => src.Status.ToString()))
-				.ForMember(dest => dest.PaymentStatusText, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
 				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems));
 
             // OrderItem (Sadece tek yönlü, reverseMap yok!)
             CreateMap<OrderItem, ResultOrderItemDto>()
 				.ForMember(dest => dest.OrderItemId, opt => opt.MapFrom(src => src.OrderItemId))
-				.ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
 				.ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
 				.ForMember(dest => dest.ProductVariantId, opt => opt.MapFrom(src => src.ProductVariantId))
 				.ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
