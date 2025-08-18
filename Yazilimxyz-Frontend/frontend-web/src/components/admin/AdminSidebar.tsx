@@ -1,162 +1,376 @@
-'use client'; // Bu bileşenin client-side (tarayıcıda çalışan) bir React bileşeni olduğunu belirtir.
+import React, { useState, ReactNode } from 'react';
 
-import React from 'react';
-// Next.js yönlendirme ve mevcut URL yolunu almak için hook'ları import ediyoruz.
-import { useRouter, usePathname } from 'next/navigation';
+// Sidebar Menu Items with corresponding inline SVG icons
+const sidebarMenuItems = [
+  {
+    page: 'panel',
+    label: 'Kontrol Paneli',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+      </svg>
+    )
+  },
+  {
+    page: 'products',
+    label: 'Ürün Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M16 6.5V2l5 5-5 5V7.5M10.9 9.1 5.5 14.5m5.4 5.4-5.4-5.4m0 0a3 3 0 1 0-4.2-4.2M5.5 14.5a3 3 0 1 0 4.2 4.2"></path>
+      </svg>
+    )
+  },
+  {
+    page: 'orders',
+    label: 'Sipariş Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <circle cx="8" cy="21" r="1"></circle>
+        <circle cx="19" cy="21" r="1"></circle>
+        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+      </svg>
+    )
+  },
+  {
+    page: 'users',
+    label: 'Kullanıcı Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M14 19a6 6 0 0 0-12 0"></path>
+        <circle cx="8" cy="9" r="4"></circle>
+        <path d="M22 19a6 6 0 0 0-12 0"></path>
+        <circle cx="16" cy="9" r="4"></circle>
+      </svg>
+    )
+  },
+  {
+    page: 'categories',
+    label: 'Kategori Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+        <path d="M8 7h6"></path>
+        <path d="M8 11h8"></path>
+      </svg>
+    )
+  },
+  {
+    page: 'sellers',
+    label: 'Satıcı Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="m2 7 4.41-4.41A2 2 0 0 1 7.41 2h9.18a2 2 0 0 1 1.4.59L22 7"></path>
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+        <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
+        <path d="M15 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path>
+      </svg>
+    )
+  },
+  {
+    page: 'brands',
+    label: 'Marka Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M9 5H2.828A2 2 0 0 0 1.414 6.414L8.414 13.414A2 2 0 0 0 9.828 14.828L16.828 21.828A2 2 0 0 0 18.242 22.56L22.586 18.242A2 2 0 0 0 22.56 16.828L15.56 9.828A2 2 0 0 0 14.146 8.414L7.146 1.414A2 2 0 0 0 5.732 1.414L1.414 5.732A2 2 0 0 0 2.828 7.146L9 5Z"></path>
+        <circle cx="8" cy="8" r="1"></circle>
+      </svg>
+    )
+  },
+  {
+    page: 'reports',
+    label: 'İstatistik & Raporlama',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <line x1="12" x2="12" y1="20" y2="10"></line>
+        <line x1="18" x2="18" y1="20" y2="4"></line>
+        <line x1="6" x2="6" y1="20" y2="16"></line>
+      </svg>
+    )
+  },
+  {
+    page: 'reviews',
+    label: 'Yorum ve Değerlendirme',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        <line x1="8" x2="8" y1="12" y2="12"></line>
+        <line x1="12" x2="12" y1="12" y2="12"></line>
+        <line x1="16" x2="16" y1="12" y2="12"></line>
+      </svg>
+    )
+  },
+  {
+    page: 'payments',
+    label: 'Fatura ve Ödeme',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M12 21.41a2 2 0 0 1-2 0l-5-5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7.41a2 2 0 0 1-2 0l-5 5a2 2 0 0 1-2 0Z"></path>
+        <path d="m14 14-2 2-2-2"></path>
+        <path d="M8 10h8"></path>
+      </svg>
+    )
+  },
+  {
+    page: 'settings',
+    label: 'Genel Ayarlar',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.39a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.73l-.15.1a2 2 0 0 0-.73 2.73l.22.39a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0-2.73l.15-.1a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    )
+  },
+  {
+    page: 'permissions',
+    label: 'Yetki ve Rol Yönetimi',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+        <path d="M12 21V3"></path>
+        <path d="M3 12h18"></path>
+      </svg>
+    )
+  },
+  {
+    page: 'contact',
+    label: 'İletişim & Mesajlar',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    )
+  },
+];
 
-/**
- * AdminSidebar Bileşeni Props Tür Tanımı
- * @typedef {object} AdminSidebarProps
- * @property {string} currentPage - Mevcut aktif sayfanın adı (sidebar'da vurgulama için).
- */
-interface AdminSidebarProps {
+interface AdminLayoutProps {
+  children: ReactNode;
+  onPageChange: (page: string) => void;
   currentPage: string;
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
 }
 
-/**
- * AdminSidebar Bileşeni
- * Admin panelinin sol tarafındaki navigasyon menüsünü oluşturur.
- *
- * @param {AdminSidebarProps} props - Bileşen props'ları
- */
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ currentPage }) => {
-  const router = useRouter(); // Next.js router instance'ı
-  const pathname = usePathname(); // Mevcut URL yolunu almak için
-
-  // Navigasyon menüsü öğeleri
-  const navItems = [
-    { name: 'Kontrol Paneli', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M3 3v18h18" />
-          <path d="M18.7 8.3c3 3 3 7.2 0 10.2-3 3-7.2 3-10.2 0-3-3-3-7.2 0-10.2 3-3 7.2-3 10.2 0" />
-        </svg>
-      ), page: 'dashboard' },
-    { name: 'Ürün Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 0 1-8 0" />
-        </svg>
-      ), page: 'products' },
-    { name: 'Sipariş Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 0 1-8 0" />
-        </svg>
-      ), page: 'orders' },
-    { name: 'Kullanıcı Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ), page: 'customers' },
-    { name: 'Kategori Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="12" y1="18" x2="12" y2="12" />
-          <line x1="9" y1="15" x2="15" y2="15" />
-        </svg>
-      ), page: 'categories' },
-    { name: 'Satıcı Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ), page: 'vendors' },
-    { name: 'Marka Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
-      ), page: 'brands' },
-    { name: 'İstatistik & Raporlama', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ), page: 'reports' },
-    { name: 'Yorum ve Değerlendirme', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      ), page: 'comments' },
-    { name: 'Fatura ve Ödeme', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <line x1="10" y1="9" x2="10" y2="9" />
-        </svg>
-      ), page: 'invoices' },
-    { name: 'Genel Ayarlar', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l-.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      ), page: 'settings' },
-    { name: 'Yetki ve Rol Yönetimi', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-      ), page: 'permissions' },
-    { name: 'İletişim & Mesajlar', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-          <polyline points="22,6 12,13 2,6" />
-        </svg>
-      ), page: 'messages' },
-  ];
-
-  // Mevcut yolun hangi menü öğesine karşılık geldiğini belirle
-  const isActive = (pageName: string): boolean => {
-    // pathname'i uygun şekilde işleyerek aktif sayfayı belirle
-    // Örn: "/admin/dashboard" -> "dashboard"
-    const currentPathSegment = pathname.split('/').pop();
-    return currentPathSegment === pageName;
-  };
-
+// AdminLayout bileşeni, tüm sayfalarda ortak olan arayüzü (sidebar vb.) içerir.
+const AdminLayout = ({ children, onPageChange, currentPage, isSidebarOpen, toggleSidebar }: AdminLayoutProps) => {
   return (
-    <div className="flex flex-col w-64 bg-gray-800 text-white shadow-lg rounded-r-lg">
-      <div className="flex items-center justify-center h-20 shadow-md">
-        <h1 className="text-2xl font-semibold text-white">Admin Paneli</h1>
-      </div>
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {navItems.map((item) => (
-          <button
-            key={item.name}
-            // Next.js router'ı kullanarak navigasyon yapın
-            onClick={() => {
-              router.push(`/admin/${item.page}`); // URL'yi güncelle
-            }}
-            className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors duration-200 ${
-              isActive(item.page) ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-gray-700 text-gray-300'
-            }`}
+    <div className="bg-gray-100 min-h-screen flex font-sans">
+      
+      {/* Mobil kenar çubuğu katmanı */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300 md:hidden ${
+          isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={toggleSidebar}
+      ></div>
+
+      {/* Kenar çubuğu - Mobil Uyumlu */}
+      <aside
+        className={`bg-gray-800 text-gray-300 w-64 p-4 flex flex-col h-screen fixed top-0 left-0 z-40 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:static md:shadow-lg md:flex`}
+      >
+        <div className="text-white text-2xl font-bold mb-8 px-2">
+          ShopEase
+        </div>
+        <nav className="flex-grow space-y-2">
+          {sidebarMenuItems.map(item => (
+            <a
+              key={item.page}
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                onPageChange(item.page);
+                toggleSidebar(); // Mobil cihazlarda kenar çubuğunu kapat
+              }}
+              className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${
+                currentPage === item.page ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className="mt-auto pt-4 border-t border-gray-700">
+          <a
+            href="#"
+            className="flex items-center p-3 rounded-lg hover:bg-red-600 text-gray-300 transition-colors duration-200"
           >
-            {item.icon}
-            <span className="text-lg">{item.name}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out mr-3">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" x2="9" y1="12" y2="12"></line>
+            </svg>
+            Çıkış Yap
+          </a>
+        </div>
+      </aside>
+      
+      {/* Ana içerik alanı */}
+      <main className="flex-1 p-6 md:p-10">
+        {/* Mobil Başlık ve Hamburger Menü Butonu */}
+        <header className="flex items-center justify-between p-4 bg-white shadow-md rounded-lg md:hidden mb-6">
+          <button onClick={toggleSidebar} className="text-gray-600 focus:outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" x2="20" y1="12" y2="12" />
+              <line x1="4" x2="20" y1="6" y2="6" />
+              <line x1="4" x2="20" y1="18" y2="18" />
+            </svg>
           </button>
-        ))}
-      </nav>
-      <div className="p-4 border-t border-gray-700">
-        <button className="flex items-center w-full px-4 py-3 rounded-lg text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-3">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span className="text-lg">Çıkış Yap</span>
-        </button>
-      </div>
+          <div className="text-gray-800 text-xl font-bold">ShopEase</div>
+          <div className="w-6"></div> {/* Hizalama için boşluk */}
+        </header>
+
+        {children}
+      </main>
     </div>
   );
 };
 
-export default AdminSidebar;
+// Sayfa içeriği için placeholder bileşenleri
+const AdminPanelPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Kontrol Paneli</h1>
+    <p>Admin paneline hoş geldiniz.</p>
+  </>
+);
 
+const ProductsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Ürün Yönetimi</h1>
+    <p>Ürün yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const OrdersPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Sipariş Yönetimi</h1>
+    <p>Sipariş yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const UsersPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Kullanıcı Yönetimi</h1>
+    <p>Kullanıcı yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const CategoriesPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Kategori Yönetimi</h1>
+    <p>Kategori yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const SellersPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Satıcı Yönetimi</h1>
+    <p>Satıcı yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const BrandsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Marka Yönetimi</h1>
+    <p>Marka yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const ReportsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">İstatistik & Raporlama</h1>
+    <p>İstatistik ve raporlama sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const ReviewsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Yorum ve Değerlendirme</h1>
+    <p>Yorum ve değerlendirme sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const PaymentsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Fatura ve Ödeme</h1>
+    <p>Fatura ve ödeme sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const SettingsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Genel Ayarlar</h1>
+    <p>Genel ayarlar sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const PermissionsPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">Yetki ve Rol Yönetimi</h1>
+    <p>Yetki ve rol yönetimi sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+const ContactPage = () => (
+  <>
+    <h1 className="text-2xl font-bold mb-4">İletişim & Mesajlar</h1>
+    <p>İletişim ve mesajlar sayfası içeriği buraya gelecek.</p>
+  </>
+);
+
+// Ana uygulama bileşeni. Yönetici panelinin tüm mantığını içerir.
+export default function App() {
+  const [currentPage, setCurrentPage] = useState('panel');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handlePageChange = (page: string) => {
+    setCurrentPage(page);
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'panel':
+        return <AdminPanelPage />;
+      case 'products':
+        return <ProductsPage />;
+      case 'orders':
+        return <OrdersPage />;
+      case 'users':
+        return <UsersPage />;
+      case 'categories':
+        return <CategoriesPage />;
+      case 'sellers':
+        return <SellersPage />;
+      case 'brands':
+        return <BrandsPage />;
+      case 'reports':
+        return <ReportsPage />;
+      case 'reviews':
+        return <ReviewsPage />;
+      case 'payments':
+        return <PaymentsPage />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'permissions':
+        return <PermissionsPage />;
+      case 'contact':
+        return <ContactPage />;
+      default:
+        return <AdminPanelPage />;
+    }
+  };
+
+  return (
+    <AdminLayout onPageChange={handlePageChange} currentPage={currentPage} isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}>
+      {renderPage()}
+    </AdminLayout>
+  );
+}
