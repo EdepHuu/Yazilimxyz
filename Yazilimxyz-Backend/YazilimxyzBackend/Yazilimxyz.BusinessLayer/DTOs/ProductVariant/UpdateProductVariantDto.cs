@@ -1,5 +1,6 @@
 ﻿namespace Yazilimxyz.BusinessLayer.DTOs.ProductVariant
 {
+
     public class UpdateProductVariantDto
     {
         public int Id { get; set; }
@@ -8,4 +9,6 @@
         public string Color { get; set; }
         public int Stock { get; set; }
     }
+
+
 }
