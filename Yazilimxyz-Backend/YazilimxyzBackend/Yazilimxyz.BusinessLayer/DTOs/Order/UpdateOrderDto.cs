@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Yazilimxyz.EntityLayer.Enums;
+﻿using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.BusinessLayer.DTOs.Order
 {
