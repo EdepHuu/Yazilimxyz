@@ -18,15 +18,15 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 
         public async Task<ProductVariant?> GetByProductAndOptionsAsync(int productId, string size, string color)
         {
-            return await _appDbContext.Set<ProductVariant>()
-                .Include(pv => pv.Product)
-                .FirstOrDefaultAsync(pv =>
-                    pv.ProductId == productId &&
-                    pv.Size == size &&
-                    pv.Color == color);
-        }
+			return await _appDbContext.Set<ProductVariant>()
+	            .Include(pv => pv.Product)
+	            .FirstOrDefaultAsync(pv =>
+		            pv.ProductId == productId &&
+		            pv.Size.ToLower().Trim() == size.ToLower().Trim() &&
+		            pv.Color.ToLower().Trim() == color.ToLower().Trim());
+		}
 
-        public async Task<IEnumerable<ProductVariant>> GetByProductIdAsync(int productId)
+		public async Task<IEnumerable<ProductVariant>> GetByProductIdAsync(int productId)
         {
             return await _appDbContext.Set<ProductVariant>()
                 .Where(pv => pv.ProductId == productId)

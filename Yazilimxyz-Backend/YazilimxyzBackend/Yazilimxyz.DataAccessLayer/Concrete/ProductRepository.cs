@@ -77,14 +77,16 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 
         public async Task<Product?> GetWithVariantsAsync(int id)
         {
-            return await _dbSet
-                .Include(p => p.Merchant.AppUser.Name)
-                .Include(p => p.Category)
-				.Include(p => p.ProductVariants)
-                .FirstOrDefaultAsync(p => p.Id == id);
-        }
+			return await _dbSet
+	            .Include(p => p.Merchant)
+		            .ThenInclude(m => m.AppUser)
+	            .Include(p => p.Category)
+	            .Include(p => p.ProductVariants)
+	            .FirstOrDefaultAsync(p => p.Id == id);
 
-        public async Task<IEnumerable<Product>> SearchAsync(string searchTerm)
+		}
+
+		public async Task<IEnumerable<Product>> SearchAsync(string searchTerm)
         {
             return await _dbSet
                 .Include(p => p.ProductImages)

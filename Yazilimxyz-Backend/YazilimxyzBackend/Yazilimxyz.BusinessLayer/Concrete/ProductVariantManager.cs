@@ -63,8 +63,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (string.IsNullOrWhiteSpace(color))
                 return new ErrorDataResult<ResultProductVariantDto>(Messages.InvalidProductVariantColor);
 
-            var variant = await _productVariantRepository.GetByProductAndOptionsAsync(productId, size, color);
-            if (variant == null)
+			var variant = await _productVariantRepository.GetByProductAndOptionsAsync(productId, size.Trim().ToLower(), color.Trim().ToLower());
+			if (variant == null)
                 return new ErrorDataResult<ResultProductVariantDto>(Messages.ProductVariantNotFound);
 
             return new SuccessDataResult<ResultProductVariantDto>(_mapper.Map<ResultProductVariantDto>(variant), Messages.ProductVariantsListed);
@@ -120,8 +120,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (dto.ProductId <= 0)
                 return new ErrorResult(Messages.InvalidProductId);
 
-            if (string.IsNullOrWhiteSpace(dto.Size))
-                return new ErrorResult(Messages.InvalidProductVariantSize);
+			if (string.IsNullOrWhiteSpace(dto.Size?.Trim()))
+				return new ErrorResult(Messages.InvalidProductVariantSize);
 
             if (dto.Size.Length > 50)
                 return new ErrorResult(Messages.ProductVariantSizeTooLong);
@@ -132,33 +132,27 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (dto.Color.Length > 50)
                 return new ErrorResult(Messages.ProductVariantColorTooLong);
 
-            if (dto.Stock < 0)
-                return new ErrorResult(Messages.InvalidProductVariantStock);
+			if (dto.Stock < 0 || dto.Stock > 999999)
+				return new ErrorResult("Stok değeri 0'dan küçük veya 999999'dan büyük olamaz.");
 
-            if (dto.Stock > 999999)
-                return new ErrorResult(Messages.ProductVariantStockTooHigh);
-
-            var product = await _productRepository.GetByIdAsync(dto.ProductId);
+			var product = await _productRepository.GetByIdAsync(dto.ProductId);
             if (product == null)
                 return new ErrorResult(Messages.ProductNotFound);
 
-            var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size, dto.Color);
-            if (existingVariant != null)
-                return new ErrorResult(Messages.DuplicateProductVariant);
+			var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size.Trim().ToLower(), dto.Color.Trim().ToLower());
+			if (existingVariant != null)
+				return new ErrorResult(Messages.DuplicateProductVariant);
 
-            var variant = _mapper.Map<ProductVariant>(dto);
+			var variant = _mapper.Map<ProductVariant>(dto);
             await _productVariantRepository.AddAsync(variant);
 
             return new SuccessResult(Messages.ProductVariantAdded);
         }
 
         [CacheRemoveAspect("IProductVariantService.Get")]
-        public async Task<IResult> UpdateAsync(UpdateProductVariantDto dto)
-        {
-            if (dto.Id <= 0)
-                return new ErrorResult(Messages.InvalidProductVariantId);
-
-            if (dto.ProductId <= 0)
+		public async Task<IResult> UpdateAsync(int id, UpdateProductVariantDto dto)
+		{
+			if (dto.ProductId <= 0)
                 return new ErrorResult(Messages.InvalidProductId);
 
             if (string.IsNullOrWhiteSpace(dto.Size))
@@ -179,19 +173,19 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (dto.Stock > 999999)
                 return new ErrorResult(Messages.ProductVariantStockTooHigh);
 
-            var variant = await _productVariantRepository.GetByIdAsync(dto.Id);
-            if (variant == null)
-                return new ErrorResult(Messages.ProductVariantNotFound);
+			var variant = await _productVariantRepository.GetByIdAsync(id);
+			if (variant == null)
+				return new ErrorResult(Messages.ProductVariantNotFound);
 
-            var product = await _productRepository.GetByIdAsync(dto.ProductId);
+			var product = await _productRepository.GetByIdAsync(dto.ProductId);
             if (product == null)
                 return new ErrorResult(Messages.ProductNotFound);
 
-            var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size, dto.Color);
-            if (existingVariant != null && existingVariant.Id != dto.Id)
-                return new ErrorResult(Messages.DuplicateProductVariant);
+			var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size.Trim().ToLower(), dto.Color.Trim().ToLower());
+			if (existingVariant != null && existingVariant.Id != id)
+				return new ErrorResult(Messages.DuplicateProductVariant);
 
-            _mapper.Map(dto, variant);
+			_mapper.Map(dto, variant);
             await _productVariantRepository.UpdateAsync(variant);
 
             return new SuccessResult(Messages.ProductVariantUpdated);

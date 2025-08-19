@@ -1,7 +1,7 @@
 // src/app/merchant/dashboard/urunler/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios, { AxiosInstance } from 'axios';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -26,6 +26,7 @@ type ProductListItem = {
   basePrice?: number | null;
   categoryId?: number | null;
   categoryName?: string | null;
+  mainPhoto?: string | null; // /uploads/... gelebilir
 };
 
 type Variant = {
@@ -47,61 +48,108 @@ type ProductRow = {
 };
 
 type MainImageDto = { imageUrl?: string | null; image?: string | null };
-type ProductDetailed = { id: number; categoryId?: number | null; price?: number | null; basePrice?: number | null };
 
-type Category = {
-  id: number;
-  name?: string | null;
-  description?: string | null;
+type CategorySlim = { id: number; name?: string | null };
+
+/** Backend’in detailed cevabı farklı şemalarda dönebiliyor; hepsini kapsayacak “gevşek” tip */
+type ProductDetailedLoose = {
+  categoryId?: number | null;
+  categoryID?: number | null; // muhtemel alternatif
+  categoryName?: string | null;
+  category?: { id?: number | null; name?: string | null } | null;
+  // geri kalan alanlar bizi ilgilendirmiyor
 };
 
 /* ========== Endpointler ========== */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 const PROFILE = '/api/Merchant/profile';
-const PRODUCTS_BY_MERCHANT = (merchantId: number) => `/api/Product/get-by-merchant/${merchantId}`;
+const PRODUCTS_ALL = '/api/Product/get-all';
 const VARIANTS_BY_PRODUCT = (productId: number) => `/api/ProductVariants/by-product/${productId}`;
-const IMAGE_MAIN_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}/main`; // fotoğraf altyapısı sonra güncellenecek
+const IMAGE_MAIN_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}/main`;
 const PRODUCT_DETAILED = (productId: number) => `/api/Product/${productId}/detailed`;
 const CATEGORY_LIST = '/api/Category';
+const CATEGORY_BY_ID = (id: number) => `/api/Category/${id}`;
 
 /* ========== Helpers ========== */
-function isObject(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null;
-}
+const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null;
 
 function unwrap<T>(raw: unknown): T {
-  if (isObject(raw) && 'data' in raw) {
-    return (raw as ApiEnvelope<T>).data;
-  }
+  if (isObject(raw) && 'data' in raw) return (raw as ApiEnvelope<T>).data as T;
   return raw as T;
 }
 
-function isCategoryArray(x: unknown): x is Category[] {
-  return Array.isArray(x) && x.every((c) => isObject(c) && typeof (c as Category).id === 'number');
-}
+const sumStocks = (vs: Variant[]) => vs.reduce((s, v) => s + (Number.isFinite(v.stock) ? v.stock : 0), 0);
+const absolutize = (u?: string | null) => (u ? (u.startsWith('http') ? u : `${API_BASE}${u}`) : null);
 
-function hasCategoryItems(x: unknown): x is { items: Category[] } {
-  return (
-    isObject(x) &&
-    'items' in x &&
-    isCategoryArray((x as { items: unknown }).items)
-  );
+/** /uploads/merchant/{id}/... içerisinden id çıkarır */
+function extractMerchantIdFromPath(path?: string | null): number | null {
+  if (!path) return null;
+  const m = path.match(/\/uploads\/merchant\/(\d+)\//i);
+  return m ? Number(m[1]) : null;
 }
-
-const sumStocks = (vs: Variant[]) =>
-  vs.reduce((s, v) => s + (Number.isFinite(v.stock) ? v.stock : 0), 0);
 
 /** Kategori sözlüğü {id -> name} */
 async function loadCategoryDict(api: AxiosInstance): Promise<Record<number, string>> {
-  const res = await api.get<ApiEnvelope<Category[] | { items: Category[] }> | Category[] | { items: Category[] }>(
-    CATEGORY_LIST
-  );
-  const raw = unwrap<Category[] | { items: Category[] }>(res.data);
-
-  const arr: Category[] = isCategoryArray(raw) ? raw : hasCategoryItems(raw) ? raw.items : [];
+  const res = await api.get<ApiEnvelope<CategorySlim[]>>(CATEGORY_LIST);
+  const arr = unwrap<CategorySlim[]>(res.data) ?? [];
   const dict: Record<number, string> = {};
   for (const c of arr) dict[c.id] = String(c.name ?? '');
   return dict;
+}
+
+/** detailed cevabından {id, name} çıkar (type guard’lı, any yok) */
+function extractCategoryFromDetailed(det: unknown): { id: number | null; name: string | null } {
+  if (!isObject(det)) return { id: null, name: null };
+
+  // name doğrudan
+  const directName =
+    (typeof (det as { categoryName?: unknown }).categoryName === 'string'
+      ? (det as { categoryName?: string }).categoryName
+      : null) ??
+    (isObject((det as { category?: unknown }).category) &&
+    typeof ((det as { category?: { name?: unknown } }).category as { name?: unknown })?.name === 'string'
+      ? (((det as { category?: { name?: unknown } }).category as { name?: unknown }).name as string)
+      : null);
+
+  // id olasılıkları
+  const idCandidates: Array<number | null> = [
+    typeof (det as { categoryId?: unknown }).categoryId === 'number'
+      ? ((det as { categoryId?: number }).categoryId as number)
+      : null,
+    typeof (det as { categoryID?: unknown }).categoryID === 'number'
+      ? ((det as { categoryID?: number }).categoryID as number)
+      : null,
+    isObject((det as { category?: unknown }).category) &&
+    typeof ((det as { category?: { id?: unknown } }).category as { id?: unknown })?.id === 'number'
+      ? (((det as { category?: { id?: unknown } }).category as { id?: unknown }).id as number)
+      : null,
+  ];
+
+  const id = idCandidates.find((v) => typeof v === 'number') ?? null;
+  return { id, name: directName };
+}
+
+/** Sözlük + (gerekirse) tekil çağrı ile kategori adını getir */
+async function resolveCategoryName(
+  api: AxiosInstance,
+  dict: Record<number, string>,
+  detail: unknown,
+  fallbackName?: string | null
+): Promise<string | null> {
+  const { id, name } = extractCategoryFromDetailed(detail);
+  if (name) return name;
+  if (id != null) {
+    if (dict[id]) return dict[id];
+    try {
+      const res = await api.get<ApiEnvelope<CategorySlim>>(CATEGORY_BY_ID(id));
+      const item = unwrap<CategorySlim>(res.data);
+      const n = item?.name ?? null;
+      return n ?? null;
+    } catch {
+      // yoksay
+    }
+  }
+  return fallbackName ?? null;
 }
 
 /* ========== Sayfa ========== */
@@ -128,10 +176,14 @@ export default function MerchantProductsListPage() {
     return inst;
   }, []);
 
-  const getData = async <T,>(path: string) => {
-    const res = await api.get<ApiEnvelope<T> | T>(path);
-    return unwrap<T>(res.data);
-  };
+  // useEffect bağımlılığı için useCallback
+  const getData = useCallback(
+    async <T,>(path: string) => {
+      const res = await api.get<ApiEnvelope<T> | T>(path);
+      return unwrap<T>(res.data);
+    },
+    [api]
+  );
 
   useEffect(() => {
     let alive = true;
@@ -139,48 +191,60 @@ export default function MerchantProductsListPage() {
       try {
         setMsg(null);
 
-        // 1) Merchant
+        // 1) Giriş yapan merchant
         const me = await getData<MerchantSelf>(PROFILE);
 
-        // 2) Ürün listesi
-        const base = await getData<ProductListItem[]>(PRODUCTS_BY_MERCHANT(me.id));
+        // 2) Tüm ürünler
+        const base = await getData<ProductListItem[]>(PRODUCTS_ALL);
         setApiTotal(base.length);
 
-        // 3) Kategori sözlüğü
+        // 3) Ana görsel + owner (merchantId) çıkar
+        const withOwner = await Promise.all(
+          base.map(async (p) => {
+            let imageUrl = absolutize(p.mainPhoto ?? null);
+            if (!imageUrl) {
+              try {
+                const mi = await getData<MainImageDto>(IMAGE_MAIN_BY_PRODUCT(p.id));
+                imageUrl = absolutize(mi.imageUrl ?? mi.image ?? null);
+              } catch {
+                /* yoksa boş */
+              }
+            }
+            const ownerId = extractMerchantIdFromPath(imageUrl ?? p.mainPhoto ?? null);
+            return {
+              ...p,
+              __imageUrl: imageUrl as string | null,
+              __ownerId: ownerId as number | null,
+            };
+          })
+        );
+
+        // 4) SADECE giriş yapan merchant'ın ürünleri
+        const list = withOwner.filter((p) => p.__ownerId === me.id);
+
+        // 5) Kategori sözlüğü
         const catDict = await loadCategoryDict(api);
 
-        // 4) Zenginleştirme (stok, görsel, kategori adı)
+        // 6) Enrichment: stok ve kategori adı
         const enriched: ProductRow[] = await Promise.all(
-          base.map(async (p) => {
+          list.map(async (p) => {
+            // stok
             let stockTotal = 0;
-            let imageUrl: string | null = null;
-
             try {
-              const [vs, main] = await Promise.all([
-                getData<Variant[]>(VARIANTS_BY_PRODUCT(p.id)),
-                getData<MainImageDto>(IMAGE_MAIN_BY_PRODUCT(p.id)),
-              ]);
+              const vs = await getData<Variant[]>(VARIANTS_BY_PRODUCT(p.id));
               stockTotal = sumStocks(vs);
-              imageUrl = main.imageUrl ?? main.image ?? null;
             } catch {
-              /* görsel/variant hatası listeyi engellemesin */
+              /* stok gelmezse 0 */
             }
 
             // kategori adı
-            let catName: string | null = null;
-            let catId = typeof p.categoryId === 'number' ? p.categoryId : null;
-
-            if (catId == null) {
-              try {
-                const det = await getData<ProductDetailed>(PRODUCT_DETAILED(p.id));
-                catId = typeof det.categoryId === 'number' ? det.categoryId : null;
-              } catch {
-                /* yoksa boş bırak */
-              }
+            let categoryName: string | null = null;
+            try {
+              const det = await getData<ProductDetailedLoose>(PRODUCT_DETAILED(p.id));
+              categoryName = await resolveCategoryName(api, catDict, det, p.categoryName ?? null);
+            } catch {
+              categoryName = p.categoryName ?? null;
             }
-
-            if (catId != null && catDict[catId]) catName = catDict[catId];
-            else if (p.categoryName) catName = p.categoryName ?? null;
 
             const price = p.price ?? p.basePrice ?? null;
 
@@ -188,10 +252,10 @@ export default function MerchantProductsListPage() {
               id: p.id,
               name: p.name,
               isActive: Boolean(p.isActive),
-              categoryName: catName,
+              categoryName,
               price,
               stockTotal,
-              imageUrl,
+              imageUrl: p.__imageUrl ?? null,
             };
           })
         );
@@ -218,7 +282,7 @@ export default function MerchantProductsListPage() {
     return () => {
       alive = false;
     };
-  }, [api, router]);
+  }, [api, getData, router]);
 
   // filtre + sayfalama
   const filtered = useMemo(() => {
@@ -235,12 +299,7 @@ export default function MerchantProductsListPage() {
     const maxPage = Math.max(1, Math.ceil(total / pageSize));
     const safePage = Math.min(page, maxPage);
     const start = (safePage - 1) * pageSize;
-    return {
-      items: base.slice(start, start + pageSize),
-      total,
-      maxPage,
-      page: safePage,
-    };
+    return { items: base.slice(start, start + pageSize), total, maxPage, page: safePage };
   }, [rows, q, page, pageSize]);
 
   if (loading) return <div className="text-slate-600 text-sm">Yükleniyor…</div>;
@@ -268,7 +327,10 @@ export default function MerchantProductsListPage() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
           <input
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
             placeholder="Ürün adı veya kategori ara…"
             className="w-full sm:w-80 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
           />
@@ -276,10 +338,17 @@ export default function MerchantProductsListPage() {
             <label className="text-sm text-slate-600">Sayfa boyutu</label>
             <select
               value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
               className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none"
             >
-              {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+              {[10, 20, 50].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </select>
           </div>
         </div>

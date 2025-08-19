@@ -155,24 +155,23 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessResult(Messages.ProductAdded);
         }
 
-        [CacheRemoveAspect("IProductService.Get")]
+		[CacheRemoveAspect("IProductService.Get")]
 		public async Task<IResult> UpdateAsync(UpdateProductDto dto)
 		{
-			var userId = _httpContextAccessor.HttpContext?.User
-				.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var httpContext = _httpContextAccessor.HttpContext;
+			var userId = httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
 			if (string.IsNullOrEmpty(userId))
 				return new ErrorResult("Kullanıcı bilgisi alınamadı.");
 
+			var isAdmin = httpContext.User.IsInRole("AppAdmin");
 			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
-			if (merchant == null)
-				return new ErrorResult("Satıcı bulunamadı.");
 
 			var product = await _productRepository.GetByIdAsync(dto.Id);
 			if (product == null)
 				return new ErrorResult("Güncellenmek istenen ürün bulunamadı.");
 
-			if (product.AppUserId != merchant.AppUserId)
+			if (!isAdmin && (merchant == null || product.AppUserId != merchant.AppUserId))
 				return new ErrorResult("Bu ürünü güncelleme yetkiniz bulunmamaktadır.");
 
 			if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
@@ -187,7 +186,8 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
 			_mapper.Map(dto, product);
 			await _productRepository.UpdateAsync(product);
-			return new SuccessResult("Ürün başarıyla güncellendi.");
+
+			return new SuccessResult(Messages.ProductUpdated);
 		}
 
 		[CacheRemoveAspect("IProductService.Get")]

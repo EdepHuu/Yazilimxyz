@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.ProductVariant;
 using Yazilimxyz.DataAccessLayer.Abstract;
 
@@ -124,45 +125,63 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			if (dto.ProductId <= 0)
 			{
-				return BadRequest("ProductId 0'dan büyük olmalıdır.");
+				return BadRequest(Messages.InvalidProductId);
 			}
 
-			if (string.IsNullOrWhiteSpace(dto.Size) || dto.Size.Length > 50)
+			if (string.IsNullOrWhiteSpace(dto.Size))
 			{
-				return BadRequest("Geçersiz beden bilgisi.");
+				return BadRequest(Messages.InvalidProductVariantSize);
+			}
+			if (dto.Size.Length > 50)
+			{
+				return BadRequest(Messages.ProductVariantSizeTooLong);
 			}
 
-			if (string.IsNullOrWhiteSpace(dto.Color) || dto.Color.Length > 50)
+			if (string.IsNullOrWhiteSpace(dto.Color))
 			{
-				return BadRequest("Geçersiz renk bilgisi.");
+				return BadRequest(Messages.InvalidProductVariantColor);
+			}
+			if (dto.Color.Length > 50)
+			{
+				return BadRequest(Messages.ProductVariantColorTooLong);
 			}
 
-			if (dto.Stock < 0 || dto.Stock > 999_999)
+			if (dto.Stock < 0)
 			{
-				return BadRequest("Stok 0 ile 999,999 arasında olmalıdır.");
+				return BadRequest(Messages.InvalidProductVariantStock);
+			}
+			if (dto.Stock > 999_999)
+			{
+				return BadRequest(Messages.ProductVariantStockTooHigh);
 			}
 
 			var product = await _productRepository.GetByIdAsync(dto.ProductId);
 			if (product == null)
 			{
-				return NotFound("Belirtilen ürün bulunamadı.");
+				return NotFound(Messages.ProductNotFound);
 			}
 
 			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			var isAdmin = User.IsInRole("AppAdmin");
+
 			if (!isAdmin && product.AppUserId != userId)
 			{
 				return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
 			}
 
 			var existing = await _variantService.GetByProductAndOptionsAsync(dto.ProductId, dto.Size.Trim(), dto.Color.Trim());
-			if (existing != null)
+			if (existing.Success && existing.Data != null)
 			{
-				return Conflict("Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.");
+				return Conflict(Messages.DuplicateProductVariant);
 			}
 
-			await _variantService.CreateAsync(dto);
-			return StatusCode(StatusCodes.Status201Created);
+			var result = await _variantService.CreateAsync(dto);
+			if (!result.Success)
+			{
+				return BadRequest(result.Message); // örneğin: "Geçersiz veri"
+			}
+
+			return StatusCode(StatusCodes.Status201Created, result.Message); // → "Ürün varyantı başarıyla eklendi."
 		}
 
 		[HttpPut("{id:int}")]
@@ -172,112 +191,180 @@ namespace Yazilimxyz.WebAPI.Controllers
 		[ProducesResponseType(StatusCodes.Status403Forbidden)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> UpdateVariant(int id, [FromBody] UpdateProductVariantDto dto)
-        {
-            if (id <= 0)
-                return BadRequest("Id 0'dan büyük olmalıdır.");
-            if (dto is null)
-                return BadRequest("Veri gönderilmedi.");
-            if (dto.Id != id)
-                return BadRequest("URL'deki Id ile gövdedeki Id eşleşmiyor.");
-            if (dto.ProductId <= 0)
-                return BadRequest("ProductId 0'dan büyük olmalıdır.");
-            if (string.IsNullOrWhiteSpace(dto.Size) || dto.Size.Length > 50)
-                return BadRequest("Geçersiz beden bilgisi.");
-            if (string.IsNullOrWhiteSpace(dto.Color) || dto.Color.Length > 50)
-                return BadRequest("Geçersiz renk bilgisi.");
-            if (dto.Stock < 0 || dto.Stock > 999_999)
-                return BadRequest("Stok 0 ile 999,999 arasında olmalıdır.");
+		public async Task<IActionResult> UpdateVariant(int id, [FromBody] UpdateProductVariantDto dto)
+		{
+			if (id <= 0)
+			{
+				return BadRequest(Messages.InvalidProductVariantId);
+			}
 
-            // Varyantı IDataResult<T> içinden al
-            var currentResult = await _variantService.GetByIdAsync(id);
-            if (!currentResult.Success || currentResult.Data is null)
-                return NotFound("Varyant bulunamadı.");
+			if (dto == null)
+			{
+				return BadRequest("Veri gönderilmedi.");
+			}
 
-            var product = await _productRepository.GetByIdAsync(dto.ProductId);
-            if (product is null)
-                return NotFound("Belirtilen ürün bulunamadı.");
+			if (dto.ProductId <= 0)
+			{
+				return BadRequest(Messages.InvalidProductId);
+			}
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var isAdmin = User.IsInRole("AppAdmin");
-            if (!isAdmin && product.AppUserId != userId)
-                return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+			if (string.IsNullOrWhiteSpace(dto.Size))
+			{
+				return BadRequest(Messages.InvalidProductVariantSize);
+			}
+			if (dto.Size.Length > 50)
+			{
+				return BadRequest(Messages.ProductVariantSizeTooLong);
+			}
 
-            // Aynı beden+renk kombinasyonu var mı?
-            var clashResult = await _variantService.GetByProductAndOptionsAsync(
-                dto.ProductId, dto.Size.Trim(), dto.Color.Trim());
+			if (string.IsNullOrWhiteSpace(dto.Color))
+			{
+				return BadRequest(Messages.InvalidProductVariantColor);
+			}
+			if (dto.Color.Length > 50)
+			{
+				return BadRequest(Messages.ProductVariantColorTooLong);
+			}
 
-            var clash = (clashResult.Success) ? clashResult.Data : null;
+			if (dto.Stock < 0)
+			{
+				return BadRequest(Messages.InvalidProductVariantStock);
+			}
+			if (dto.Stock > 999_999)
+			{
+				return BadRequest(Messages.ProductVariantStockTooHigh);
+			}
 
-            if (clash is not null && clash.Id != id)
-                return Conflict("Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.");
+			var currentResult = await _variantService.GetByIdAsync(id);
+			if (!currentResult.Success || currentResult.Data == null)
+			{
+				return NotFound(Messages.ProductVariantNotFound);
+			}
 
+			var product = await _productRepository.GetByIdAsync(dto.ProductId);
+			if (product == null)
+			{
+				return NotFound(Messages.ProductNotFound);
+			}
 
-            await _variantService.UpdateAsync(dto);
-            return Ok("Varyant güncellendi.");
-        }
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var isAdmin = User.IsInRole("AppAdmin");
 
-        [HttpPatch("{id:int}/stock")]
+			if (!isAdmin && product.AppUserId != userId)
+			{
+				return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+			}
+
+			var clashResult = await _variantService.GetByProductAndOptionsAsync(dto.ProductId, dto.Size.Trim(), dto.Color.Trim());
+			var clash = clashResult.Success ? clashResult.Data : null;
+
+			if (clash != null && clash.Id != id)
+			{
+				return Conflict(Messages.DuplicateProductVariant);
+			}
+
+			var result = await _variantService.UpdateAsync(id, dto);
+			if (!result.Success)
+			{
+				return BadRequest(result.Message); // örneğin güncellenemedi mesajı
+			}
+
+			return Ok(result.Message); // → "Ürün varyantı başarıyla güncellendi."
+		}
+
+		[HttpPatch("{id:int}/stock")]
 		[Authorize(Roles = "Merchant,AppAdmin")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status403Forbidden)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateVariantStock(int id, [FromBody] UpdateVariantStockRequest req)
-        {
-            if (id <= 0) return BadRequest("Id 0'dan büyük olmalıdır.");
-            if (req == null) return BadRequest("Veri gönderilmedi.");
-            if (req.Quantity < 0 || req.Quantity > 999_999)
-                return BadRequest("Stok 0 ile 999,999 arasında olmalıdır.");
+		public async Task<IActionResult> UpdateVariantStock(int id, [FromBody] UpdateVariantStockRequest req)
+		{
+			if (id <= 0)
+			{
+				return BadRequest(Messages.InvalidProductVariantId);
+			}
 
-            var variantResult = await _variantService.GetByIdAsync(id);
-            if (!variantResult.Success || variantResult.Data == null)
-                return NotFound("Varyant bulunamadı.");
+			if (req == null)
+			{
+				return BadRequest("Veri gönderilmedi.");
+			}
 
-            var variant = variantResult.Data; // <<— DTO
+			if (req.Quantity < 0)
+			{
+				return BadRequest(Messages.InvalidProductVariantStock);
+			}
 
-            var product = await _productRepository.GetByIdAsync(variant.ProductId);
-            if (product == null)
-                return NotFound("Varyantın bağlı olduğu ürün bulunamadı.");
+			if (req.Quantity > 999_999)
+			{
+				return BadRequest(Messages.ProductVariantStockTooHigh);
+			}
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var isAdmin = User.IsInRole("AppAdmin");
-            if (!isAdmin && product.AppUserId != userId)
-                return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+			var variantResult = await _variantService.GetByIdAsync(id);
+			if (!variantResult.Success || variantResult.Data == null)
+			{
+				return NotFound(Messages.ProductVariantNotFound);
+			}
 
-            await _variantService.UpdateStockAsync(id, req.Quantity);
-            return Ok("Stok güncellendi.");
-        }
+			var variant = variantResult.Data;
 
-        [HttpDelete("{id:int}")]
+			var product = await _productRepository.GetByIdAsync(variant.ProductId);
+			if (product == null)
+			{
+				return NotFound(Messages.ProductNotFound);
+			}
+
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var isAdmin = User.IsInRole("AppAdmin");
+
+			if (!isAdmin && product.AppUserId != userId)
+			{
+				return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+			}
+
+			await _variantService.UpdateStockAsync(id, req.Quantity);
+			return Ok(Messages.ProductVariantStockUpdated);
+		}
+
+		[HttpDelete("{id:int}")]
 		[Authorize(Roles = "Merchant,AppAdmin")]
-		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status403Forbidden)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteVariant(int id)
-        {
-            if (id <= 0) return BadRequest("Id 0'dan büyük olmalıdır.");
+		public async Task<IActionResult> DeleteVariant(int id)
+		{
+			if (id <= 0)
+			{
+				return BadRequest(Messages.InvalidProductVariantId);
+			}
 
-            var variantResult = await _variantService.GetByIdAsync(id);
-            if (!variantResult.Success || variantResult.Data == null)
-                return NotFound("Varyant bulunamadı.");
+			var variantResult = await _variantService.GetByIdAsync(id);
+			if (!variantResult.Success || variantResult.Data == null)
+			{
+				return NotFound(Messages.ProductVariantNotFound);
+			}
 
-            var variant = variantResult.Data; // <<— DTO
+			var variant = variantResult.Data;
 
-            var product = await _productRepository.GetByIdAsync(variant.ProductId);
-            if (product == null)
-                return NotFound("Varyantın bağlı olduğu ürün bulunamadı.");
+			var product = await _productRepository.GetByIdAsync(variant.ProductId);
+			if (product == null)
+			{
+				return NotFound(Messages.ProductNotFound);
+			}
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var isAdmin = User.IsInRole("AppAdmin");
-            if (!isAdmin && product.AppUserId != userId)
-                return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var isAdmin = User.IsInRole("AppAdmin");
 
-            await _variantService.DeleteAsync(id);
-            return NoContent();
-        }
-    }
+			if (!isAdmin && product.AppUserId != userId)
+			{
+				return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+			}
+
+			await _variantService.DeleteAsync(id);
+			return Ok(new { message = Messages.ProductVariantDeleted });
+		}
+	}
 
 	// Basit stok güncelleme modeli
 	public class UpdateVariantStockRequest
