@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import { useRouter, useParams } from 'next/navigation';
 
-/* ================== Types ================== */
-type ApiResponse<T> = { data: T; success?: boolean; message?: string };
+/* ================== Tipler ================== */
 
-type ProductDetail = {
+type ApiEnvelope<T> = { data: T; success?: boolean; message?: string };
+
+type Category = { id: number; name?: string | null };
+
+type ProductDetailApi = {
   id: number;
   name: string;
   description?: string | null;
@@ -18,6 +21,19 @@ type ProductDetail = {
   categoryId?: number | null;
   categoryName?: string | null;
   mainPhoto?: string | null;
+};
+
+type ProductDetailVM = {
+  id: number;
+  name: string;
+  description: string | null;
+  basePrice: number;
+  price: number;
+  gender: number;
+  isActive: boolean;
+  categoryId: number;
+  categoryName: string | null;
+  mainPhoto: string | null;
 };
 
 type Variant = {
@@ -45,13 +61,28 @@ type ProductImage = {
   productId: number;
 };
 
-type Category = { id: number; name?: string | null };
+type ProductUpdateDto = {
+  id: number;
+  name: string;
+  description?: string | null;
+  basePrice: number;
+  price: number;
+  gender: number;
+  isActive: boolean;
+  categoryId: number;
+  productCode: string;
+  fabricInfo: string;
+  modelMeasurements: string;
+};
 
-/* ================== Endpoints ================== */
+/* ================== Sabitler & Endpointler ================== */
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 const PRODUCT_DETAILED = (productId: number) => `/api/Product/${productId}/detailed`;
 const PRODUCT_UPDATE = `/api/Product/update`;
+
+const CATEGORY_LIST = '/api/Category';
 
 const VARIANTS_BY_PRODUCT = (productId: number) => `/api/ProductVariants/by-product/${productId}`;
 const VARIANT_UPDATE = (id: number) => `/api/ProductVariants/${id}`;
@@ -62,24 +93,69 @@ const IMAGES_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${pr
 const IMAGE_DELETE = (id: number) => `/api/ProductImage/${id}`;
 const IMAGE_REORDER = (productId: number) => `/api/ProductImage/reorder/${productId}`;
 const IMAGE_CREATE = `/api/ProductImage/create`;
+const IMAGE_SET_MAIN = (imageId: number) => `/api/ProductImage/set-main/${imageId}`;
 
-const CATEGORY_LIST = '/api/Category';
+const DUMMY_EXTRAS = {
+  productCode: 'SKU-AUTO',
+  fabricInfo: '100% Pamuk',
+  modelMeasurements: 'Boy 180, Göğüs 96, Bel 78',
+};
 
-/* ================== Helpers ================== */
-const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null;
-const unwrap = <T,>(raw: unknown): T => (isObj(raw) && 'data' in raw ? (raw as ApiResponse<T>).data : (raw as T));
-const absolutize = (u?: string | null) => (u ? (u.startsWith('http') ? u : `${API_BASE}${u}`) : null);
+/* ================== Yardımcılar ================== */
 
-/** TR girişlerini sayıya çevir (örn. "2.000,95" -> 2000.95) */
+const isRecord = (x: unknown): x is Record<string, unknown> =>
+  typeof x === 'object' && x !== null;
+
+const unwrap = <T,>(raw: unknown): T =>
+  isRecord(raw) && 'data' in raw ? (raw as ApiEnvelope<T>).data : (raw as T);
+
+const absolutize = (u?: string | null) =>
+  u ? (u.startsWith('http') ? u : `${API_BASE}${u}`) : null;
+
+const pickNum = (obj: unknown, key: string): number | null =>
+  isRecord(obj) && typeof obj[key] === 'number' ? (obj[key] as number) : null;
+
+/** TR girişlerini sayıya çevir (örn. "2.000,95" -> 2000.95) ve 2 ondalığa yuvarla */
 function parseTrNumber(s: string): number {
   const cleaned = s.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
   const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+
+function explainAxiosError(err: unknown): string {
+  if (!axios.isAxiosError(err)) return '❌ İşlem başarısız.';
+  const e = err as AxiosError;
+  const resp = e.response?.data;
+  if (typeof resp === 'string') return resp;
+  if (isRecord(resp)) {
+    const msg = typeof resp['message'] === 'string' ? (resp['message'] as string) : null;
+    if (msg) return msg;
+    const errors = resp['errors'];
+    if (isRecord(errors)) {
+      const parts: string[] = [];
+      Object.entries(errors).forEach(([k, v]) => {
+        if (Array.isArray(v)) v.forEach((s) => typeof s === 'string' && parts.push(`${k}: ${s}`));
+        else if (typeof v === 'string') parts.push(`${k}: ${v}`);
+      });
+      if (parts.length) return parts.join(' • ');
+    }
+  }
+  return '❌ İşlem başarısız.';
+}
+
+function getApi(): AxiosInstance {
+  const inst = axios.create({ baseURL: API_BASE });
+  inst.interceptors.request.use((cfg) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) cfg.headers.Authorization = `Bearer ${token}`;
+    return cfg;
+  });
+  return inst;
 }
 
 /** Görselleri API'den oku ve normalize et */
 async function loadImages(api: AxiosInstance, productId: number): Promise<ProductImage[]> {
-  const res = await api.get<ApiResponse<ProductImageRow[]> | ProductImageRow[]>(IMAGES_BY_PRODUCT(productId));
+  const res = await api.get<ApiEnvelope<ProductImageRow[]> | ProductImageRow[]>(IMAGES_BY_PRODUCT(productId));
   const rows = unwrap<ProductImageRow[]>(res.data);
   return rows.map((r) => ({
     id: r.id,
@@ -90,29 +166,33 @@ async function loadImages(api: AxiosInstance, productId: number): Promise<Produc
   }));
 }
 
-/* ================== Page ================== */
+/* ================== Sayfa ================== */
+
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const idParam = Array.isArray(params?.id) ? params.id[0] : (params?.id as string | undefined);
   const productId = Number(idParam);
 
+  const api = useMemo(getApi, []);
+
+  // sözlükler
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // veri
   const [loading, setLoading] = useState(true);
-  const [detail, setDetail] = useState<ProductDetail | null>(null);
+  const [detail, setDetail] = useState<ProductDetailVM | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+
+  // ui
+  const [priceInput, setPriceInput] = useState<string>('');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [imagesBusy, setImagesBusy] = useState(false);
 
-  // TR biçimli fiyat alanı için
-  const [priceInput, setPriceInput] = useState<string>('');
-
-  // Save durumları
-  const [saveBusy, setSaveBusy] = useState(false);
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  // Dirty flags
+  // dirty flags
   const [dirtyProduct, setDirtyProduct] = useState(false);
   const [dirtyVariants, setDirtyVariants] = useState<Set<number>>(new Set());
   const [newVariants, setNewVariants] = useState<Variant[]>([]);
@@ -122,20 +202,9 @@ export default function ProductDetailPage() {
   // validation
   const [errors, setErrors] = useState<{ name?: string; basePrice?: string; categoryId?: string }>({});
 
-  const api = useMemo(() => {
-    const inst = axios.create({ baseURL: API_BASE });
-    inst.interceptors.request.use((cfg) => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (token) cfg.headers.Authorization = `Bearer ${token}`;
-      cfg.headers['Content-Type'] = 'application/json';
-      return cfg;
-    });
-    return inst;
-  }, []);
-
   const getData = useCallback(
     async <T,>(path: string) => {
-      const res = await api.get<ApiResponse<T> | T>(path);
+      const res = await api.get<ApiEnvelope<T> | T>(path);
       return unwrap<T>(res.data);
     },
     [api]
@@ -152,39 +221,48 @@ export default function ProductDetailPage() {
       try {
         setMsg(null);
 
-        const cats = await getData<Category[]>(CATEGORY_LIST);
-        const det = await getData<ProductDetail>(PRODUCT_DETAILED(productId));
-        const vs = await getData<Variant[]>(VARIANTS_BY_PRODUCT(productId));
-        const imgs = await loadImages(api, productId);
+        const [cats, detRaw, vs, imgs] = await Promise.all([
+          getData<Category[]>(CATEGORY_LIST),
+          getData<ProductDetailApi>(PRODUCT_DETAILED(productId)),
+          getData<Variant[]>(VARIANTS_BY_PRODUCT(productId)),
+          loadImages(api, productId),
+        ]);
 
         // kategori id yoksa isimden bul
-        let catId: number | null =
-          typeof det.categoryId === 'number' && det.categoryId > 0 ? det.categoryId : null;
-        if (!catId && det.categoryName) {
+        let catId: number =
+          typeof detRaw.categoryId === 'number' && detRaw.categoryId > 0
+            ? detRaw.categoryId
+            : 0;
+        let catName: string | null = detRaw.categoryName ?? null;
+        if (!catId && detRaw.categoryName) {
           const found = cats.find(
-            (c) => (c.name ?? '').trim().toLowerCase() === det.categoryName!.trim().toLowerCase()
+            (c) => (c.name ?? '').trim().toLowerCase() === detRaw.categoryName!.trim().toLowerCase()
           );
-          if (found) catId = found.id;
+          if (found) {
+            catId = found.id;
+            catName = found.name ?? null;
+          }
         }
+
+        const priceInit = Number(detRaw.basePrice ?? detRaw.price ?? 0);
 
         if (!alive) return;
         setCategories(cats);
-
-        const priceInit = Number(det.basePrice ?? det.price ?? 0);
-        setPriceInput(priceInit.toLocaleString('tr-TR', { useGrouping: false }));
-
         setDetail({
-          id: det.id,
-          name: det.name,
-          description: det.description ?? null,
+          id: detRaw.id,
+          name: detRaw.name,
+          description: detRaw.description ?? null,
           basePrice: priceInit,
           price: priceInit,
-          gender: det.gender ?? 0,
-          isActive: !!det.isActive,
-          categoryId: catId ?? 0,
-          categoryName: det.categoryName ?? null,
-          mainPhoto: det.mainPhoto ?? null,
+          gender: detRaw.gender ?? 0,
+          isActive: !!detRaw.isActive,
+          categoryId: catId,
+          categoryName: catName,
+          mainPhoto: detRaw.mainPhoto ?? null,
         });
+        setPriceInput(
+          priceInit.toLocaleString('tr-TR', { useGrouping: false })
+        );
         setVariants(vs);
         setImages(imgs);
       } catch {
@@ -205,18 +283,19 @@ export default function ProductDetailPage() {
     const next: typeof errors = {};
     if (!detail.name || !detail.name.trim()) next.name = 'İsim zorunludur.';
     const priceVal = parseTrNumber(priceInput);
-    if (!Number.isFinite(priceVal) || priceVal < 0) next.basePrice = 'Fiyat 0 veya daha büyük olmalıdır.';
+    if (!Number.isFinite(priceVal) || priceVal <= 0) next.basePrice = 'Fiyat 0’dan büyük olmalıdır.';
     const catId = Number(detail.categoryId ?? 0);
     if (!Number.isFinite(catId) || catId <= 0) next.categoryId = 'Kategori seçiniz.';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  /* ------ Save ------ */
+  /* ------ KAYDET ------ */
   const saveAll = async () => {
     if (!detail) return;
     const hasChanges =
       dirtyProduct || imagesDirty || dirtyVariants.size > 0 || newVariants.length > 0 || deletedVariantIds.length > 0;
+
     if (!hasChanges) {
       setSaveMsg('Kaydedilecek değişiklik yok.');
       return;
@@ -225,61 +304,92 @@ export default function ProductDetailPage() {
       setSaveMsg('Lütfen formdaki hataları düzeltin.');
       return;
     }
-    if (!window.confirm('Kaydetmek istediğinize emin misiniz?')) return;
+    if (!window.confirm('Değişiklikleri kaydetmek istiyor musunuz?')) return;
 
-    setSaveBusy(true);
+    setBusy(true);
     setSaveMsg(null);
+
     try {
+      // 1) ÜRÜN
       if (dirtyProduct) {
-        const payload = {
+        const priceVal = parseTrNumber(priceInput);
+        const payload: ProductUpdateDto = {
           id: detail.id,
           name: detail.name.trim(),
           description: (detail.description ?? '').trim(),
-          basePrice: parseTrNumber(priceInput),
+          basePrice: priceVal,
+          price: priceVal, // create ile uyumlu olacak şekilde
           gender: Number(detail.gender ?? 0),
           isActive: Boolean(detail.isActive),
           categoryId: Number(detail.categoryId ?? 0),
+          productCode: DUMMY_EXTRAS.productCode,
+          fabricInfo: DUMMY_EXTRAS.fabricInfo,
+          modelMeasurements: DUMMY_EXTRAS.modelMeasurements,
         };
         await api.put(PRODUCT_UPDATE, payload);
       }
 
-      for (const id of deletedVariantIds) await api.delete(VARIANT_DELETE(id));
+      // 2) VARYANTLAR
+      for (const id of deletedVariantIds) {
+        await api.delete(VARIANT_DELETE(id));
+      }
+
       for (const id of Array.from(dirtyVariants)) {
         const v = variants.find((x) => x.id === id);
-        if (v) await api.put(VARIANT_UPDATE(id), v);
+        if (v) {
+          const dto = {
+            id: v.id,
+            productId: v.productId,
+            size: v.size?.trim() ? v.size.trim() : null,
+            color: v.color?.trim() ? v.color.trim() : null,
+            stock: Number.isFinite(v.stock) ? Math.max(0, Math.floor(v.stock)) : 0,
+          };
+          await api.put(VARIANT_UPDATE(id), dto);
+        }
       }
-      for (const nv of newVariants) await api.post(VARIANT_CREATE, nv);
 
+      for (const nv of newVariants) {
+        const dto = {
+          productId: nv.productId,
+          size: nv.size?.trim() ? nv.size.trim() : null,
+          color: nv.color?.trim() ? nv.color.trim() : null,
+          stock: Number.isFinite(nv.stock) ? Math.max(0, Math.floor(nv.stock)) : 0,
+        };
+        // boş varyantı atlama
+        if (!dto.size && !dto.color && dto.stock === 0) continue;
+        await api.post(VARIANT_CREATE, dto);
+      }
+
+      // 3) GÖRSELLER (sadece sıralama)
       if (imagesDirty && images.length) {
         const ordered = images.map((i, idx) => ({ id: i.id, sortOrder: idx + 1 }));
         await api.put(IMAGE_REORDER(detail.id), ordered);
       }
 
+      // temizle
       setDirtyProduct(false);
       setDirtyVariants(new Set());
       setNewVariants([]);
       setDeletedVariantIds([]);
       setImagesDirty(false);
+
       setSaveMsg('✅ Değişiklikler kaydedildi.');
     } catch (err) {
-      const m =
-        axios.isAxiosError(err)
-          ? ((err.response?.data as { message?: string } | undefined)?.message ?? '❌ Kaydetme hatası.')
-          : '❌ Kaydetme hatası.';
-      setSaveMsg(m);
+      setSaveMsg(explainAxiosError(err));
     } finally {
-      setSaveBusy(false);
+      setBusy(false);
     }
   };
 
-  /* ------ Variants ------ */
+  /* ------ Varyant İşlemleri ------ */
   const addVariant = () => {
     if (!detail) return;
-    const tmpId = Math.floor(Math.random() * -1_000_000_000);
-    const tmp: Variant = { id: tmpId, productId: detail.id, size: 'M', color: 'Siyah', stock: 0 };
+    const tmpId = -1 * (1 + Math.floor(Math.random() * 1_000_000_000));
+    const tmp: Variant = { id: tmpId, productId: detail.id, size: '', color: '', stock: 0 };
     setNewVariants((l) => [...l, tmp]);
     setVariants((l) => [...l, tmp]);
   };
+
   const removeVariant = (v: Variant) => {
     if (v.id < 0) {
       setNewVariants((l) => l.filter((x) => x.id !== v.id));
@@ -290,7 +400,7 @@ export default function ProductDetailPage() {
     }
   };
 
-  /* ------ Images ------ */
+  /* ------ Görsel İşlemleri ------ */
   const deleteImage = async (img: ProductImage) => {
     if (!window.confirm('Görseli silmek istediğinize emin misiniz?')) return;
     try {
@@ -320,30 +430,42 @@ export default function ProductDetailPage() {
     setImagesBusy(true);
     const token = localStorage.getItem('token') ?? '';
 
-    // çoklu upload – sırayla
     for (const file of Array.from(files)) {
-      const tryOnce = async (field: 'image' | 'imageFile') => {
+      // farklı backend bağlamaları için iki alan dene
+      const tryOnce = async (key1: string, key2: string) => {
         const fd = new FormData();
         fd.append('productId', String(detail.id));
-        fd.append(field, file);
+        fd.append(key1, file);
+        fd.append(key2, file);
         fd.append('altText', file.name);
-        await axios.post(`${API_BASE}${IMAGE_CREATE}`, fd, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        try {
+          const up = await axios.post(`${API_BASE}${IMAGE_CREATE}`, fd, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          // ilk görsel ana görsel değilse set-main deneyebiliriz (opsiyonel)
+          const data = unwrap<unknown>(up.data);
+          const newImageId = pickNum(data, 'id') ?? pickNum(data, 'imageId') ?? (typeof data === 'number' ? data : 0);
+          if (newImageId && images.length === 0) {
+            await api.put(IMAGE_SET_MAIN(newImageId), {});
+          }
+        } catch {
+          // bu deneme başarısızsa dışarıda ikinci methoda düşecek
+          throw new Error('upload failed');
+        }
       };
 
       try {
-        await tryOnce('image');
+        await tryOnce('image', 'Image');
       } catch {
         try {
-          await tryOnce('imageFile');
+          await tryOnce('imageFile', 'ImageFile');
         } catch {
           console.warn(`Upload başarısız: ${file.name}`);
         }
       }
     }
 
-    // upload bitti, listeyi refetch et (id ve sortOrder kesinleşir)
+    // Güncel listeyi çek
     try {
       const fresh = await loadImages(api, detail.id);
       setImages(fresh);
@@ -360,7 +482,6 @@ export default function ProductDetailPage() {
       <div className="max-w-[1480px] pl-6 pr-8">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-2xl font-semibold text-slate-800">Ürün Detay</h1>
-          {/* SAĞ ÜSTTE TEK BUTON */}
           <button
             onClick={() => router.push('/merchant/dashboard/urunler')}
             className="rounded-xl px-3 py-2 text-sm border border-slate-300 hover:bg-slate-50"
@@ -370,20 +491,13 @@ export default function ProductDetailPage() {
         </div>
 
         {msg && (
-          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{msg}</div>
+          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {msg}
+          </div>
         )}
 
         {detail && (
-          <div
-            className="
-              w-full max-w-[1200px]
-              bg-white rounded-2xl shadow-sm border border-slate-200
-              p-5 space-y-6
-              md:sticky md:top-4
-              md:h-[calc(100vh-120px)]
-              overflow-y-auto
-            "
-          >
+          <div className="w-full max-w-[1200px] bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-6 md:sticky md:top-4 md:h-[calc(100vh-120px)] overflow-y-auto">
             {/* GENEL BİLGİ */}
             <section>
               <div className="text-xs font-semibold text-slate-500 mb-2">GENEL BİLGİ</div>
@@ -442,7 +556,6 @@ export default function ProductDetailPage() {
                   {errors.basePrice && <div className="text-xs text-red-600 mt-1">{errors.basePrice}</div>}
                 </div>
 
-                {/* Kategori */}
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">Kategori</label>
                   <select
@@ -506,14 +619,12 @@ export default function ProductDetailPage() {
               </div>
             </section>
 
-            {/* GÖRSELLER – oklar + sil + upload */}
+            {/* GÖRSELLER */}
             <section>
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs font-semibold text-slate-500">
                   GÖRSELLER {imagesBusy && <span className="ml-2 text-[11px] text-slate-400">(yükleniyor…)</span>}
                 </div>
-
-                {/* YÜKLE */}
                 <label className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs cursor-pointer hover:bg-slate-50">
                   Görsel Ekle
                   <input
@@ -528,38 +639,32 @@ export default function ProductDetailPage() {
 
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {images.map((img, idx) => (
-                  <li
-                    key={img.id ?? `tmp-${idx}-${img.imageUrl}`}
-                    className="relative rounded-xl border border-slate-200 overflow-hidden"
-                  >
+                  <li key={img.id} className="relative rounded-xl border border-slate-200 overflow-hidden">
                     <div className="aspect-[4/3] bg-slate-100">
                       <img src={img.imageUrl} alt={img.altText ?? ''} className="h-full w-full object-cover" />
                     </div>
 
-                    <div className="absolute top-2 right-2">
-                      <button
-                        onClick={() => deleteImage(img)}
-                        className="px-2 py-1 rounded bg-red-600/90 text-white text-xs"
-                        title="Sil"
-                      >
-                        Sil
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 p-2">
+                    <div className="absolute top-2 right-2 flex gap-2">
                       <button
                         onClick={() => moveImage(idx, -1)}
-                        className="px-2 py-1 rounded text-xs border border-slate-300"
+                        className="px-2 py-1 rounded text-xs border border-slate-300 bg-white/80"
                         title="Yukarı"
                       >
                         ↑
                       </button>
                       <button
                         onClick={() => moveImage(idx, 1)}
-                        className="px-2 py-1 rounded text-xs border border-slate-300"
+                        className="px-2 py-1 rounded text-xs border border-slate-300 bg-white/80"
                         title="Aşağı"
                       >
                         ↓
+                      </button>
+                      <button
+                        onClick={() => deleteImage(img)}
+                        className="px-2 py-1 rounded bg-red-600/90 text-white text-xs"
+                        title="Sil"
+                      >
+                        Sil
                       </button>
                     </div>
                   </li>
@@ -584,43 +689,40 @@ export default function ProductDetailPage() {
                 {variants.map((v) => (
                   <div key={v.id} className="border border-slate-200 rounded-xl p-3">
                     <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-500 mb-1">Beden</label>
-                        <input
-                          value={v.size ?? ''}
-                          onChange={(e) => {
-                            const next = { ...v, size: e.target.value };
-                            setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
-                            if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
-                          }}
-                          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-500 mb-1">Renk</label>
-                        <input
-                          value={v.color ?? ''}
-                          onChange={(e) => {
-                            const next = { ...v, color: e.target.value };
-                            setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
-                            if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
-                          }}
-                          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-500 mb-1">Stok</label>
-                        <input
-                          type="number"
-                          value={v.stock}
-                          onChange={(e) => {
-                            const next = { ...v, stock: Number(e.target.value) || 0 };
-                            setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
-                            if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
-                          }}
-                          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                        />
-                      </div>
+                      <input
+                        value={v.size ?? ''}
+                        onChange={(e) => {
+                          const next = { ...v, size: e.target.value };
+                          setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
+                          if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
+                        }}
+                        placeholder="Beden"
+                        className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      />
+                      <input
+                        value={v.color ?? ''}
+                        onChange={(e) => {
+                          const next = { ...v, color: e.target.value };
+                          setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
+                          if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
+                        }}
+                        placeholder="Renk"
+                        className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      />
+                      <input
+                        type="number"
+                        value={v.stock}
+                        onChange={(e) => {
+                          const val = Number.isFinite(Number(e.target.value))
+                            ? Math.max(0, Math.floor(Number(e.target.value)))
+                            : 0;
+                          const next = { ...v, stock: val };
+                          setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
+                          if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
+                        }}
+                        placeholder="Stok"
+                        className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      />
                     </div>
                     <div className="mt-3 flex items-center justify-end">
                       <button
@@ -638,12 +740,13 @@ export default function ProductDetailPage() {
               </div>
             </section>
 
+            {/* KAYDET */}
             <div className="pt-2 border-t border-slate-200 pb-2">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm text-slate-600">{saveBusy ? 'İşleniyor…' : saveMsg}</div>
+                <div className="text-sm text-slate-600">{busy ? 'İşleniyor…' : saveMsg}</div>
                 <button
                   onClick={saveAll}
-                  disabled={saveBusy}
+                  disabled={busy}
                   className="px-4 py-2 rounded-xl bg-slate-800 text-white text-sm hover:opacity-90 disabled:opacity-50"
                 >
                   Kaydet
