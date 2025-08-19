@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.Customer;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
@@ -108,30 +109,9 @@ namespace Yazilimxyz.WebAPI.Controllers
 		[Authorize(Roles = "Merchant,AppAdmin")]
 		public async Task<IActionResult> UpdateProductAsync([FromBody] UpdateProductDto dto)
 		{
-			// 1. Kategori kontrolü
-			var category = await _categoryService.GetByIdAsync(dto.CategoryId);
-			if (category == null)
-				return BadRequest(new { message = "Kategori bulunamadı." });
+			if (dto.Id <= 0)
+				return BadRequest(new { message = Messages.InvalidProductId });
 
-			// 2. Ürün var mı
-			var existingResult = await _productService.GetDetailedAsync(dto.Id);
-			if (!existingResult.Success || existingResult.Data == null)
-				return NotFound(new { message = "Güncellenecek ürün bulunamadı." });
-
-			var existing = existingResult.Data;
-
-			// 3. Sadece merchant ise sahiplik kontrolü
-			if (User.IsInRole("Merchant"))
-			{
-				var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-				var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
-
-				if (merchant != null && existing.MerchantId != merchant.Id)
-					return StatusCode(StatusCodes.Status403Forbidden,
-						new { message = "Sadece kendi ürününüzü güncelleyebilirsiniz." });
-			}
-
-			// 4. Servisten dönen sonucu kontrol et
 			var result = await _productService.UpdateAsync(dto);
 			if (!result.Success)
 				return BadRequest(new { message = result.Message });

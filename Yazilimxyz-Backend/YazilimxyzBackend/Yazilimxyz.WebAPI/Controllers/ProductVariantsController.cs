@@ -203,11 +203,6 @@ namespace Yazilimxyz.WebAPI.Controllers
 				return BadRequest("Veri gönderilmedi.");
 			}
 
-			if (dto.Id != id)
-			{
-				return BadRequest("URL'deki Id ile gövdedeki Id eşleşmiyor.");
-			}
-
 			if (dto.ProductId <= 0)
 			{
 				return BadRequest(Messages.InvalidProductId);
@@ -268,7 +263,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 				return Conflict(Messages.DuplicateProductVariant);
 			}
 
-			var result = await _variantService.UpdateAsync(dto);
+			var result = await _variantService.UpdateAsync(id, dto);
 			if (!result.Success)
 			{
 				return BadRequest(result.Message); // örneğin güncellenemedi mesajı
@@ -333,7 +328,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 		[HttpDelete("{id:int}")]
 		[Authorize(Roles = "Merchant,AppAdmin")]
-		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status403Forbidden)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -367,7 +362,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			}
 
 			await _variantService.DeleteAsync(id);
-			return NoContent(); // 204 → içerik dönmüyor, başarılı silindi.
+			return Ok(new { message = Messages.ProductVariantDeleted });
 		}
 	}
 

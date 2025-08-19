@@ -150,12 +150,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         }
 
         [CacheRemoveAspect("IProductVariantService.Get")]
-        public async Task<IResult> UpdateAsync(UpdateProductVariantDto dto)
-        {
-            if (dto.Id <= 0)
-                return new ErrorResult(Messages.InvalidProductVariantId);
-
-            if (dto.ProductId <= 0)
+		public async Task<IResult> UpdateAsync(int id, UpdateProductVariantDto dto)
+		{
+			if (dto.ProductId <= 0)
                 return new ErrorResult(Messages.InvalidProductId);
 
             if (string.IsNullOrWhiteSpace(dto.Size))
@@ -176,16 +173,16 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (dto.Stock > 999999)
                 return new ErrorResult(Messages.ProductVariantStockTooHigh);
 
-            var variant = await _productVariantRepository.GetByIdAsync(dto.Id);
-            if (variant == null)
-                return new ErrorResult(Messages.ProductVariantNotFound);
+			var variant = await _productVariantRepository.GetByIdAsync(id);
+			if (variant == null)
+				return new ErrorResult(Messages.ProductVariantNotFound);
 
-            var product = await _productRepository.GetByIdAsync(dto.ProductId);
+			var product = await _productRepository.GetByIdAsync(dto.ProductId);
             if (product == null)
                 return new ErrorResult(Messages.ProductNotFound);
 
 			var existingVariant = await _productVariantRepository.GetByProductAndOptionsAsync(dto.ProductId, dto.Size.Trim().ToLower(), dto.Color.Trim().ToLower());
-			if (existingVariant != null && existingVariant.Id != dto.Id)
+			if (existingVariant != null && existingVariant.Id != id)
 				return new ErrorResult(Messages.DuplicateProductVariant);
 
 			_mapper.Map(dto, variant);
