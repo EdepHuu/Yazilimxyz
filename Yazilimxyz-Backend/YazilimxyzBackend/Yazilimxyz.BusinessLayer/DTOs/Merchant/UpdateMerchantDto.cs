@@ -4,7 +4,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Merchant
 {
 	public class UpdateMerchantDto
 	{
-		 public int Id { get; set; }
+		 
 		 public string CompanyName { get; set; }
 		 public string Iban { get; set; }
 		 public string TaxNumber { get; set; }
