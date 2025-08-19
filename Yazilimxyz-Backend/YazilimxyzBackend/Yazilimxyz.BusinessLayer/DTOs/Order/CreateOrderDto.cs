@@ -12,6 +12,6 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Order
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
         public int ShippingAddressId { get; set; }
-        public DateTime? ShippedAt { get; set; }
+        
     }
 }

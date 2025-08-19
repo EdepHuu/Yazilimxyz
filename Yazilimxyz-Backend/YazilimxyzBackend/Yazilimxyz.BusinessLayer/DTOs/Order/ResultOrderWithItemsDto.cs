@@ -24,12 +24,12 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Order
         public DateTime CreatedDate { get; set; }
         public DateTime? ShippedAt { get; set; }
 
-        // Teslimat adresi bilgileri
+        // Teslimat adresi
         public string ShippingAddressLine { get; set; }
         public string ShippingCity { get; set; }
         public string ShippingDistrict { get; set; }
 
-        // Siparişteki tüm ürünlerin listesi
+        // Siparişteki ürünler
         public List<ResultOrderItemDto> Items { get; set; } = new();
     }
 }
