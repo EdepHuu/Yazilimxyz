@@ -37,7 +37,7 @@ type ProductDetailVM = {
 };
 
 type Variant = {
-  id: number;
+  id: number;           // >0: gerçek id, <0: geçici id (yeni)
   productId: number;
   size?: string | null;
   color?: string | null;
@@ -70,6 +70,8 @@ type ProductUpdateDto = {
   gender: number;
   isActive: boolean;
   categoryId: number;
+
+  // backend zorunlu dummy alanlar
   productCode: string;
   fabricInfo: string;
   modelMeasurements: string;
@@ -82,13 +84,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 const PRODUCT_DETAILED = (productId: number) => `/api/Product/${productId}/detailed`;
 const PRODUCT_UPDATE = `/api/Product/update`;
 
-const CATEGORY_LIST = '/api/Category';
+const CATEGORY_LIST = `/api/Category`;
 
+// Varyantlar
 const VARIANTS_BY_PRODUCT = (productId: number) => `/api/ProductVariants/by-product/${productId}`;
 const VARIANT_UPDATE = (id: number) => `/api/ProductVariants/${id}`;
 const VARIANT_DELETE = (id: number) => `/api/ProductVariants/${id}`;
-const VARIANT_CREATE = `/api/ProductVariants`;
+const VARIANT_CREATE = `/api/ProductVariants`; // POST
 
+// Görseller
 const IMAGES_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}`;
 const IMAGE_DELETE = (id: number) => `/api/ProductImage/${id}`;
 const IMAGE_REORDER = (productId: number) => `/api/ProductImage/reorder/${productId}`;
@@ -155,7 +159,9 @@ function getApi(): AxiosInstance {
 
 /** Görselleri API'den oku ve normalize et */
 async function loadImages(api: AxiosInstance, productId: number): Promise<ProductImage[]> {
-  const res = await api.get<ApiEnvelope<ProductImageRow[]> | ProductImageRow[]>(IMAGES_BY_PRODUCT(productId));
+  const res = await api.get<ApiEnvelope<ProductImageRow[]> | ProductImageRow[]>(
+    IMAGES_BY_PRODUCT(productId)
+  );
   const rows = unwrap<ProductImageRow[]>(res.data);
   return rows.map((r) => ({
     id: r.id,
@@ -171,6 +177,7 @@ async function loadImages(api: AxiosInstance, productId: number): Promise<Produc
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
+
   const idParam = Array.isArray(params?.id) ? params.id[0] : (params?.id as string | undefined);
   const productId = Number(idParam);
 
@@ -201,6 +208,7 @@ export default function ProductDetailPage() {
 
   // validation
   const [errors, setErrors] = useState<{ name?: string; basePrice?: string; categoryId?: string }>({});
+  const [variantErrors, setVariantErrors] = useState<Record<number, string>>({}); // id->hata
 
   const getData = useCallback(
     async <T,>(path: string) => {
@@ -215,8 +223,8 @@ export default function ProductDetailPage() {
       router.replace('/merchant/dashboard/urunler');
       return;
     }
-    let alive = true;
 
+    let alive = true;
     (async () => {
       try {
         setMsg(null);
@@ -230,10 +238,9 @@ export default function ProductDetailPage() {
 
         // kategori id yoksa isimden bul
         let catId: number =
-          typeof detRaw.categoryId === 'number' && detRaw.categoryId > 0
-            ? detRaw.categoryId
-            : 0;
+          typeof detRaw.categoryId === 'number' && detRaw.categoryId > 0 ? detRaw.categoryId : 0;
         let catName: string | null = detRaw.categoryName ?? null;
+
         if (!catId && detRaw.categoryName) {
           const found = cats.find(
             (c) => (c.name ?? '').trim().toLowerCase() === detRaw.categoryName!.trim().toLowerCase()
@@ -247,6 +254,7 @@ export default function ProductDetailPage() {
         const priceInit = Number(detRaw.basePrice ?? detRaw.price ?? 0);
 
         if (!alive) return;
+
         setCategories(cats);
         setDetail({
           id: detRaw.id,
@@ -260,9 +268,8 @@ export default function ProductDetailPage() {
           categoryName: catName,
           mainPhoto: detRaw.mainPhoto ?? null,
         });
-        setPriceInput(
-          priceInit.toLocaleString('tr-TR', { useGrouping: false })
-        );
+
+        setPriceInput(priceInit.toLocaleString('tr-TR', { useGrouping: false }));
         setVariants(vs);
         setImages(imgs);
       } catch {
@@ -278,21 +285,45 @@ export default function ProductDetailPage() {
   }, [api, getData, productId, router]);
 
   /* ------ Validation ------ */
+
   const validate = (): boolean => {
     if (!detail) return false;
     const next: typeof errors = {};
+
     if (!detail.name || !detail.name.trim()) next.name = 'İsim zorunludur.';
+
     const priceVal = parseTrNumber(priceInput);
     if (!Number.isFinite(priceVal) || priceVal <= 0) next.basePrice = 'Fiyat 0’dan büyük olmalıdır.';
+
     const catId = Number(detail.categoryId ?? 0);
     if (!Number.isFinite(catId) || catId <= 0) next.categoryId = 'Kategori seçiniz.';
+
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
+  const validateVariantsBeforeSave = (): boolean => {
+    // Backend (önceki paylaştığın controller) update için Size/Color boş olmasın.
+    const newErrs: Record<number, string> = {};
+    for (const v of [...newVariants, ...variants.filter((x) => x.id > 0 && dirtyVariants.has(x.id))]) {
+      const sz = (v.size ?? '').trim();
+      const cl = (v.color ?? '').trim();
+      const st = Number.isFinite(v.stock) ? Math.max(0, Math.floor(v.stock)) : 0;
+      if (!sz) newErrs[v.id] = 'Beden zorunludur.';
+      else if (sz.length > 50) newErrs[v.id] = 'Beden 50 karakteri aşamaz.';
+      else if (!cl) newErrs[v.id] = 'Renk zorunludur.';
+      else if (cl.length > 50) newErrs[v.id] = 'Renk 50 karakteri aşamaz.';
+      else if (st < 0 || st > 999_999) newErrs[v.id] = 'Stok 0–999.999 aralığında olmalıdır.';
+    }
+    setVariantErrors(newErrs);
+    return Object.keys(newErrs).length === 0;
+  };
+
   /* ------ KAYDET ------ */
+
   const saveAll = async () => {
     if (!detail) return;
+
     const hasChanges =
       dirtyProduct || imagesDirty || dirtyVariants.size > 0 || newVariants.length > 0 || deletedVariantIds.length > 0;
 
@@ -300,10 +331,17 @@ export default function ProductDetailPage() {
       setSaveMsg('Kaydedilecek değişiklik yok.');
       return;
     }
+
     if (!validate()) {
       setSaveMsg('Lütfen formdaki hataları düzeltin.');
       return;
     }
+
+    if (!validateVariantsBeforeSave()) {
+      setSaveMsg('Varyant alanlarındaki hataları düzeltin.');
+      return;
+    }
+
     if (!window.confirm('Değişiklikleri kaydetmek istiyor musunuz?')) return;
 
     setBusy(true);
@@ -318,7 +356,7 @@ export default function ProductDetailPage() {
           name: detail.name.trim(),
           description: (detail.description ?? '').trim(),
           basePrice: priceVal,
-          price: priceVal, // create ile uyumlu olacak şekilde
+          price: priceVal,
           gender: Number(detail.gender ?? 0),
           isActive: Boolean(detail.isActive),
           categoryId: Number(detail.categoryId ?? 0),
@@ -330,34 +368,36 @@ export default function ProductDetailPage() {
       }
 
       // 2) VARYANTLAR
+
+      // 2.a) Silinenler
       for (const id of deletedVariantIds) {
         await api.delete(VARIANT_DELETE(id));
       }
 
+      // 2.b) Güncellenen mevcutlar
       for (const id of Array.from(dirtyVariants)) {
         const v = variants.find((x) => x.id === id);
         if (v) {
           const dto = {
             id: v.id,
             productId: v.productId,
-            size: v.size?.trim() ? v.size.trim() : null,
-            color: v.color?.trim() ? v.color.trim() : null,
+            size: (v.size ?? '').trim(),
+            color: (v.color ?? '').trim(),
             stock: Number.isFinite(v.stock) ? Math.max(0, Math.floor(v.stock)) : 0,
           };
           await api.put(VARIANT_UPDATE(id), dto);
         }
       }
 
+      // 2.c) Yeni eklenenler (geçici id < 0)
       for (const nv of newVariants) {
-        const dto = {
+        const body = {
           productId: nv.productId,
-          size: nv.size?.trim() ? nv.size.trim() : null,
-          color: nv.color?.trim() ? nv.color.trim() : null,
+          size: (nv.size ?? '').trim(),
+          color: (nv.color ?? '').trim(),
           stock: Number.isFinite(nv.stock) ? Math.max(0, Math.floor(nv.stock)) : 0,
         };
-        // boş varyantı atlama
-        if (!dto.size && !dto.color && dto.stock === 0) continue;
-        await api.post(VARIANT_CREATE, dto);
+        await api.post(VARIANT_CREATE, body);
       }
 
       // 3) GÖRSELLER (sadece sıralama)
@@ -366,13 +406,21 @@ export default function ProductDetailPage() {
         await api.put(IMAGE_REORDER(detail.id), ordered);
       }
 
+      // 4) Sunucudan taze veri çek (özellikle yeni varyantların gerçek id'leri için)
+      const [freshVariants, freshImages] = await Promise.all([
+        getData<Variant[]>(VARIANTS_BY_PRODUCT(detail.id)),
+        loadImages(api, detail.id),
+      ]);
+      setVariants(freshVariants);
+      setImages(freshImages);
+
       // temizle
       setDirtyProduct(false);
       setDirtyVariants(new Set());
       setNewVariants([]);
       setDeletedVariantIds([]);
       setImagesDirty(false);
-
+      setVariantErrors({});
       setSaveMsg('✅ Değişiklikler kaydedildi.');
     } catch (err) {
       setSaveMsg(explainAxiosError(err));
@@ -382,25 +430,80 @@ export default function ProductDetailPage() {
   };
 
   /* ------ Varyant İşlemleri ------ */
+
   const addVariant = () => {
     if (!detail) return;
     const tmpId = -1 * (1 + Math.floor(Math.random() * 1_000_000_000));
     const tmp: Variant = { id: tmpId, productId: detail.id, size: '', color: '', stock: 0 };
     setNewVariants((l) => [...l, tmp]);
     setVariants((l) => [...l, tmp]);
+    setVariantErrors((e) => ({ ...e, [tmpId]: 'Beden ve renk zorunludur.' }));
+  };
+
+  const onVariantChange = (v: Variant, field: 'size' | 'color' | 'stock', value: string) => {
+    const next: Variant =
+      field === 'stock'
+        ? { ...v, stock: Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0 }
+        : { ...v, [field]: value };
+
+    setVariants((list) => list.map((x) => (x.id === v.id ? next : x)));
+
+    // dirty işaretlemesi
+    if (v.id > 0) {
+      setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
+    }
+
+    // validasyon mesajı
+    const sz = (field === 'size' ? value : next.size ?? '').trim();
+    const cl = (field === 'color' ? value : next.color ?? '').trim();
+    const st = next.stock;
+    let err = '';
+    if (!sz) err = 'Beden zorunludur.';
+    else if (sz.length > 50) err = 'Beden 50 karakteri aşamaz.';
+    else if (!cl) err = 'Renk zorunludur.';
+    else if (cl.length > 50) err = 'Renk 50 karakteri aşamaz.';
+    else if (st < 0 || st > 999_999) err = 'Stok 0–999.999 aralığında olmalıdır.';
+
+    setVariantErrors((e) => {
+      const copy = { ...e };
+      if (err) copy[v.id] = err;
+      else delete copy[v.id];
+      return copy;
+    });
+
+    // yeni varyant listesinde de güncelle (negatif id)
+    if (v.id < 0) {
+      setNewVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
+    }
   };
 
   const removeVariant = (v: Variant) => {
     if (v.id < 0) {
       setNewVariants((l) => l.filter((x) => x.id !== v.id));
       setVariants((l) => l.filter((x) => x.id !== v.id));
+      setVariantErrors((e) => {
+        const copy = { ...e };
+        delete copy[v.id];
+        return copy;
+      });
     } else {
       setDeletedVariantIds((l) => [...l, v.id]);
       setVariants((l) => l.filter((x) => x.id !== v.id));
+      setDirtyVariants((s) => {
+        const copy = new Set(Array.from(s));
+        copy.delete(v.id);
+        return copy;
+      });
+      setVariantErrors((e) => {
+        const copy = { ...e };
+        delete copy[v.id];
+        return copy;
+      });
     }
   };
 
   /* ------ Görsel İşlemleri ------ */
+
   const deleteImage = async (img: ProductImage) => {
     if (!window.confirm('Görseli silmek istediğinize emin misiniz?')) return;
     try {
@@ -431,27 +534,16 @@ export default function ProductDetailPage() {
     const token = localStorage.getItem('token') ?? '';
 
     for (const file of Array.from(files)) {
-      // farklı backend bağlamaları için iki alan dene
       const tryOnce = async (key1: string, key2: string) => {
         const fd = new FormData();
         fd.append('productId', String(detail.id));
         fd.append(key1, file);
         fd.append(key2, file);
         fd.append('altText', file.name);
-        try {
-          const up = await axios.post(`${API_BASE}${IMAGE_CREATE}`, fd, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          // ilk görsel ana görsel değilse set-main deneyebiliriz (opsiyonel)
-          const data = unwrap<unknown>(up.data);
-          const newImageId = pickNum(data, 'id') ?? pickNum(data, 'imageId') ?? (typeof data === 'number' ? data : 0);
-          if (newImageId && images.length === 0) {
-            await api.put(IMAGE_SET_MAIN(newImageId), {});
-          }
-        } catch {
-          // bu deneme başarısızsa dışarıda ikinci methoda düşecek
-          throw new Error('upload failed');
-        }
+
+        await axios.post(`${API_BASE}${IMAGE_CREATE}`, fd, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       };
 
       try {
@@ -465,9 +557,12 @@ export default function ProductDetailPage() {
       }
     }
 
-    // Güncel listeyi çek
+    // İlk görsel yüklendiyse ana görseli set et (opsiyonel güvence)
     try {
       const fresh = await loadImages(api, detail.id);
+      if (fresh.length && images.length === 0) {
+        await api.put(IMAGE_SET_MAIN(fresh[0].id), {});
+      }
       setImages(fresh);
       setImagesDirty(true);
     } finally {
@@ -553,7 +648,9 @@ export default function ProductDetailPage() {
                         : 'border-slate-300 bg-slate-50 focus:ring-slate-400')
                     }
                   />
-                  {errors.basePrice && <div className="text-xs text-red-600 mt-1">{errors.basePrice}</div>}
+                  {errors.basePrice && (
+                    <div className="text-xs text-red-600 mt-1">{errors.basePrice}</div>
+                  )}
                 </div>
 
                 <div>
@@ -582,7 +679,9 @@ export default function ProductDetailPage() {
                       </option>
                     ))}
                   </select>
-                  {errors.categoryId && <div className="text-xs text-red-600 mt-1">{errors.categoryId}</div>}
+                  {errors.categoryId && (
+                    <div className="text-xs text-red-600 mt-1">{errors.categoryId}</div>
+                  )}
                 </div>
 
                 <div>
@@ -643,7 +742,6 @@ export default function ProductDetailPage() {
                     <div className="aspect-[4/3] bg-slate-100">
                       <img src={img.imageUrl} alt={img.altText ?? ''} className="h-full w-full object-cover" />
                     </div>
-
                     <div className="absolute top-2 right-2 flex gap-2">
                       <button
                         onClick={() => moveImage(idx, -1)}
@@ -670,6 +768,7 @@ export default function ProductDetailPage() {
                   </li>
                 ))}
               </ul>
+
               {images.length === 0 && <div className="text-sm text-slate-500">Bu ürüne ait görsel yok.</div>}
             </section>
 
@@ -691,39 +790,29 @@ export default function ProductDetailPage() {
                     <div className="grid grid-cols-3 gap-3">
                       <input
                         value={v.size ?? ''}
-                        onChange={(e) => {
-                          const next = { ...v, size: e.target.value };
-                          setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
-                          if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
-                        }}
+                        onChange={(e) => onVariantChange(v, 'size', e.target.value)}
                         placeholder="Beden"
                         className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
                       />
                       <input
                         value={v.color ?? ''}
-                        onChange={(e) => {
-                          const next = { ...v, color: e.target.value };
-                          setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
-                          if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
-                        }}
+                        onChange={(e) => onVariantChange(v, 'color', e.target.value)}
                         placeholder="Renk"
                         className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
                       />
                       <input
                         type="number"
                         value={v.stock}
-                        onChange={(e) => {
-                          const val = Number.isFinite(Number(e.target.value))
-                            ? Math.max(0, Math.floor(Number(e.target.value)))
-                            : 0;
-                          const next = { ...v, stock: val };
-                          setVariants((l) => l.map((x) => (x.id === v.id ? next : x)));
-                          if (v.id > 0) setDirtyVariants((s) => new Set([...Array.from(s), v.id]));
-                        }}
+                        onChange={(e) => onVariantChange(v, 'stock', e.target.value)}
                         placeholder="Stok"
                         className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
                       />
                     </div>
+
+                    {variantErrors[v.id] && (
+                      <div className="text-xs text-red-600 mt-2">{variantErrors[v.id]}</div>
+                    )}
+
                     <div className="mt-3 flex items-center justify-end">
                       <button
                         onClick={() => removeVariant(v)}
@@ -734,6 +823,7 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
                 ))}
+
                 {variants.length === 0 && (
                   <div className="text-sm text-slate-500">Bu ürüne ait varyant bulunamadı.</div>
                 )}

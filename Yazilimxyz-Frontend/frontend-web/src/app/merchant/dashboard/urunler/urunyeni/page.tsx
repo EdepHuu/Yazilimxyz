@@ -20,6 +20,7 @@ type ProductCreateDto = {
   isActive: boolean;
   categoryId: number;
   merchantId?: number;
+  // backend zorunlu: dummy alanlar
   productCode: string;
   fabricInfo: string;
   modelMeasurements: string;
@@ -27,7 +28,7 @@ type ProductCreateDto = {
 
 type Variant = {
   id: number;        // geçici UI id (negatif)
-  productId: number; // create sonrası atanır
+  productId: number; // create sonrası set edilir
   size?: string | null;
   color?: string | null;
   stock: number;
@@ -35,6 +36,7 @@ type Variant = {
 
 type NewImage = { file: File; previewUrl: string; altText?: string | null };
 
+// /api/Product/get-all maddesi
 type ProductListItem = {
   id: number;
   name: string;
@@ -42,18 +44,30 @@ type ProductListItem = {
   createdAt?: string;
 };
 
+// Görsel create dönüşü olasılıkları
 type CreatedImage = number | { id: number } | { imageId: number };
 
 /* ---------- Sabitler ---------- */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
 const CATEGORY_LIST = '/api/Category';
 const MERCHANT_PROFILE = '/api/Merchant/profile';
 const PRODUCT_CREATE = '/api/Product/create';
 const PRODUCT_GET_ALL = '/api/Product/get-all';
 
+// VARYANT – swagger’a göre
+const VARIANT_CREATE = '/api/ProductVariants';
+
+// GÖRSEL – buna dokunmuyoruz
 const IMAGE_CREATE = '/api/ProductImage/create';
 const IMAGE_SET_MAIN = (imageId: number) => `/api/ProductImage/set-main/${imageId}`;
+
+const DUMMY_EXTRAS = {
+  productCode: 'SKU-AUTO',
+  fabricInfo: '100% Pamuk',
+  modelMeasurements: 'Boy 180, Göğüs 96, Bel 78',
+};
 
 /* ---------- Yardımcılar (any yok) ---------- */
 
@@ -87,20 +101,13 @@ const resolveProductIdFallback = async (
   try {
     const res = await api.get<ApiEnvelope<ProductListItem[]> | ProductListItem[]>(PRODUCT_GET_ALL);
     const list = unwrap<ProductListItem[]>(res.data);
-
     const byNameAndMerchant = list.filter(
       (p) => p.name === name && (merchantId ? p.merchantId === merchantId : true)
     );
     const byMerchantOnly = merchantId ? list.filter((p) => p.merchantId === merchantId) : [];
-
     const pickMax = (arr: ProductListItem[]): number =>
       arr.reduce((mx, it) => (it.id > mx ? it.id : mx), 0);
-
-    return (
-      pickMax(byNameAndMerchant) ||
-      pickMax(byMerchantOnly) ||
-      pickMax(list)
-    );
+    return pickMax(byNameAndMerchant) || pickMax(byMerchantOnly) || pickMax(list);
   } catch {
     return 0;
   }
@@ -113,8 +120,9 @@ const parseTr = (s: string) => {
 };
 
 const explainAxiosError = (err: unknown): string => {
-  if (!axios.isAxiosError(err)) return '❌ Kayıt başarısız.';
-  const resp: unknown = (err as AxiosError).response?.data;
+  if (!axios.isAxiosError(err)) return '❌ İşlem başarısız.';
+  const e = err as AxiosError;
+  const resp = e.response?.data;
   if (typeof resp === 'string') return resp;
   if (isRecord(resp)) {
     const msg = typeof resp['message'] === 'string' ? (resp['message'] as string) : null;
@@ -129,7 +137,7 @@ const explainAxiosError = (err: unknown): string => {
       if (parts.length) return parts.join(' • ');
     }
   }
-  return '❌ Kayıt başarısız.';
+  return '❌ İşlem başarısız.';
 };
 
 function getApi(): AxiosInstance {
@@ -137,6 +145,8 @@ function getApi(): AxiosInstance {
   inst.interceptors.request.use((cfg) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (token) cfg.headers.Authorization = `Bearer ${token}`;
+    // swagger da application/json – axios zaten ayarlıyor ama garanti olsun:
+    if (!cfg.headers['Content-Type']) cfg.headers['Content-Type'] = 'application/json';
     return cfg;
   });
   return inst;
@@ -153,57 +163,6 @@ type StepLog = {
 
 const addLog = (setter: React.Dispatch<React.SetStateAction<StepLog[]>>, log: StepLog) =>
   setter((l) => [...l, log]);
-
-/* ---------- Tek varyant POST (çift endpoint + PascalCase fallback) ---------- */
-
-// Tek varyant POST (birden fazla endpoint + birden fazla payload şekli)
-async function postVariantFlexible(
-  api: AxiosInstance,
-  base: { productId: number; size: string | null; color: string | null; stock: number }
-): Promise<void> {
-  // Denenecek endpoint’ler
-  const endpoints = [
-    '/api/ProductVariants',
-    '/api/ProductVariants/create',
-    '/api/ProductVariant',
-    '/api/ProductVariant/create',
-  ];
-
-  // Denenecek payload kombinasyonları (bazı backend’ler quantity/Quantity bekleyebiliyor)
-  const payloads: Array<Record<string, unknown>> = [
-    // camelCase
-    { productId: base.productId, size: base.size, color: base.color, stock: base.stock },
-    { productId: base.productId, size: base.size, color: base.color, quantity: base.stock },
-
-    // PascalCase
-    { ProductId: base.productId, Size: base.size, Color: base.color, Stock: base.stock },
-    { ProductId: base.productId, Size: base.size, Color: base.color, Quantity: base.stock },
-  ];
-
-  let lastErr: unknown = null;
-
-  for (const ep of endpoints) {
-    for (const body of payloads) {
-      try {
-        await api.post(ep, body);
-        return; // başarı
-      } catch (e) {
-        lastErr = e;
-        // 404/405 ise bir sonraki endpoint/payload’ı dene, diğer hatalarda da devam et
-        continue;
-      }
-    }
-  }
-  // Buraya geldiyse hepsi başarısız
-  if (axios.isAxiosError(lastErr)) {
-    const msg =
-      (lastErr.response?.data as { message?: string } | undefined)?.message ||
-      `(${lastErr.response?.status})`;
-    throw new Error(`Varyant oluşturulamadı ${msg}`);
-  }
-  throw new Error('Varyant oluşturulamadı.');
-}
-
 
 /* ---------- Sayfa ---------- */
 
@@ -244,7 +203,7 @@ export default function ProductCreatePage() {
         if (!alive) return;
         setCategories(unwrap<Category[]>(catsRes.data));
         setMerchantId(unwrap<MerchantSelf>(meRes.data).id);
-      } catch {/* form açılsın */}
+      } catch { /* form açılsın */ }
     })();
     return () => {
       alive = false;
@@ -283,7 +242,7 @@ export default function ProductCreatePage() {
 
     setSaving(true);
     try {
-      /* 1) CREATE */
+      /* 1) ÜRÜN OLUŞTUR */
       const payload: ProductCreateDto = {
         name: name.trim(),
         description: (description ?? '').trim(),
@@ -293,9 +252,9 @@ export default function ProductCreatePage() {
         isActive,
         categoryId,
         ...(merchantId ? { merchantId } : {}),
-        productCode: 'SKU-AUTO',
-        fabricInfo: '100% Pamuk',
-        modelMeasurements: 'Boy 180, Göğüs 96, Bel 78',
+        productCode: DUMMY_EXTRAS.productCode,
+        fabricInfo: DUMMY_EXTRAS.fabricInfo,
+        modelMeasurements: DUMMY_EXTRAS.modelMeasurements,
       };
 
       const createdRes = await api.post(PRODUCT_CREATE, payload);
@@ -308,13 +267,12 @@ export default function ProductCreatePage() {
       if (!(newId > 0)) {
         newId = await resolveProductIdFallback(api, payload.name, merchantId);
       }
-
       if (!(newId > 0)) {
         addLog(setLogs, {
           step: 'create',
           ok: false,
           status: createdRes.status,
-          note: 'Create başarılı görünse de geçerli ürün ID’si elde edilemedi.',
+          note: 'Create başarılı göründü, fakat ürün ID’si alınamadı.',
         });
         setMsg('Sunucu geçersiz ürün ID döndürdü.');
         setSaving(false);
@@ -324,7 +282,7 @@ export default function ProductCreatePage() {
       setCreatedId(newId);
       addLog(setLogs, { step: 'create', ok: true, status: createdRes.status, note: `id=${newId}` });
 
-      /* 2) VARİYANTLAR (sağlamlaştırılmış) */
+      /* 2) VARYANTLAR – kesin /api/ProductVariants ve swagger şeması */
       try {
         let sent = 0;
         for (const v of variants) {
@@ -334,17 +292,24 @@ export default function ProductCreatePage() {
             color: v.color?.trim() ? v.color.trim() : null,
             stock: Number.isFinite(v.stock) ? Math.max(0, Math.floor(v.stock)) : 0,
           };
+          // tamamen boş varyantı atla
           if (!dto.size && !dto.color && dto.stock === 0) continue;
-          await postVariantFlexible(api, dto);
+          // boş string'leri backend validasyonuna takılmaması için null'a çevir
+          const body = {
+            productId: dto.productId,
+            size: dto.size ?? '',
+            color: dto.color ?? '',
+            stock: dto.stock,
+          };
+          await api.post(VARIANT_CREATE, body);
           sent++;
         }
-        addLog(setLogs, { step: 'variants', ok: true, note: sent ? `${sent} varyant oluşturuldu` : 'varyant yok' });
+        addLog(setLogs, { step: 'variants', ok: true, note: sent ? `${sent} varyant` : 'varyant yok' });
       } catch (e) {
-        addLog(setLogs, { step: 'variants', ok: false, note: (e as Error).message });
+        addLog(setLogs, { step: 'variants', ok: false, note: explainAxiosError(e) });
       }
 
-
-      /* 3) GÖRSELLER + ANA GÖRSEL (aynen korundu) */
+      /* 3) GÖRSELLER + ANA GÖRSEL – aynen korunur */
       let firstImageId: number | null = null;
       const token = localStorage.getItem('token') ?? '';
 
@@ -371,7 +336,6 @@ export default function ProductCreatePage() {
           let imageId = 0;
           if (typeof imgData === 'number') imageId = imgData;
           else imageId = pickNum(imgData, 'id') ?? pickNum(imgData, 'imageId') ?? 0;
-
           if (!firstImageId && imageId > 0) firstImageId = imageId;
         }
         addLog(setLogs, { step: 'images', ok: true, note: `${images.length} görsel` });
