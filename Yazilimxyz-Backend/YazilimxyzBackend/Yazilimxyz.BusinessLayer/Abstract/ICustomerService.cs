@@ -12,7 +12,6 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IDataResult<ResultCustomerDto?>> GetByIdAsync(int id);
         Task<IDataResult<ResultCustomerDto?>> GetByAppUserIdAsync(string appUserId);
         Task<IDataResult<ResultCustomerWithAddressesDto?>> GetWithAddressesAsync(int id);
-        Task<IResult> AdminCreateAsync(AdminCreateCustomerDto dto);
         Task<IResult> AdminSetActiveAsync(int id, bool isActive);
 
         // REGISTER akışı

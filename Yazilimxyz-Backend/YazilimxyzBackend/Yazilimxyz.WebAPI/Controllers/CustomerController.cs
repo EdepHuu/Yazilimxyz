@@ -36,26 +36,6 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 		// ========= ADMIN =========
 
-		// POST /api/customer/admin
-		// Var olan bir AppUserId için admin yeni Customer kaydı açar.
-		[HttpPost("admin")]
-		[Authorize(Policy = "Admin")]
-		public async Task<IActionResult> AdminCreate([FromBody] AdminCreateCustomerDto dto)
-		{
-			if (dto == null)
-			{
-				return BadRequest("Geçersiz istek gövdesi.");
-			}
-
-			if (string.IsNullOrWhiteSpace(dto.AppUserId))
-			{
-				return BadRequest("AppUserId zorunludur.");
-			}
-
-			await _customerService.AdminCreateAsync(dto);
-			return Ok("Müşteri kaydı oluşturuldu.");
-		}
-
 		// GET /api/customer/admin/{id}
 		// Belirli bir customer'ı (AppUser bilgileriyle) getirir.
 		[HttpGet("admin/{id:int}")]
