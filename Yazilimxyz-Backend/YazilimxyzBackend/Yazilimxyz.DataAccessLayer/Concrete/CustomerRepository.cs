@@ -18,6 +18,7 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 		{
 			return await _dbSet
 				.Include(c => c.AppUser)
+				.Include(c => c.Addresses)
 				.FirstOrDefaultAsync(c => c.Id == id);
 		}
 

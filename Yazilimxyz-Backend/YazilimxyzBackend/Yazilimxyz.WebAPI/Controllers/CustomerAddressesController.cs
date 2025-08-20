@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
 
 namespace Yazilimxyz.WebAPI.Controllers
@@ -163,7 +164,6 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var dto = new UpdateCustomerAddressDto
 			{
-				Id = id,
 				CustomerId = existing.Data.CustomerId,
 				Title = body.Title,
 				FullName = body.FullName,
@@ -177,7 +177,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 				IsDefault = body.IsDefault
 			};
 
-			var res = await _addressService.UpdateAsync(dto);
+			var res = await _addressService.UpdateAsync(id, dto);
 			if (!res.Success) return Bad(res.Message);
 
 			if (body.IsDefault)
@@ -276,7 +276,6 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (id <= 0) return Bad("Id 0'dan büyük olmalıdır.");
 			if (dto is null) return Bad("Geçersiz istek.");
-			if (dto.Id != id) return Bad("URL Id ile gövde Id eşleşmiyor.");
 			if (dto.CustomerId <= 0) return Bad("CustomerId zorunludur.");
 
 			if (string.IsNullOrWhiteSpace(dto.FullName)) return Bad("Ad Soyad zorunludur.");
@@ -285,7 +284,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (string.IsNullOrWhiteSpace(dto.City)) return Bad("Şehir zorunludur.");
 			if (string.IsNullOrWhiteSpace(dto.District)) return Bad("İlçe zorunludur.");
 
-			var res = await _addressService.UpdateAsync(dto);
+			var res = await _addressService.UpdateAsync(id, dto);
 			if (!res.Success) return Bad(res.Message);
 
 			if (dto.IsDefault)
@@ -299,15 +298,17 @@ namespace Yazilimxyz.WebAPI.Controllers
 		[Authorize(Roles = "AppAdmin")]
 		public async Task<IActionResult> AdminDelete(int id)
 		{
-			if (id <= 0) return Bad("Id 0'dan büyük olmalıdır.");
+			if (id <= 0) return Bad(Messages.InvalidAddressId);
 
 			var addr = await _addressService.GetByIdAsync(id);
-			if (!addr.Success || addr.Data is null) return NotF(addr.Message);
+			if (!addr.Success || addr.Data is null)
+				return NotF(addr.Message);
 
 			var res = await _addressService.DeleteAsync(id);
-			if (!res.Success) return Bad(res.Message);
+			if (!res.Success)
+				return Bad(res.Message);
 
-			return NoContent();
+			return OkResp(Messages.CustomerAddressDeleted); // ✅ 200 OK + mesaj
 		}
 	}
 

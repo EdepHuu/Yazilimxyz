@@ -84,28 +84,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
         }
 
         [CacheRemoveAspect("ICustomerService.Get")]
-        public async Task<IResult> AdminCreateAsync(AdminCreateCustomerDto dto)
-        {
-            if (dto == null)
-                return new ErrorResult("Geçersiz istek.");
-
-            if (string.IsNullOrWhiteSpace(dto.AppUserId))
-                return new ErrorResult("AppUserId zorunludur.");
-
-            var exists = await _customerRepository.GetByAppUserIdAsync(dto.AppUserId);
-            if (exists != null)
-                return new ErrorResult(Messages.CustomerAlreadyExists);
-
-            var entity = new Customer
-            {
-                AppUserId = dto.AppUserId
-            };
-            await _customerRepository.AddAsync(entity);
-
-            return new SuccessResult(Messages.CustomerAdded);
-        }
-
-        [CacheRemoveAspect("ICustomerService.Get")]
         public async Task<IResult> AdminSetActiveAsync(int id, bool isActive)
         {
             if (id <= 0)

@@ -10,7 +10,7 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IResult> SetDefaultAddressAsync(int customerId, int addressId);
         Task<IDataResult<ResultCustomerAddressDto?>> GetByIdAsync(int id);
         Task<IResult> CreateAsync(CreateCustomerAddressDto dto);
-        Task<IResult> UpdateAsync(UpdateCustomerAddressDto dto);
+        Task<IResult> UpdateAsync(int id, UpdateCustomerAddressDto dto);
         Task<IResult> DeleteAsync(int id);
     }
 }
