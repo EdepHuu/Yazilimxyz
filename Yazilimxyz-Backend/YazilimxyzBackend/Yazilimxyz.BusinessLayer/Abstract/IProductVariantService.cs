@@ -10,13 +10,10 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IDataResult<List<ResultProductVariantDto>>> GetByProductIdAsync(int productId);
         Task<IDataResult<ResultProductVariantDto>> GetByProductAndOptionsAsync(int productId, string size, string color);
         Task<IDataResult<List<ResultProductVariantDto>>> GetInStockAsync(int productId);
-
         Task<IDataResult<bool>> IsInStockAsync(int variantId, int quantity);
         Task<IResult> UpdateStockAsync(int variantId, int quantity);
-
         Task<IResult> CreateAsync(CreateProductVariantDto dto);
         Task<IResult> UpdateAsync(int id, UpdateProductVariantDto dto);
-
         Task<IResult> DeleteAsync(int id);
     }
 }

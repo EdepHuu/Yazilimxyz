@@ -19,9 +19,20 @@ export async function fetchListProductDetail(id:number) {
     return response.data;
 }
 
+ export async function fetchListFilter(){
+   const response =await api.get("/api/Product/filter-options");
+   return response.data;
+ }
 
-
-// export async function fetchListFilter(){
-//   const response =await api.get("/api/Product/Filter");
+// export async function fetchListProductFilter(payload: {
+//   brands?: string[];
+//   colors?: string[];
+//   genders?: string[];
+//   sizes?: string[];
+//   minPrice?: number;
+//   maxPrice?: number;
+// }) {
+//   const response = await api.post("/api/Product/Filter", payload);
 //   return response.data;
 // }
+
