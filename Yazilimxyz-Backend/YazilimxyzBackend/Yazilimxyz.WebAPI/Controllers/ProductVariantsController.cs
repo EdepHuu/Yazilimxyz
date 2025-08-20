@@ -165,21 +165,13 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return StatusCode(StatusCodes.Status201Created);
 		}
 
-		[HttpPut("{id:int}")]
-		[Authorize(Roles = "Merchant,AppAdmin")]
-		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		[ProducesResponseType(StatusCodes.Status403Forbidden)]
-		[ProducesResponseType(StatusCodes.Status404NotFound)]
-		[ProducesResponseType(StatusCodes.Status409Conflict)]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateVariant(int id, [FromBody] UpdateProductVariantDto dto)
         {
             if (id <= 0)
                 return BadRequest("Id 0'dan büyük olmalıdır.");
             if (dto is null)
                 return BadRequest("Veri gönderilmedi.");
-            if (dto.Id != id)
-                return BadRequest("URL'deki Id ile gövdedeki Id eşleşmiyor.");
             if (dto.ProductId <= 0)
                 return BadRequest("ProductId 0'dan büyük olmalıdır.");
             if (string.IsNullOrWhiteSpace(dto.Size) || dto.Size.Length > 50)
@@ -189,7 +181,6 @@ namespace Yazilimxyz.WebAPI.Controllers
             if (dto.Stock < 0 || dto.Stock > 999_999)
                 return BadRequest("Stok 0 ile 999,999 arasında olmalıdır.");
 
-            // Varyantı IDataResult<T> içinden al
             var currentResult = await _variantService.GetByIdAsync(id);
             if (!currentResult.Success || currentResult.Data is null)
                 return NotFound("Varyant bulunamadı.");
@@ -203,7 +194,6 @@ namespace Yazilimxyz.WebAPI.Controllers
             if (!isAdmin && product.AppUserId != userId)
                 return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
 
-            // Aynı beden+renk kombinasyonu var mı?
             var clashResult = await _variantService.GetByProductAndOptionsAsync(
                 dto.ProductId, dto.Size.Trim(), dto.Color.Trim());
 
@@ -212,10 +202,10 @@ namespace Yazilimxyz.WebAPI.Controllers
             if (clash is not null && clash.Id != id)
                 return Conflict("Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.");
 
-
-            await _variantService.UpdateAsync(dto);
+            await _variantService.UpdateAsync(id, dto); // ← id parametresi eklendi
             return Ok("Varyant güncellendi.");
         }
+
 
         [HttpPatch("{id:int}/stock")]
 		[Authorize(Roles = "Merchant,AppAdmin")]

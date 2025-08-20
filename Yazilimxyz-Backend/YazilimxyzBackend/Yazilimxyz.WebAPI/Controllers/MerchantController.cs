@@ -113,48 +113,34 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(merchant);
 		}
 
-		// PUT /api/merchant/admin/{id}
-		[HttpPut("admin/{id:int}")]
-		[Authorize(Policy = "Admin")]
-		public async Task<IActionResult> AdminUpdate(int id, [FromBody] UpdateMerchantDto dto)
-		{
-			if (id <= 0)
-			{
-				return BadRequest("Geçersiz id.");
-			}
-			if (dto == null)
-			{
-				return BadRequest("Geçersiz istek gövdesi.");
-			}
-			if (dto.Id != id)
-			{
-				return BadRequest("Body ve route id eşleşmiyor.");
-			}
-			if (string.IsNullOrWhiteSpace(dto.CompanyName))
-			{
-				return BadRequest("Şirket adı zorunludur.");
-			}
-			if (string.IsNullOrWhiteSpace(dto.Iban))
-			{
-				return BadRequest("IBAN zorunludur.");
-			}
-			if (string.IsNullOrWhiteSpace(dto.TaxNumber))
-			{
-				return BadRequest("Vergi numarası zorunludur.");
-			}
+        // PUT /api/merchant/admin/{id}
+        [HttpPut("admin/{id:int}")]
+        [Authorize(Policy = "Admin")]
+        public async Task<IActionResult> AdminUpdate(int id, [FromBody] UpdateMerchantDto dto)
+        {
+            if (id <= 0)
+                return BadRequest("Geçersiz id.");
+            if (dto == null)
+                return BadRequest("Geçersiz istek gövdesi.");
+            if (string.IsNullOrWhiteSpace(dto.CompanyName))
+                return BadRequest("Şirket adı zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.Iban))
+                return BadRequest("IBAN zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.TaxNumber))
+                return BadRequest("Vergi numarası zorunludur.");
 
-			var exists = await _merchantService.GetByIdAsync(id);
-			if (exists == null)
-			{
-				return NotFound("Merchant bulunamadı.");
-			}
+            var exists = await _merchantService.GetByIdAsync(id);
+            if (exists == null)
+                return NotFound("Merchant bulunamadı.");
 
-			await _merchantService.AdminUpdateAsync(id, dto);
-			return Ok("Merchant bilgileri güncellendi.");
-		}
+            // dto.Id kontrolü artık yok
+            await _merchantService.AdminUpdateAsync(id, dto);
+            return Ok("Merchant bilgileri güncellendi.");
+        }
 
-		// PUT /api/merchant/admin/{id}/status?value=true|false
-		[HttpPut("admin/{id:int}/status")]
+
+        // PUT /api/merchant/admin/{id}/status?value=true|false
+        [HttpPut("admin/{id:int}/status")]
 		[Authorize(Policy = "Admin")]
 		public async Task<IActionResult> AdminSetStatus(int id, [FromQuery] bool value)
 		{

@@ -15,7 +15,8 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IResult> UpdateStockAsync(int variantId, int quantity);
 
         Task<IResult> CreateAsync(CreateProductVariantDto dto);
-        Task<IResult> UpdateAsync(UpdateProductVariantDto dto);
+        Task<IResult> UpdateAsync(int id, UpdateProductVariantDto dto);
+
         Task<IResult> DeleteAsync(int id);
     }
 }
