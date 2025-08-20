@@ -1,4 +1,3 @@
-// src/app/merchant/dashboard/urunler/urunyeni/page.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -21,7 +20,6 @@ type ProductCreateDto = {
   isActive: boolean;
   categoryId: number;
   merchantId?: number;
-  // UI’da göstermiyoruz: backend istiyor → dummy gönderilecek
   productCode: string;
   fabricInfo: string;
   modelMeasurements: string;
@@ -37,7 +35,6 @@ type Variant = {
 
 type NewImage = { file: File; previewUrl: string; altText?: string | null };
 
-// /api/Product/get-all maddesi
 type ProductListItem = {
   id: number;
   name: string;
@@ -45,7 +42,6 @@ type ProductListItem = {
   createdAt?: string;
 };
 
-// Görsel create dönüşü olasılıkları
 type CreatedImage = number | { id: number } | { imageId: number };
 
 /* ---------- Sabitler ---------- */
@@ -55,15 +51,9 @@ const CATEGORY_LIST = '/api/Category';
 const MERCHANT_PROFILE = '/api/Merchant/profile';
 const PRODUCT_CREATE = '/api/Product/create';
 const PRODUCT_GET_ALL = '/api/Product/get-all';
-const VARIANT_CREATE = '/api/ProductVariants';
+
 const IMAGE_CREATE = '/api/ProductImage/create';
 const IMAGE_SET_MAIN = (imageId: number) => `/api/ProductImage/set-main/${imageId}`;
-
-const DUMMY_EXTRAS = {
-  productCode: 'SKU-AUTO',
-  fabricInfo: '100% Pamuk',
-  modelMeasurements: 'Boy 180, Göğüs 96, Bel 78',
-};
 
 /* ---------- Yardımcılar (any yok) ---------- */
 
@@ -164,6 +154,57 @@ type StepLog = {
 const addLog = (setter: React.Dispatch<React.SetStateAction<StepLog[]>>, log: StepLog) =>
   setter((l) => [...l, log]);
 
+/* ---------- Tek varyant POST (çift endpoint + PascalCase fallback) ---------- */
+
+// Tek varyant POST (birden fazla endpoint + birden fazla payload şekli)
+async function postVariantFlexible(
+  api: AxiosInstance,
+  base: { productId: number; size: string | null; color: string | null; stock: number }
+): Promise<void> {
+  // Denenecek endpoint’ler
+  const endpoints = [
+    '/api/ProductVariants',
+    '/api/ProductVariants/create',
+    '/api/ProductVariant',
+    '/api/ProductVariant/create',
+  ];
+
+  // Denenecek payload kombinasyonları (bazı backend’ler quantity/Quantity bekleyebiliyor)
+  const payloads: Array<Record<string, unknown>> = [
+    // camelCase
+    { productId: base.productId, size: base.size, color: base.color, stock: base.stock },
+    { productId: base.productId, size: base.size, color: base.color, quantity: base.stock },
+
+    // PascalCase
+    { ProductId: base.productId, Size: base.size, Color: base.color, Stock: base.stock },
+    { ProductId: base.productId, Size: base.size, Color: base.color, Quantity: base.stock },
+  ];
+
+  let lastErr: unknown = null;
+
+  for (const ep of endpoints) {
+    for (const body of payloads) {
+      try {
+        await api.post(ep, body);
+        return; // başarı
+      } catch (e) {
+        lastErr = e;
+        // 404/405 ise bir sonraki endpoint/payload’ı dene, diğer hatalarda da devam et
+        continue;
+      }
+    }
+  }
+  // Buraya geldiyse hepsi başarısız
+  if (axios.isAxiosError(lastErr)) {
+    const msg =
+      (lastErr.response?.data as { message?: string } | undefined)?.message ||
+      `(${lastErr.response?.status})`;
+    throw new Error(`Varyant oluşturulamadı ${msg}`);
+  }
+  throw new Error('Varyant oluşturulamadı.');
+}
+
+
 /* ---------- Sayfa ---------- */
 
 export default function ProductCreatePage() {
@@ -252,9 +293,9 @@ export default function ProductCreatePage() {
         isActive,
         categoryId,
         ...(merchantId ? { merchantId } : {}),
-        productCode: DUMMY_EXTRAS.productCode,
-        fabricInfo: DUMMY_EXTRAS.fabricInfo,
-        modelMeasurements: DUMMY_EXTRAS.modelMeasurements,
+        productCode: 'SKU-AUTO',
+        fabricInfo: '100% Pamuk',
+        modelMeasurements: 'Boy 180, Göğüs 96, Bel 78',
       };
 
       const createdRes = await api.post(PRODUCT_CREATE, payload);
@@ -283,8 +324,9 @@ export default function ProductCreatePage() {
       setCreatedId(newId);
       addLog(setLogs, { step: 'create', ok: true, status: createdRes.status, note: `id=${newId}` });
 
-      /* 2) VARİYANTLAR */
+      /* 2) VARİYANTLAR (sağlamlaştırılmış) */
       try {
+        let sent = 0;
         for (const v of variants) {
           const dto = {
             productId: newId,
@@ -293,14 +335,16 @@ export default function ProductCreatePage() {
             stock: Number.isFinite(v.stock) ? Math.max(0, Math.floor(v.stock)) : 0,
           };
           if (!dto.size && !dto.color && dto.stock === 0) continue;
-          await api.post(VARIANT_CREATE, dto);
+          await postVariantFlexible(api, dto);
+          sent++;
         }
-        addLog(setLogs, { step: 'variants', ok: true, note: variants.length ? `${variants.length} varyant` : 'varyant yok' });
+        addLog(setLogs, { step: 'variants', ok: true, note: sent ? `${sent} varyant oluşturuldu` : 'varyant yok' });
       } catch (e) {
-        addLog(setLogs, { step: 'variants', ok: false, note: explainAxiosError(e) });
+        addLog(setLogs, { step: 'variants', ok: false, note: (e as Error).message });
       }
 
-      /* 3) GÖRSELLER + ANA GÖRSEL */
+
+      /* 3) GÖRSELLER + ANA GÖRSEL (aynen korundu) */
       let firstImageId: number | null = null;
       const token = localStorage.getItem('token') ?? '';
 
@@ -379,7 +423,7 @@ export default function ProductCreatePage() {
           </div>
         )}
 
-        {/* Debug panel (isteğe bağlı görünür) */}
+        {/* Debug panel */}
         {logs.length > 0 && (
           <div className="mb-4 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
             <div className="font-semibold text-slate-600 mb-1">İşlem Günlüğü</div>
