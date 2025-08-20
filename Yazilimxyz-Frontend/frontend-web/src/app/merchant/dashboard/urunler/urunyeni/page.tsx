@@ -223,6 +223,17 @@ export default function ProductCreatePage() {
     e.currentTarget.value = '';
   };
 
+  // >>> EKLENDİ: Yüklenen yerel görseli listeden sil (preview URL’ini de serbest bırak)
+  const removeLocalImage = (idx: number) => {
+    setImages((prev) => {
+      const next = [...prev];
+      const item = next[idx];
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      next.splice(idx, 1);
+      return next;
+    });
+  };
+
   const addVariant = () => {
     const tmpId = -1 * (1 + Math.floor(Math.random() * 1_000_000_000));
     setVariants((l) => [...l, { id: tmpId, productId: 0, size: '', color: '', stock: 0 }]);
@@ -490,6 +501,17 @@ export default function ProductCreatePage() {
                   <div className="aspect-[4/3] bg-slate-100">
                     <img src={img.previewUrl} alt={img.altText ?? ''} className="h-full w-full object-cover" />
                   </div>
+
+                  {/* >>> EKLENDİ: Görsel sil butonu (yalnızca yükleme ekranında, sunucuya gitmeden kaldırır) */}
+                  <button
+                    onClick={() => removeLocalImage(idx)}
+                    className="absolute top-2 right-2 px-2 py-1 rounded bg-red-600/90 text-white text-xs"
+                    title="Görseli kaldır"
+                    type="button"
+                  >
+                    Sil
+                  </button>
+
                   <div className="p-2">
                     <input
                       value={img.altText ?? ''}

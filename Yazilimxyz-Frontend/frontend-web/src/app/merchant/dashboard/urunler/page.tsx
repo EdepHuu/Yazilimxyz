@@ -65,8 +65,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 const PROFILE = '/api/Merchant/profile';
 const PRODUCTS_ALL = '/api/Product/get-all';
 const VARIANTS_BY_PRODUCT = (productId: number) => `/api/ProductVariants/by-product/${productId}`;
+const VARIANT_DELETE = (id: number) => `/api/ProductVariants/${id}`; // eklendi
 const IMAGE_MAIN_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}/main`;
+const IMAGES_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}`; // eklendi
+const IMAGE_DELETE = (id: number) => `/api/ProductImage/${id}`; // eklendi
 const PRODUCT_DETAILED = (productId: number) => `/api/Product/${productId}/detailed`;
+const PRODUCT_DELETE_CANDIDATES = (productId: number) => [
+  `/api/Product/${productId}`,           // DELETE /api/Product/{id}
+  `/api/Product/delete/${productId}`,    // alternatif
+  `/api/Product/remove/${productId}`,    // alternatif
+];
 const CATEGORY_LIST = '/api/Category';
 const CATEGORY_BY_ID = (id: number) => `/api/Category/${id}`;
 
@@ -164,6 +172,7 @@ export default function MerchantProductsListPage() {
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set()); // eklendi
 
   const api = useMemo(() => {
     const inst = axios.create({ baseURL: API_BASE });
@@ -283,6 +292,81 @@ export default function MerchantProductsListPage() {
       alive = false;
     };
   }, [api, getData, router]);
+
+  // --- DERİN SİLME (varyantlar + görseller + ürün) ---
+  const deepDeleteProduct = useCallback(
+    async (productId: number) => {
+      // 1) Varyantları sil
+      try {
+        const variants = await getData<Variant[]>(VARIANTS_BY_PRODUCT(productId));
+        for (const v of variants) {
+          try {
+            await api.delete(VARIANT_DELETE(v.id));
+          } catch {
+            // biri hata verirse iptal edelim ki tutarsız kalmasın
+            throw new Error('Varyant silme sırasında hata oluştu.');
+          }
+        }
+      } catch {
+        // varyant yoksa geç
+      }
+
+      // 2) Görselleri sil
+      try {
+        const imgs = await getData<Array<{ id: number }>>(IMAGES_BY_PRODUCT(productId));
+        for (const img of imgs) {
+          try {
+            await api.delete(IMAGE_DELETE(img.id));
+          } catch {
+            throw new Error('Görsel silme sırasında hata oluştu.');
+          }
+        }
+      } catch {
+        // görsel yoksa geç
+      }
+
+      // 3) Ürün kaydını sil (birkaç olası endpoint’i dene)
+      let deleted = false;
+      const candidates = PRODUCT_DELETE_CANDIDATES(productId);
+      for (const url of candidates) {
+        try {
+          const r = await api.delete(url);
+          if (r.status < 400) {
+            deleted = true;
+            break;
+          }
+        } catch {
+          // diğer adayı dene
+        }
+      }
+      if (!deleted) throw new Error('Ürün silme endpointi bulunamadı veya başarısız oldu.');
+    },
+    [api, getData]
+  );
+
+  const handleDeleteClick = async (row: ProductRow) => {
+    if (!window.confirm(`“${row.name}” ürününü ve ilişkili tüm verileri silmek istiyor musunuz? Bu işlem geri alınamaz.`))
+      return;
+
+    setMsg(null);
+    setDeletingIds((s) => new Set([...Array.from(s), row.id]));
+    try {
+      await deepDeleteProduct(row.id);
+      // listeden düş
+      setRows((list) => list.filter((r) => r.id !== row.id));
+      // toplam sayıyı da güncelle (kaba düzeltme)
+      setApiTotal((n) => Math.max(0, n - 1));
+    } catch (e) {
+      const m = e instanceof Error ? e.message : 'Silme işlemi başarısız.';
+      setMsg(m);
+    } finally {
+      setDeletingIds((s) => {
+        const n = new Set(Array.from(s));
+        n.delete(row.id);
+        return n;
+      });
+    }
+  };
 
   // filtre + sayfalama
   const filtered = useMemo(() => {
@@ -404,12 +488,27 @@ export default function MerchantProductsListPage() {
                     </span>
                   </td>
                   <td className="py-3 px-3 text-right">
-                    <button
-                      onClick={() => router.push(`/merchant/dashboard/urunler/urundetay/${p.id}`)}
-                      className="text-slate-700 hover:text-slate-900 underline-offset-2 hover:underline text-sm"
-                    >
-                      Düzenle
-                    </button>
+                    <div className="flex items-center gap-3 justify-end">
+                      <button
+                        onClick={() => router.push(`/merchant/dashboard/urunler/urundetay/${p.id}`)}
+                        className="text-slate-700 hover:text-slate-900 underline-offset-2 hover:underline text-sm"
+                      >
+                        Düzenle
+                      </button>
+
+                      {/* --- Sil butonu (tasarıma dokunmadan, yanına eklendi) --- */}
+                      <button
+                        onClick={() => handleDeleteClick(p)}
+                        disabled={deletingIds.has(p.id)}
+                        className={
+                          'text-red-600 hover:text-red-700 underline-offset-2 hover:underline text-sm ' +
+                          (deletingIds.has(p.id) ? 'opacity-50 cursor-not-allowed' : '')
+                        }
+                        title="Ürünü ve ilişkili tüm verileri sil"
+                      >
+                        {deletingIds.has(p.id) ? 'Siliniyor…' : 'Sil'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
