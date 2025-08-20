@@ -65,15 +65,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 const PROFILE = '/api/Merchant/profile';
 const PRODUCTS_ALL = '/api/Product/get-all';
 const VARIANTS_BY_PRODUCT = (productId: number) => `/api/ProductVariants/by-product/${productId}`;
-const VARIANT_DELETE = (id: number) => `/api/ProductVariants/${id}`; // eklendi
+const VARIANT_DELETE = (id: number) => `/api/ProductVariants/${id}`;
 const IMAGE_MAIN_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}/main`;
-const IMAGES_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}`; // eklendi
-const IMAGE_DELETE = (id: number) => `/api/ProductImage/${id}`; // eklendi
+const IMAGES_BY_PRODUCT = (productId: number) => `/api/ProductImage/product/${productId}`;
+const IMAGE_DELETE = (id: number) => `/api/ProductImage/${id}`;
 const PRODUCT_DETAILED = (productId: number) => `/api/Product/${productId}/detailed`;
 const PRODUCT_DELETE_CANDIDATES = (productId: number) => [
-  `/api/Product/${productId}`,           // DELETE /api/Product/{id}
-  `/api/Product/delete/${productId}`,    // alternatif
-  `/api/Product/remove/${productId}`,    // alternatif
+  `/api/Product/${productId}`,        // yaygın
+  `/api/Product/delete/${productId}`, // alternatif
+  `/api/Product/remove/${productId}`, // alternatif
 ];
 const CATEGORY_LIST = '/api/Category';
 const CATEGORY_BY_ID = (id: number) => `/api/Category/${id}`;
@@ -165,14 +165,13 @@ export default function MerchantProductsListPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ProductRow[]>([]);
-  const [apiTotal, setApiTotal] = useState<number>(0);
   const [msg, setMsg] = useState<string | null>(null);
 
   // UI state
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set()); // eklendi
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   const api = useMemo(() => {
     const inst = axios.create({ baseURL: API_BASE });
@@ -205,7 +204,6 @@ export default function MerchantProductsListPage() {
 
         // 2) Tüm ürünler
         const base = await getData<ProductListItem[]>(PRODUCTS_ALL);
-        setApiTotal(base.length);
 
         // 3) Ana görsel + owner (merchantId) çıkar
         const withOwner = await Promise.all(
@@ -303,7 +301,6 @@ export default function MerchantProductsListPage() {
           try {
             await api.delete(VARIANT_DELETE(v.id));
           } catch {
-            // biri hata verirse iptal edelim ki tutarsız kalmasın
             throw new Error('Varyant silme sırasında hata oluştu.');
           }
         }
@@ -354,8 +351,8 @@ export default function MerchantProductsListPage() {
       await deepDeleteProduct(row.id);
       // listeden düş
       setRows((list) => list.filter((r) => r.id !== row.id));
-      // toplam sayıyı da güncelle (kaba düzeltme)
-      setApiTotal((n) => Math.max(0, n - 1));
+      // sayfa sınırındaysak sayfayı geri al
+      setPage((p0) => (p0 > 1 && ( ( (rows.length - 1) - 1) / pageSize + 1 < p0) ? p0 - 1 : p0));
     } catch (e) {
       const m = e instanceof Error ? e.message : 'Silme işlemi başarısız.';
       setMsg(m);
@@ -496,7 +493,7 @@ export default function MerchantProductsListPage() {
                         Düzenle
                       </button>
 
-                      {/* --- Sil butonu (tasarıma dokunmadan, yanına eklendi) --- */}
+                      {/* Sil butonu */}
                       <button
                         onClick={() => handleDeleteClick(p)}
                         disabled={deletingIds.has(p.id)}
@@ -526,7 +523,8 @@ export default function MerchantProductsListPage() {
         {/* sayfalama */}
         <div className="flex items-center justify-between mt-4 text-sm text-slate-600">
           <div>
-            Toplam <strong>{q ? filtered.total : apiTotal}</strong> ürün
+            {/* DİNAMİK: Arama olsa da olmasa da mevcut veri kümesinin toplamı */}
+            Toplam <strong>{filtered.total}</strong> ürün
           </div>
           <div className="flex items-center gap-2">
             <button
