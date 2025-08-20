@@ -153,6 +153,7 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 
 
 			// SupportMessage
+			// CUSTOMER → DTO
 			CreateMap<Customer, ResultCustomerDto>()
 				.ForMember(d => d.UserName, o => o.MapFrom(s => s.AppUser.UserName))
 				.ForMember(d => d.Email, o => o.MapFrom(s => s.AppUser.Email))
@@ -172,19 +173,17 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 				.ForMember(d => d.AddressCount, o => o.MapFrom(s => s.Addresses.Count))
 				.ForMember(d => d.Addresses, o => o.MapFrom(s => s.Addresses));
 
-			CreateMap<CustomerAddress, ResultCustomerAddressDto>();
-
-
-			// CustomerAddress
-			CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
-			CreateMap<CustomerAddress, GetByIdCustomerAddressDto>()
-				.ForMember(dest => dest.CustomerFullName, opt => opt.MapFrom(src => src.Customer.AppUser.Name));
-
+			// CUSTOMER ADDRESS ↔ DTO
 			CreateMap<CustomerAddress, ResultCustomerAddressDto>()
 				.ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.AppUser.Name));
 
-			CreateMap<CreateMyCustomerAddressDto, CustomerAddress>().ReverseMap();
+			CreateMap<CustomerAddress, GetByIdCustomerAddressDto>()
+				.ForMember(dest => dest.CustomerFullName, opt => opt.MapFrom(src => src.Customer.AppUser.Name));
 
+			CreateMap<UpdateCustomerAddressDto, CustomerAddress>().ReverseMap();
+
+			CreateMap<CreateMyCustomerAddressDto, CustomerAddress>().ReverseMap();
+			CreateMap<CreateCustomerAddressDto, CustomerAddress>();
 
 			// AppUser
 			CreateMap<ResultAppUserDto, AppUser>().ReverseMap();

@@ -108,12 +108,12 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 		}
 
 		[CacheRemoveAspect("ICustomerAddressService.Get")]
-		public async Task<IResult> UpdateAsync(UpdateCustomerAddressDto dto)
+		public async Task<IResult> UpdateAsync(int id, UpdateCustomerAddressDto dto)
 		{
 			if (dto == null) return new ErrorResult("Geçersiz istek.");
-			if (dto.Id <= 0) return new ErrorResult(Messages.InvalidAddressId);
+			if (id <= 0) return new ErrorResult(Messages.InvalidAddressId);
 
-			var existing = await _customerAddressRepository.GetByIdAsync(dto.Id);
+			var existing = await _customerAddressRepository.GetByIdAsync(id);
 			if (existing == null) return new ErrorResult(Messages.CustomerAddressNotFound);
 
 			if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
@@ -132,7 +132,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			existing.District = dto.District;
 			existing.PostalCode = dto.PostalCode;
 			existing.Country = dto.Country;
-			// existing.IsDefault -> değişmiyor (şimdi set etmeyeceğiz)
 
 			await _customerAddressRepository.UpdateAsync(existing);
 
@@ -141,7 +140,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			{
 				await _customerAddressRepository.SetDefaultAddressAsync(existing.CustomerId, existing.Id);
 			}
-			// (İstenirse: wantDefault=false ve existing.IsDefault=true ise default'u kaldırma kararı verilebilir.)
 
 			return new SuccessResult(Messages.CustomerAddressUpdated);
 		}
