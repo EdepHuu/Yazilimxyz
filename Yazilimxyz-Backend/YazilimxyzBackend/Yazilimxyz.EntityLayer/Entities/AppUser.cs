@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using SignalRNotificationApi.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.EntityLayer.Entities
 {
@@ -17,9 +12,9 @@ namespace Yazilimxyz.EntityLayer.Entities
 
         public Customer? Customer { get; set; }
         public Merchant? Merchant { get; set; }
-		public bool IsAdmin { get; set; } // Bu gerekli
+        public bool IsAdmin { get; set; }
 
-		public ICollection<Product> Products { get; set; } = new List<Product>();
+        public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<SupportMessage> SentMessages { get; set; } = new List<SupportMessage>();
         public ICollection<SupportMessage> ReceivedMessages { get; set; } = new List<SupportMessage>();

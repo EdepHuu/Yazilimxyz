@@ -10,12 +10,11 @@ using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
 using Yazilimxyz.BusinessLayer.DTOs.ProductImage;
 using Yazilimxyz.BusinessLayer.DTOs.ProductVariant;
-using Yazilimxyz.BusinessLayer.DTOs.SupportMessage;
 using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.BusinessLayer.Mapping
 {
-	public class AutoMapperProfile : Profile
+	public partial class AutoMapperProfile : Profile
 	{
 		public AutoMapperProfile()
 		{
