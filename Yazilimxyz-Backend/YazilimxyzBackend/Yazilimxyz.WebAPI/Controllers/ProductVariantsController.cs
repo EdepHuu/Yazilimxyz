@@ -181,6 +181,55 @@ namespace Yazilimxyz.WebAPI.Controllers
 				return BadRequest(result.Message); // örneğin: "Geçersiz veri"
 			}
 
+
+			await _variantService.CreateAsync(dto);
+			return StatusCode(StatusCodes.Status201Created);
+		}
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateVariant(int id, [FromBody] UpdateProductVariantDto dto)
+        {
+            if (id <= 0)
+                return BadRequest("Id 0'dan büyük olmalıdır.");
+            if (dto is null)
+                return BadRequest("Veri gönderilmedi.");
+            if (dto.ProductId <= 0)
+                return BadRequest("ProductId 0'dan büyük olmalıdır.");
+            if (string.IsNullOrWhiteSpace(dto.Size) || dto.Size.Length > 50)
+                return BadRequest("Geçersiz beden bilgisi.");
+            if (string.IsNullOrWhiteSpace(dto.Color) || dto.Color.Length > 50)
+                return BadRequest("Geçersiz renk bilgisi.");
+            if (dto.Stock < 0 || dto.Stock > 999_999)
+                return BadRequest("Stok 0 ile 999,999 arasında olmalıdır.");
+
+            var currentResult = await _variantService.GetByIdAsync(id);
+            if (!currentResult.Success || currentResult.Data is null)
+                return NotFound("Varyant bulunamadı.");
+
+            var product = await _productRepository.GetByIdAsync(dto.ProductId);
+            if (product is null)
+                return NotFound("Belirtilen ürün bulunamadı.");
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var isAdmin = User.IsInRole("AppAdmin");
+            if (!isAdmin && product.AppUserId != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, "Bu üründe işlem yapma yetkiniz yok.");
+
+            var clashResult = await _variantService.GetByProductAndOptionsAsync(
+                dto.ProductId, dto.Size.Trim(), dto.Color.Trim());
+
+            var clash = (clashResult.Success) ? clashResult.Data : null;
+
+            if (clash is not null && clash.Id != id)
+                return Conflict("Bu ürün için aynı beden ve renk kombinasyonu zaten mevcut.");
+
+            await _variantService.UpdateAsync(id, dto); // ← id parametresi eklendi
+            return Ok("Varyant güncellendi.");
+        }
+
+
+        [HttpPatch("{id:int}/stock")]
+=======
 			return StatusCode(StatusCodes.Status201Created, result.Message); // → "Ürün varyantı başarıyla eklendi."
 		}
 
