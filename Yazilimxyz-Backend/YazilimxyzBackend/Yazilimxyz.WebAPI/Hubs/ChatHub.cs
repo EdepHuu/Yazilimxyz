@@ -21,19 +21,18 @@ namespace Yazilimxyz.WebAPI.Hubs
         // Kullanıcı mesaj gönderdiğinde
         public async Task SendMessage(SupportMessageDto dto)
         {
-            var senderIdString = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(senderIdString, out int senderId)) return;
+            var senderId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(senderId)) return;
 
             // Conversation kontrolü
             SupportConversation conversation = null;
-
-            if (dto.ConversationId.HasValue)
+            if (!string.IsNullOrEmpty(dto.ConversationId))
             {
+                int conversationId = int.Parse(dto.ConversationId); // veya TryParse kullan
                 conversation = await _context.SupportConversations
                     .Include(c => c.Messages)
-                    .FirstOrDefaultAsync(c => c.Id == dto.ConversationId.Value);
+                    .FirstOrDefaultAsync(c => c.Id == conversationId);
             }
-
             if (conversation == null)
             {
                 // Eğer conversation yoksa otomatik oluştur
@@ -62,7 +61,7 @@ namespace Yazilimxyz.WebAPI.Hubs
             await _context.SaveChangesAsync();
 
             // Hedef kullanıcıya gönder
-            await Clients.User(dto.ReceiverId.ToString()).SendAsync("ReceiveMessage", new
+            await Clients.User(dto.ReceiverId).SendAsync("ReceiveMessage", new
             {
                 SenderId = senderId,
                 dto.Content,
@@ -83,8 +82,8 @@ namespace Yazilimxyz.WebAPI.Hubs
         // Önceki mesajları getir
         public async Task GetPreviousMessages(int conversationId)
         {
-            var senderIdString = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(senderIdString, out int senderId)) return;
+            var senderId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(senderId)) return;
 
             var messages = await _context.SupportMessages
                 .Where(m => m.ConversationId == conversationId)
