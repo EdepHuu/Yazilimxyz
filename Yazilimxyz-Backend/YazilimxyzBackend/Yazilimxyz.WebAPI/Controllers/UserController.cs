@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
 using Yazilimxyz.EntityLayer.Entities;
 
@@ -23,6 +24,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 		[HttpGet("me")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
+		[Authorize]
 		public async Task<IActionResult> GetMe()
 		{
 			var uid = GetUserId();
@@ -31,7 +33,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var u = await _userManager.FindByIdAsync(uid);
 			if (u is null)
-				return NotFound("Kullanıcı bulunamadı.");
+				return NotFound(Messages.UserNotFound);
 
 			return Ok(new
 			{
@@ -46,6 +48,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		}
 
 		[HttpPut("me")]
+		[Authorize]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		public async Task<IActionResult> UpdateMe([FromBody] UpdateMyProfileDto body)
@@ -59,7 +62,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var u = await _userManager.FindByIdAsync(uid);
 			if (u is null)
-				return NotFound("Kullanıcı bulunamadı.");
+				return NotFound(Messages.UserNotFound);
 
 			// Sadece gönderilen alanları güncelle
 			if (!string.IsNullOrWhiteSpace(body.Name))
@@ -78,11 +81,12 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!res.Succeeded)
 				return BadRequest(string.Join(", ", res.Errors.Select(e => e.Description)));
 
-			return Ok("Profil güncellendi.");
+			return Ok(Messages.ProfileUpdated);
 		}
 
 		// E-posta değişimi 2 adımlı: istek + onay
 		[HttpPost("change-email/request")]
+		[Authorize]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<IActionResult> RequestEmailChange([FromBody] ChangeEmailDto body)
 		{
@@ -95,7 +99,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var u = await _userManager.FindByIdAsync(uid);
 			if (u is null)
-				return NotFound("Kullanıcı bulunamadı.");
+				return NotFound(Messages.UserNotFound);
 
 			var token = await _userManager.GenerateChangeEmailTokenAsync(u, body.NewEmail.Trim());
 
@@ -104,6 +108,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		}
 
 		[HttpPost("change-email/confirm")]
+		[Authorize]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<IActionResult> ConfirmEmailChange([FromBody] ConfirmEmailChangeDto body)
 		{
@@ -116,7 +121,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var u = await _userManager.FindByIdAsync(uid);
 			if (u is null)
-				return NotFound("Kullanıcı bulunamadı.");
+				return NotFound(Messages.UserNotFound);
 
 			var result = await _userManager.ChangeEmailAsync(u, body.NewEmail.Trim(), body.Token);
 			if (!result.Succeeded)
@@ -125,10 +130,11 @@ namespace Yazilimxyz.WebAPI.Controllers
 			// Username = email mantığı varsa eşitle
 			await _userManager.SetUserNameAsync(u, body.NewEmail.Trim());
 
-			return Ok("E-posta güncellendi ve onaylandı.");
+			return Ok(Messages.EmailChangedAndConfirmed);
 		}
 
 		[HttpPost("change-password")]
+		[Authorize]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto body)
@@ -153,13 +159,13 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var u = await _userManager.FindByIdAsync(uid);
 			if (u is null)
-				return NotFound("Kullanıcı bulunamadı.");
+				return NotFound(Messages.UserNotFound);
 
 			var result = await _userManager.ChangePasswordAsync(u, body.CurrentPassword, body.NewPassword);
 			if (!result.Succeeded)
 				return BadRequest(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-			return Ok("Şifre güncellendi.");
+			return Ok(Messages.PasswordChanged);
 		}
 	}
 }

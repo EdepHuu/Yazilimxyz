@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.Customer;
 
 namespace Yazilimxyz.WebAPI.Controllers
@@ -28,7 +29,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			if (me == null)
 			{
-				return NotFound("Müşteri profili bulunamadı.");
+				return NotFound(Messages.CustomerNotFound);
 			}
 
 			return Ok(me);
@@ -51,7 +52,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			if (cust == null)
 			{
-				return NotFound("Müşteri bulunamadı.");
+				return NotFound(Messages.CustomerNotFound);
 			}
 
 			return Ok(cust);
@@ -72,7 +73,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			if (cust == null)
 			{
-				return NotFound("Müşteri bulunamadı.");
+				return NotFound(Messages.CustomerNotFound);
 			}
 
 			return Ok(cust);
@@ -93,7 +94,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			if (cust == null)
 			{
-				return NotFound("Müşteri bulunamadı.");
+				return NotFound(Messages.CustomerNotFound);
 			}
 
 			return Ok(cust);
@@ -114,7 +115,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			var exists = await _customerService.GetByIdAsync(id);
 			if (exists == null)
 			{
-				return NotFound("Müşteri bulunamadı.");
+				return NotFound(Messages.CustomerNotFound);
 			}
 
 			await _customerService.AdminSetActiveAsync(id, value);

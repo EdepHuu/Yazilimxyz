@@ -56,7 +56,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		public async Task<IActionResult> GetMyAddresses()
 		{
 			var (ok, myId) = await GetCurrentCustomerIdAsync();
-			if (!ok) return Bad("Müşteri profili bulunamadı.");
+			if (!ok) return Bad(Messages.CustomerNotFound);
 
 			var res = await _addressService.GetByCustomerIdAsync(myId);
 			if (!res.Success) return Bad(res.Message);
@@ -69,7 +69,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		public async Task<IActionResult> GetMyDefaultAddress()
 		{
 			var (ok, myId) = await GetCurrentCustomerIdAsync();
-			if (!ok) return Bad("Müşteri profili bulunamadı.");
+			if (!ok) return Bad(Messages.CustomerNotFound);
 
 			var res = await _addressService.GetDefaultAddressAsync(myId);
 			if (!res.Success || res.Data is null) return NotF(res.Message);
@@ -89,7 +89,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!User.IsInRole("AppAdmin"))
 			{
 				var (ok, myId) = await GetCurrentCustomerIdAsync();
-				if (!ok) return Bad("Müşteri profili bulunamadı.");
+				if (!ok) return Bad(Messages.CustomerNotFound);
 				if (myId != res.Data.CustomerId) return Forb("Bu adrese erişim yetkiniz yok.");
 			}
 
@@ -114,7 +114,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (string.IsNullOrWhiteSpace(body.District)) return Bad("İlçe zorunludur.");
 
 			var (ok, myId) = await GetCurrentCustomerIdAsync();
-			if (!ok) return Bad("Müşteri profili bulunamadı.");
+			if (!ok) return Bad(Messages.CustomerNotFound);
 
 			var dto = new CreateCustomerAddressDto
 			{
@@ -134,7 +134,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			var res = await _addressService.CreateAsync(dto);
 			if (!res.Success) return Bad(res.Message);
 
-			return StatusCode(StatusCodes.Status201Created, new ApiResponse(true, "Adres oluşturuldu."));
+			return StatusCode(StatusCodes.Status201Created, new ApiResponse(true, Messages.CustomerAddressAdded));
 		}
 
 		// body'de Id YOK; sadece path'te
@@ -158,7 +158,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!User.IsInRole("AppAdmin"))
 			{
 				var (ok, myId) = await GetCurrentCustomerIdAsync();
-				if (!ok) return Bad("Müşteri profili bulunamadı.");
+				if (!ok) return Bad(Messages.CustomerNotFound);
 				if (myId != existing.Data.CustomerId) return Forb("Bu adreste işlem yapma yetkiniz yok.");
 			}
 
@@ -186,7 +186,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 				if (!defRes.Success) return Bad(defRes.Message);
 			}
 
-			return OkResp("Adres güncellendi.");
+			return OkResp(Messages.CustomerAddressUpdated);
 		}
 
 		[HttpPatch("{id:int}/set-default")]
@@ -201,14 +201,14 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!User.IsInRole("AppAdmin"))
 			{
 				var (ok, myId) = await GetCurrentCustomerIdAsync();
-				if (!ok) return Bad("Müşteri profili bulunamadı.");
+				if (!ok) return Bad(Messages.CustomerNotFound);
 				if (myId != addr.Data.CustomerId) return Forb("Bu adreste işlem yapma yetkiniz yok.");
 			}
 
 			var res = await _addressService.SetDefaultAddressAsync(addr.Data.CustomerId, id);
 			if (!res.Success) return Bad(res.Message);
 
-			return OkResp("Varsayılan adres ayarlandı.");
+			return OkResp(Messages.DefaultAddressNotFound);
 		}
 
 		[HttpDelete("{id:int}")]
@@ -225,7 +225,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!User.IsInRole("AppAdmin"))
 			{
 				var (ok, myId) = await GetCurrentCustomerIdAsync();
-				if (!ok) return BadRequest("Müşteri profili bulunamadı.");
+				if (!ok) return BadRequest(Messages.CustomerNotFound);
 				if (myId != addr.Data.CustomerId) return Forbid("Bu adreste işlem yapma yetkiniz yok.");
 			}
 
@@ -248,7 +248,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			var res = await _addressService.GetByCustomerIdAsync(customerId);
 			if (!res.Success) return Bad(res.Message);
 
-			return OkResp("Adresler listelendi.", res.Data);
+			return OkResp(Messages.CustomerAddressesListed, res.Data);
 		}
 
 		// ADMIN — Create
@@ -266,7 +266,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 			var res = await _addressService.CreateAsync(dto);
 			if (!res.Success) return Bad(res.Message);
-			return StatusCode(StatusCodes.Status201Created, new ApiResponse(true, "Adres oluşturuldu."));
+			return StatusCode(StatusCodes.Status201Created, new ApiResponse(true, Messages.CustomerAddressAdded));
 		}
 
 		// ADMIN — Update
@@ -290,7 +290,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (dto.IsDefault)
 				await _addressService.SetDefaultAddressAsync(dto.CustomerId, id);
 
-			return OkResp("Adres güncellendi.");
+			return OkResp(Messages.CustomerAddressUpdated);
 		}
 
 		// ADMIN — Delete
@@ -308,7 +308,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!res.Success)
 				return Bad(res.Message);
 
-			return OkResp(Messages.CustomerAddressDeleted); // ✅ 200 OK + mesaj
+			return OkResp(Messages.CustomerAddressDeleted);
 		}
 	}
 
