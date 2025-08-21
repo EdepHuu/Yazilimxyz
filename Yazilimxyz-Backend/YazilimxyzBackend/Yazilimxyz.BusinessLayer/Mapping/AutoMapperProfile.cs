@@ -1,9 +1,4 @@
 ﻿using AutoMapper;
-<<<<<<< HEAD
-using SignalRNotificationApi.Models;
-using Yazilimxyz.BusinessLayer.DTOs.AppAdmin;
-=======
->>>>>>> develop
 using Yazilimxyz.BusinessLayer.DTOs.AppUser;
 using Yazilimxyz.BusinessLayer.DTOs.CartItem;
 using Yazilimxyz.BusinessLayer.DTOs.Category;

@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="SignalRApi\.vs\SignalRApi\v17\DocumentLayout.backup.json" />
-    <Content Include="SignalRApi\.vs\SignalRApi\v17\DocumentLayout.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
@@ -34,34 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="SignalRApi\SignalRApi\Migrations\" />
-    <Folder Include="SignalRApi\SignalRApi\wwwroot\" />
     <Folder Include="wwwroot\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="SignalRApi\.vs\ProjectEvaluation\signalrapi.metadata.v9.bin" />
-    <None Include="SignalRApi\.vs\ProjectEvaluation\signalrapi.projects.v9.bin" />
-    <None Include="SignalRApi\.vs\ProjectEvaluation\signalrapi.strings.v9.bin" />
-    <None Include="SignalRApi\.vs\SignalRApi\config\applicationhost.config" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.939.21063\CodeChunks.db" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.939.21063\SemanticSymbols.db" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.995.13737\CodeChunks.db" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.995.13737\CodeChunks.db-shm" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.995.13737\CodeChunks.db-wal" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.995.13737\SemanticSymbols.db" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.995.13737\SemanticSymbols.db-shm" />
-    <None Include="SignalRApi\.vs\SignalRApi\CopilotIndices\17.14.995.13737\SemanticSymbols.db-wal" />
-    <None Include="SignalRApi\.vs\SignalRApi\DesignTimeBuild\.dtbcache.v2" />
-    <None Include="SignalRApi\.vs\SignalRApi\FileContentIndex\261614a8-173a-4713-829c-78a06d90a80f.vsidx" />
-    <None Include="SignalRApi\.vs\SignalRApi\FileContentIndex\261b57c4-feac-4397-b48f-831805445a72.vsidx" />
-    <None Include="SignalRApi\.vs\SignalRApi\FileContentIndex\bed9404a-3f2b-4fef-a91f-6ca4eb031e50.vsidx" />
-    <None Include="SignalRApi\.vs\SignalRApi\FileContentIndex\e0cef13e-485b-4315-92b0-b3ed4ed94c2f.vsidx" />
-    <None Include="SignalRApi\.vs\SignalRApi\FileContentIndex\ff16a39a-6ec0-43d2-a150-c5b81b462f96.vsidx" />
-    <None Include="SignalRApi\.vs\SignalRApi\v17\.futdcache.v2" />
-    <None Include="SignalRApi\SignalRApi.sln" />
-    <None Include="SignalRApi\SignalRApi\SignalRApi.csproj" />
-    <None Include="SignalRApi\SignalRApi\SignalRApi.csproj.user" />
   </ItemGroup>
 
 </Project>

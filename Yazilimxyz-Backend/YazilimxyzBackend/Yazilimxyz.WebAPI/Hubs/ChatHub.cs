@@ -18,24 +18,22 @@ namespace Yazilimxyz.WebAPI.Hubs
             _context = context;
         }
 
-        // Kullanıcı mesaj gönderdiğinde
-        public async Task SendMessage(SupportMessageDto dto)
+        public async Task SendMessage(CreateSupportMessageDto dto)
         {
             var senderId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(senderId)) return;
 
             // Conversation kontrolü
             SupportConversation conversation = null;
-            if (!string.IsNullOrEmpty(dto.ConversationId))
+            if (!string.IsNullOrEmpty(dto.ConversationId) && int.TryParse(dto.ConversationId, out int convId))
             {
-                int conversationId = int.Parse(dto.ConversationId); // veya TryParse kullan
                 conversation = await _context.SupportConversations
                     .Include(c => c.Messages)
-                    .FirstOrDefaultAsync(c => c.Id == conversationId);
+                    .FirstOrDefaultAsync(c => c.Id == convId);
             }
+
             if (conversation == null)
             {
-                // Eğer conversation yoksa otomatik oluştur
                 conversation = new SupportConversation
                 {
                     CustomerId = senderId,
@@ -60,7 +58,7 @@ namespace Yazilimxyz.WebAPI.Hubs
             conversation.LastMessageAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            // Hedef kullanıcıya gönder
+            // Mesajları gönder
             await Clients.User(dto.ReceiverId).SendAsync("ReceiveMessage", new
             {
                 SenderId = senderId,
@@ -69,7 +67,6 @@ namespace Yazilimxyz.WebAPI.Hubs
                 message.SentAt
             });
 
-            // Kendisine de gönder
             await Clients.Caller.SendAsync("MessageSent", new
             {
                 ReceiverId = dto.ReceiverId,
@@ -79,14 +76,15 @@ namespace Yazilimxyz.WebAPI.Hubs
             });
         }
 
-        // Önceki mesajları getir
-        public async Task GetPreviousMessages(int conversationId)
+        public async Task GetPreviousMessages(string conversationId)
         {
             var senderId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(senderId)) return;
 
+            if (!int.TryParse(conversationId, out int convId)) return;
+
             var messages = await _context.SupportMessages
-                .Where(m => m.ConversationId == conversationId)
+                .Where(m => m.ConversationId == convId)
                 .OrderBy(m => m.SentAt)
                 .Select(m => new
                 {

@@ -5,7 +5,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.SupportMessage
 {
     public class SupportUserDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
     }
@@ -14,7 +14,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.SupportMessage
     {
         public int Id { get; set; }
         public string Content { get; set; }
-        public int SenderId { get; set; }
+        public string SenderId { get; set; }
         public string ReceiverId { get; set; }
         public string? ConversationId { get; set; }
         public SupportUserDto Sender { get; set; }
@@ -32,10 +32,10 @@ namespace Yazilimxyz.BusinessLayer.DTOs.SupportMessage
 
     public class CreateSupportMessageDto
     {
-        public int SenderId { get; set; }
-        public int ReceiverId { get; set; }
+        public string SenderId { get; set; }
+        public string ReceiverId { get; set; }
         public string Content { get; set; }
-        public int? ConversationId { get; set; }
+        public string? ConversationId { get; set; }
     }
 
     public class UpdateSupportMessageDto
