@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.Category;
 
 namespace Yazilimxyz.WebAPI.Controllers
@@ -40,36 +42,35 @@ namespace Yazilimxyz.WebAPI.Controllers
 
 		// POST: api/Category
 		[HttpPost]
+		[Authorize(Roles = "AppAdmin")]
 		public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
 		{
 			if (!ModelState.IsValid)
-			{
 				return BadRequest(ModelState);
-			}
 
 			await _categoryService.CreateAsync(dto);
-			return Ok(new { message = "Kategori başarıyla eklendi." });
+			return Ok(new { message = Messages.CategoryAdded });
 		}
 
 		// PUT: api/Category
 		[HttpPut]
+		[Authorize(Roles = "AppAdmin")]
 		public async Task<IActionResult> Update([FromBody] UpdateCategoryDto dto)
 		{
 			if (!ModelState.IsValid)
-			{
 				return BadRequest(ModelState);
-			}
 
 			await _categoryService.UpdateAsync(dto);
-			return Ok(new { message = "Kategori başarıyla güncellendi." });
+			return Ok(new { message = Messages.CategoryUpdated });
 		}
 
 		// DELETE: api/Category/5
 		[HttpDelete("{id}")]
+		[Authorize(Roles = "AppAdmin")]
 		public async Task<IActionResult> Delete(int id)
 		{
 			await _categoryService.DeleteAsync(id);
-			return Ok(new { message = "Kategori başarıyla silindi." });
+			return Ok(new { message = Messages.CategoryDeleted });
 		}
 
 		// GET: api/Category/active

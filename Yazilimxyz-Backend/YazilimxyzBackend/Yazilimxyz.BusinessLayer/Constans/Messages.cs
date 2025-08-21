@@ -57,7 +57,7 @@
         public static string ProductNameInvalid = "Ürün ismi geçersiz.";
         public static string ProductCountOfCategoryError = "Bir kategoride en fazla 17 ürün olabilir.";
 
-        public const string InvalidGenderType = "Geçersiz cinsiyet türü.";
+        public const string InvalidGenderType = "Geçersiz cinsiyet değeri. Lütfen 1 (Male), 2 (Female) veya 3 (Unisex) gönderin.";
         public const string InvalidProductPrice = "Ürün fiyatı sıfırdan büyük olmalıdır.";
         public const string UnauthorizedProductUpdate = "Bu ürünü güncelleme yetkiniz yok.";
         public const string UnauthorizedProductDelete = "Bu ürünü silme yetkiniz yok.";
@@ -147,5 +147,11 @@
         public const string MessageContentTooLong = "Mesaj içeriği 1000 karakterden uzun olamaz.";
         public const string SupportMessageCreated = "Destek mesajı başarıyla oluşturuldu.";
         public const string SupportMessageDeleted = "Destek mesajı başarıyla silindi.";
-    }
+
+		// User Messages
+		public static string ProfileUpdated = "Profil güncellendi.";
+		public static string PasswordChanged = "Şifre güncellendi.";
+		public static string EmailChangeTokenCreated = "Onay için e-posta değişiklik tokenı üretildi.";
+		public static string EmailChangedAndConfirmed = "E-posta güncellendi ve onaylandı.";
+	}
 }

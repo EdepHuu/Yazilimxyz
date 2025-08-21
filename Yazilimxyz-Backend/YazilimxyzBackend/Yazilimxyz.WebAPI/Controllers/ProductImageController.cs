@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.ProductImage;
 
 namespace Yazilimxyz.WebAPI.Controllers
@@ -19,7 +20,8 @@ namespace Yazilimxyz.WebAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+		[Authorize(Roles = "AppAdmin")]
+		public async Task<IActionResult> GetAll()
         {
             var result = await _productImageService.GetAllAsync();
             return Ok(result);
@@ -32,7 +34,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
             if (result == null)
             {
-                return NotFound("Fotoğraf bulunamadı.");
+                return NotFound(Messages.ProductImageNotFound);
             }
 
             return Ok(result);
@@ -52,7 +54,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 
             if (result == null)
             {
-                return NotFound("Ürüne ait main fotoğraf bulunamadı.");
+                return NotFound(Messages.ProductImageNotFound);
             }
 
             return Ok(result);
@@ -67,39 +69,42 @@ namespace Yazilimxyz.WebAPI.Controllers
                 return BadRequest("Geçersiz veri gönderildi.");
 
             await _productImageService.CreateAsync(dto);
-            return Ok("Fotoğraf başarıyla eklendi.");
+            return Ok(Messages.ProductImageAdded);
         }
 
         [HttpPut]
-        public async Task<IActionResult> Update([FromBody] UpdateProductImageDto dto)
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> Update([FromBody] UpdateProductImageDto dto)
         {
             var image = await _productImageService.GetByIdAsync(dto.Id);
 
             if (image == null)
             {
-                return NotFound("Güncellenmek istenen fotoğraf bulunamadı.");
+                return NotFound(Messages.ProductImageNotFound);
             }
 
             await _productImageService.UpdateAsync(dto);
-            return Ok("Fotoğraf başarıyla güncellendi.");
+            return Ok(Messages.ProductImageUpdated);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> Delete(int id)
         {
             var image = await _productImageService.GetByIdAsync(id);
 
             if (image == null)
             {
-                return NotFound("Silinmek istenen fotoğraf bulunamadı.");
+                return NotFound(Messages.ProductImageNotFound);
             }
 
             await _productImageService.DeleteAsync(id);
-            return Ok("Fotoğraf başarıyla silindi.");
+            return Ok(Messages.ProductImageDeleted);
         }
 
         [HttpPut("set-main/{imageId}")]
-        public async Task<IActionResult> SetMain(int imageId)
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> SetMain(int imageId)
         {
             var image = await _productImageService.GetByIdAsync(imageId);
 
@@ -113,7 +118,8 @@ namespace Yazilimxyz.WebAPI.Controllers
         }
 
         [HttpPut("reorder/{productId}")]
-        public async Task<IActionResult> Reorder(int productId, [FromBody] List<int> imageIds)
+		[Authorize(Roles = "Merchant,AppAdmin")]
+		public async Task<IActionResult> Reorder(int productId, [FromBody] List<int> imageIds)
         {
             if (imageIds == null || !imageIds.Any())
             {
