@@ -7,10 +7,10 @@ namespace Yazilimxyz.EntityLayer.Entities
     {
         public int Id { get; set; }
 
-        public int SenderId { get; set; }
+        public string SenderId { get; set; }
         public AppUser Sender { get; set; }
 
-        public int ReceiverId { get; set; }
+        public string ReceiverId { get; set; }
         public AppUser Receiver { get; set; }
 
         public string Content { get; set; }
@@ -24,10 +24,10 @@ namespace Yazilimxyz.EntityLayer.Entities
     {
         public int Id { get; set; }
 
-        public int CustomerId { get; set; }
+        public string CustomerId { get; set; }
         public AppUser Customer { get; set; }
 
-        public int? SupportAgentId { get; set; }
+        public string SupportAgentId { get; set; }
         public AppUser SupportAgent { get; set; }
 
         public List<SupportMessage> Messages { get; set; } = new List<SupportMessage>();

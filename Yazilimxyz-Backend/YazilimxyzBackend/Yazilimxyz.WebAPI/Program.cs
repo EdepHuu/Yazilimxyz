@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SignalRNotificationApi.Hubs;
 using System.Text;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.Concrete;
@@ -15,6 +16,7 @@ using Yazilimxyz.DataAccessLayer.Concrete;
 using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
+using Yazilimxyz.InfrastructureLayer.SignalR.Hubs;
 using Yazilimxyz.InfrastructureLayer.Storage;
 using Yazilimxyz.WebAPI.Hubs; // ChatHub için
 
@@ -54,14 +56,24 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+<<<<<<< HEAD
     // SignalR için JWT Auth (WebSocket üzerinden header yerine query string’ten de alabilsin)
+=======
+
+    // SignalR JWT desteði
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
+<<<<<<< HEAD
             if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+=======
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/supporthub") || path.StartsWithSegments("/notificationhub")))
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
             {
                 context.Token = accessToken;
             }
@@ -73,7 +85,10 @@ builder.Services.AddAuthentication(options =>
 // ---------- Authorization ----------
 builder.Services.AddAuthorization(opts =>
 {
+<<<<<<< HEAD
     // "IsAdmin" claim'i true olmalý
+=======
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
     opts.AddPolicy("Admin", policy => policy.RequireClaim("IsAdmin", "true"));
 });
 
@@ -81,7 +96,16 @@ builder.Services.AddAuthorization(opts =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
+<<<<<<< HEAD
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+=======
+    {
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .SetIsOriginAllowed(_ => true);
+    });
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
 });
 
 // ---------- Upload limit (ör. 20 MB) ----------
@@ -120,17 +144,29 @@ builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 
+<<<<<<< HEAD
 // ---------- SignalR ----------
 builder.Services.AddSignalR();
 
 // ---------- MVC & Swagger ----------
+=======
+// ---------- AutoMapper ----------
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+// ---------- SignalR ----------
+builder.Services.AddSignalR();
+
+// ---------- MVC & Swagger ----------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -140,6 +176,10 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Description = "JWT Token'ý 'Bearer {token}' formatýnda giriniz."
     });
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -154,7 +194,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ---------- Middleware Sýrasý ----------
+// ---------- Middleware Pipeline ----------
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -173,8 +213,14 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+<<<<<<< HEAD
 // ---------- SignalR Endpoint ----------
 app.MapHub<ChatHub>("/chathub");
+=======
+// ---------- SignalR Hubs ----------
+app.MapHub<SupportHub>("/supporthub");
+// app.MapHub<NotificationHub>("/notificationhub");
+>>>>>>> 4f8f8323f0b33e14e564975d675c5d5968aababa
 
 // ---------- Seed Admin ----------
 using (var scope = app.Services.CreateScope())

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using SignalRNotificationApi.Models;
 using System;
 using System.Collections.Generic;
 
@@ -19,5 +20,6 @@ namespace Yazilimxyz.EntityLayer.Entities
         public ICollection<SupportMessage> SentMessages { get; set; } = new List<SupportMessage>();
         public ICollection<SupportMessage> ReceivedMessages { get; set; } = new List<SupportMessage>();
         public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+
     }
 }
