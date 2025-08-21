@@ -1,5 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SignalRNotificationApi.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Text;
+using System.Threading.Tasks;
 using Yazilimxyz.EntityLayer.Entities;
 using System;
 
@@ -20,7 +25,11 @@ namespace Yazilimxyz.DataAccessLayer.Context
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<AppAdmin> AppAdmins { get; set; }
+
+        // Support Entities
         public DbSet<SupportMessage> SupportMessages { get; set; }
+        public DbSet<SupportConversation> SupportConversations { get; set; }
+
         public DbSet<Merchant> Merchants { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<CustomerAddress> CustomerAddresses { get; set; }
@@ -72,6 +81,7 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(p => p.MerchantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
             // SupportMessage → Sender
             modelBuilder.Entity<SupportMessage>()
                 .HasOne(sm => sm.Sender)
@@ -86,8 +96,29 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(sm => sm.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Merchant → AppUser
-            modelBuilder.Entity<Merchant>()
+            // SupportMessage → Conversation
+            modelBuilder.Entity<SupportMessage>()
+                .HasOne(sm => sm.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(sm => sm.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // SupportConversation → Customer
+            modelBuilder.Entity<SupportConversation>()
+                .HasOne(c => c.Customer)
+                .WithMany()
+                .HasForeignKey(c => c.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // SupportConversation → SupportAgent
+            modelBuilder.Entity<SupportConversation>()
+                .HasOne(c => c.SupportAgent)
+                .WithMany()
+                .HasForeignKey(c => c.SupportAgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+        // Merchant → AppUser
+        modelBuilder.Entity<Merchant>()
                 .HasOne(m => m.AppUser)
                 .WithOne(u => u.Merchant)
                 .HasForeignKey<Merchant>(m => m.AppUserId)

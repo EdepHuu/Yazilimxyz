@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
@@ -16,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Yazilimxyz.CoreLayer\Yazilimxyz.CoreLayer.csproj" />
+    <ProjectReference Include="..\Yazilimxyz.DataAccessLayer\Yazilimxyz.DataAccessLayer.csproj" />
     <ProjectReference Include="..\Yazilimxyz.EntityLayer\Yazilimxyz.EntityLayer.csproj" />
   </ItemGroup>
 

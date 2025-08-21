@@ -16,18 +16,21 @@ using Yazilimxyz.DataAccessLayer.Context;
 using Yazilimxyz.EntityLayer.Entities;
 using Yazilimxyz.InfrastructureLayer.Security;
 using Yazilimxyz.InfrastructureLayer.Storage;
+using Yazilimxyz.WebAPI.Hubs; // ChatHub
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- DbContext ----------
 builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-		b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        b => b.MigrationsAssembly("Yazilimxyz.DataAccessLayer"))
+);
 
 // ---------- Identity ----------
 builder.Services.AddIdentity<AppUser, IdentityRole>()
-	.AddEntityFrameworkStores<AppDbContext>()
-	.AddDefaultTokenProviders();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -38,41 +41,60 @@ var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 builder.Services.AddAuthentication(options =>
 {
-	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-	options.TokenValidationParameters = new TokenValidationParameters
-	{
-		ValidateIssuer = true,
-		ValidateAudience = true,
-		ValidateLifetime = true,
-		ValidateIssuerSigningKey = true,
-		ValidIssuer = jwtIssuer,
-		ValidAudience = jwtAudience,
-		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-	};
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+
+    // SignalR için JWT Auth (query string üzerinden)
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // ---------- Authorization ----------
-builder.Services.AddAuthorization(opts =>
+builder.Services.AddAuthorization(options =>
 {
-	// "IsAdmin" claim'i true olmalý
-	opts.AddPolicy("Admin", policy => policy.RequireClaim("IsAdmin", "true"));
+    options.AddPolicy("Admin", policy => policy.RequireClaim("IsAdmin", "true"));
 });
 
 // ---------- CORS ----------
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy("AllowAll", policy =>
-		policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .SetIsOriginAllowed(_ => true);
+    });
 });
 
-// ---------- Upload limit (ör. 20 MB) ----------
+// ---------- Upload limit ----------
 builder.Services.Configure<FormOptions>(o =>
 {
-	o.MultipartBodyLengthLimit = 20_000_000;
+    o.MultipartBodyLengthLimit = 20_000_000; // 20 MB
 });
 
 // ---------- DI: Services ----------
@@ -82,7 +104,6 @@ builder.Services.AddScoped<IOrderService, OrderManager>();
 builder.Services.AddScoped<IOrderItemService, OrderItemManager>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantManager>();
 builder.Services.AddScoped<IProductImageService, ProductImageManager>();
-builder.Services.AddScoped<ISupportMessageService, SupportMessageManager>();
 builder.Services.AddScoped<IAuthService, AuthManager>();
 builder.Services.AddScoped<IAppUserService, AppUserManager>();
 builder.Services.AddScoped<IMerchantService, MerchantManager>();
@@ -96,7 +117,6 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
-builder.Services.AddScoped<ISupportMessageRepository, SupportMessageRepository>();
 builder.Services.AddScoped<IAppUserRepository, AppUserRepository>();
 builder.Services.AddScoped<IMerchantRepository, MerchantRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
@@ -107,43 +127,49 @@ builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 
-// ---------- MVC & Swagger ----------
+// ---------- AutoMapper ----------
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+// ---------- SignalR ----------
+builder.Services.AddSignalR();
+
+// ---------- MVC & Swagger ----------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
-	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
-	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-	{
-		Name = "Authorization",
-		Type = SecuritySchemeType.ApiKey,
-		Scheme = "Bearer",
-		BearerFormat = "JWT",
-		In = ParameterLocation.Header,
-		Description = "JWT Token'ý 'Bearer {token}' formatýnda giriniz."
-	});
-	c.AddSecurityRequirement(new OpenApiSecurityRequirement
-	{
-		{
-			new OpenApiSecurityScheme
-			{
-				Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-			},
-			Array.Empty<string>()
-		}
-	});
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Yazilimxyz.WebAPI", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Token'ý 'Bearer {token}' formatýnda giriniz."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 var app = builder.Build();
 
-// ---------- Middleware Sýrasý ----------
+// ---------- Middleware Pipeline ----------
 if (app.Environment.IsDevelopment())
 {
-	app.UseDeveloperExceptionPage();
-	app.UseSwagger();
-	app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
@@ -157,10 +183,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// ---------- SignalR Endpoint ----------
+app.MapHub<ChatHub>("/chathub");
+
 // ---------- Seed Admin ----------
 using (var scope = app.Services.CreateScope())
 {
-	await SeedAdminAsync(scope.ServiceProvider, builder.Configuration);
+    await SeedAdminAsync(scope.ServiceProvider, builder.Configuration);
 }
 
 app.Run();
@@ -168,36 +197,37 @@ app.Run();
 // ================== SEED ADMIN ==================
 static async Task SeedAdminAsync(IServiceProvider sp, IConfiguration cfg)
 {
-	var userMgr = sp.GetRequiredService<UserManager<AppUser>>();
-	var email = cfg["Admin:Email"] ?? "admin@yazilimxyz.com";
-	var pass = cfg["Admin:Password"] ?? "Admin_123!";
-	var name = cfg["Admin:Name"] ?? "System";
-	var last = cfg["Admin:LastName"] ?? "Admin";
+    var userMgr = sp.GetRequiredService<UserManager<AppUser>>();
+    var email = cfg["Admin:Email"] ?? "admin@yazilimxyz.com";
+    var pass = cfg["Admin:Password"] ?? "Admin_123!";
+    var name = cfg["Admin:Name"] ?? "System";
+    var last = cfg["Admin:LastName"] ?? "Admin";
 
-	var admin = await userMgr.FindByEmailAsync(email);
-	if (admin == null)
-	{
-		admin = new AppUser
-		{
-			UserName = email,
-			Email = email,
-			Name = name,
-			LastName = last,
-			IsAdmin = true,
-			EmailConfirmed = true,
-			CreatedAt = DateTime.UtcNow
-		};
+    var admin = await userMgr.FindByEmailAsync(email);
+    if (admin == null)
+    {
+        admin = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            Name = name,
+            LastName = last,
+            IsAdmin = true,
+            EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow
+        };
 
-		var create = await userMgr.CreateAsync(admin, pass);
-		if (!create.Succeeded)
-		{
-			var msg = string.Join(", ", create.Errors.Select(e => e.Description));
-			throw new Exception("Admin seed baþarýsýz: " + msg);
-		}
-	}
-	else if (!admin.IsAdmin)
-	{
-		admin.IsAdmin = true;
-		await userMgr.UpdateAsync(admin);
-	}
+        var create = await userMgr.CreateAsync(admin, pass);
+        if (!create.Succeeded)
+        {
+            var msg = string.Join(", ", create.Errors.Select(e => e.Description));
+            throw new Exception("Admin seed baþarýsýz: " + msg);
+        }
+    }
+    else if (!admin.IsAdmin)
+    {
+        admin.IsAdmin = true;
+        await userMgr.UpdateAsync(admin);
+    }
 }
+    
