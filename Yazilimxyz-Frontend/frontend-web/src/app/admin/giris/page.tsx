@@ -2,10 +2,7 @@
 
 import React, { useState } from "react";
 
-
-
-
-
+// Mail simgesi için satır içi SVG
 const MailIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -55,54 +52,8 @@ const SpinnerIcon = () => (
   </svg>
 );
 
-// AdminPanel bileşeninin props'ları için tür tanımlaması
-interface AdminPanelProps {
-  onLogout: () => void;
-}
-
-// Yönetici Paneli Bileşeni - Ayrı bir ekran olarak tasarlanmıştır.
-const AdminPanel = ({ onLogout }: AdminPanelProps) => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-    <div className="bg-gray-800 p-8 md:p-12 rounded-3xl shadow-2xl w-full max-w-4xl text-center">
-      <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-white">
-          Yönetici Paneli
-        </h1>
-        <button
-          onClick={onLogout}
-          className="py-2 px-6 rounded-full shadow-lg font-bold text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-300 transform hover:scale-105"
-        >
-          Çıkış Yap
-        </button>
-      </div>
-      <p className="text-lg text-gray-400 mb-8">
-        Burada yönetici araçlarına ve verilerine erişebilirsiniz.
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-        <div className="bg-gray-700 p-6 rounded-2xl shadow-lg">
-          <h3 className="text-xl font-semibold text-white mb-2">Analizler</h3>
-          <p className="text-gray-400">Web sitenizin performansını izleyin ve raporları görüntüleyin.</p>
-        </div>
-        <div className="bg-gray-700 p-6 rounded-2xl shadow-lg">
-          <h3 className="text-xl font-semibold text-white mb-2">Kullanıcı Yönetimi</h3>
-          <p className="text-gray-400">Kullanıcı hesaplarını yönetin ve izinleri ayarlayın.</p>
-        </div>
-        <div className="bg-gray-700 p-6 rounded-2xl shadow-lg">
-          <h3 className="text-xl font-semibold text-white mb-2">İçerik</h3>
-          <p className="text-gray-400">Yeni içerikler oluşturun, düzenleyin veya silin.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// LoginPage bileşeninin props'ları için tür tanımlaması
-interface LoginPageProps {
-  onLogin: () => void;
-}
-
-// Giriş Sayfası Bileşeni - Tamamen ayrı bir ekran olarak tasarlanmıştır.
-const LoginPage = ({ onLogin }: LoginPageProps) => {
+// Giriş Sayfası Bileşeni - Sadece giriş sayfası
+export default function LoginPage() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -123,9 +74,9 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     setTimeout(() => {
       // Bu örnek için sabit kodlanmış bir yönetici bilgisi kontrolü
       if (email === "admin@admin.com" && password === "password") {
-        setMessage({ type: 'success', text: "Giriş başarılı! Yönetici paneline yönlendiriliyorsunuz..." });
-        // Uygulama durumunu değiştirmek için üst bileşenden gelen onLogin işlevini çağır
-        onLogin();
+        setMessage({ type: 'success', text: "Giriş başarılı! Yönlendiriliyorsunuz..." });
+        // Başarılı giriş sonrası yönlendirme işlemi burada yapılabilir.
+        // Örneğin: window.location.href = "/admin/control/panel";
       } else {
         setMessage({ type: 'error', text: "Giriş başarısız oldu. Lütfen bilgilerinizi kontrol edin." });
       }
@@ -153,7 +104,9 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
-            <MailIcon />
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <MailIcon />
+            </span>
             <input
               type="email"
               id="email"
@@ -166,7 +119,9 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
             />
           </div>
           <div className="relative">
-            <LockIcon />
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <LockIcon />
+            </span>
             <input
               type="password"
               id="password"
@@ -196,27 +151,5 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
         </form>
       </div>
     </div>
-  );
-};
-
-// Ana Uygulama Bileşeni
-export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Başarılı girişi işleyen ve yönetici paneline geçiş yapan işlev
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-  };
-
-  // Çıkışı işleyen ve giriş sayfasına geri dönen işlev
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-  };
-
-  // isLoggedIn durumu false ise LoginPage'i, true ise AdminPanel'i gösterir.
-  // Bu, iki ekranın asla aynı anda görüntülenmeyeceğini garanti eder.
-  return (
-    // Giriş durumuna göre LoginPage veya AdminPanel'i koşullu olarak oluştur
-    isLoggedIn ? <AdminPanel onLogout={handleLogout} /> : <LoginPage onLogin={handleLogin} />
   );
 }

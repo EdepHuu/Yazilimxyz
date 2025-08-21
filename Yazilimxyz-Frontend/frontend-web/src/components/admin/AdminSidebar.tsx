@@ -1,7 +1,18 @@
-import React, { useState, ReactNode } from 'react';
+'use client'; // Bu, istemci bileşeni olduğunu belirtir.
+import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
-// Sidebar Menu Items with corresponding inline SVG icons
-const sidebarMenuItems = [
+// Menü öğelerinin türünü tanımlayın
+interface MenuItem {
+  page: string;
+  label: string;
+  icon: JSX.Element;
+  href: string;
+}
+
+// Sidebar Menu Items
+const sidebarMenuItems: MenuItem[] = [
   {
     page: 'panel',
     label: 'Kontrol Paneli',
@@ -12,7 +23,8 @@ const sidebarMenuItems = [
         <rect width="7" height="9" x="14" y="12" rx="1"></rect>
         <rect width="7" height="5" x="3" y="16" rx="1"></rect>
       </svg>
-    )
+    ),
+    href: '/admin/control/panel' // Burası düzeltildi
   },
   {
     page: 'products',
@@ -21,7 +33,8 @@ const sidebarMenuItems = [
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
         <path d="M16 6.5V2l5 5-5 5V7.5M10.9 9.1 5.5 14.5m5.4 5.4-5.4-5.4m0 0a3 3 0 1 0-4.2-4.2M5.5 14.5a3 3 0 1 0 4.2 4.2"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/products' // Düzeltildi
   },
   {
     page: 'orders',
@@ -32,7 +45,8 @@ const sidebarMenuItems = [
         <circle cx="19" cy="21" r="1"></circle>
         <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/orders' // Düzeltildi
   },
   {
     page: 'users',
@@ -44,7 +58,8 @@ const sidebarMenuItems = [
         <path d="M22 19a6 6 0 0 0-12 0"></path>
         <circle cx="16" cy="9" r="4"></circle>
       </svg>
-    )
+    ),
+    href: '/admin/control/users' // Düzeltildi
   },
   {
     page: 'categories',
@@ -55,7 +70,8 @@ const sidebarMenuItems = [
         <path d="M8 7h6"></path>
         <path d="M8 11h8"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/categories' // Düzeltildi
   },
   {
     page: 'sellers',
@@ -67,7 +83,8 @@ const sidebarMenuItems = [
         <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
         <path d="M15 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/sellers' // Düzeltildi
   },
   {
     page: 'brands',
@@ -77,7 +94,8 @@ const sidebarMenuItems = [
         <path d="M9 5H2.828A2 2 0 0 0 1.414 6.414L8.414 13.414A2 2 0 0 0 9.828 14.828L16.828 21.828A2 2 0 0 0 18.242 22.56L22.586 18.242A2 2 0 0 0 22.56 16.828L15.56 9.828A2 2 0 0 0 14.146 8.414L7.146 1.414A2 2 0 0 0 5.732 1.414L1.414 5.732A2 2 0 0 0 2.828 7.146L9 5Z"></path>
         <circle cx="8" cy="8" r="1"></circle>
       </svg>
-    )
+    ),
+    href: '/admin/control/brands' // Düzeltildi
   },
   {
     page: 'reports',
@@ -88,7 +106,8 @@ const sidebarMenuItems = [
         <line x1="18" x2="18" y1="20" y2="4"></line>
         <line x1="6" x2="6" y1="20" y2="16"></line>
       </svg>
-    )
+    ),
+    href: '/admin/control/reports' // Düzeltildi
   },
   {
     page: 'reviews',
@@ -100,7 +119,8 @@ const sidebarMenuItems = [
         <line x1="12" x2="12" y1="12" y2="12"></line>
         <line x1="16" x2="16" y1="12" y2="12"></line>
       </svg>
-    )
+    ),
+    href: '/admin/control/reviews' // Düzeltildi
   },
   {
     page: 'payments',
@@ -111,17 +131,19 @@ const sidebarMenuItems = [
         <path d="m14 14-2 2-2-2"></path>
         <path d="M8 10h8"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/payments' // Düzeltildi
   },
   {
     page: 'settings',
     label: 'Genel Ayarlar',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.39a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.73l-.15.1a2 2 0 0 0-.73 2.73l.22.39a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0-2.73l.15-.1a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.39a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.73l-.15.1a2 2 0 0 0 .73 2.73l.22.39a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0-2.73l.15-.1a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
         <circle cx="12" cy="12" r="3"></circle>
       </svg>
-    )
+    ),
+    href: '/admin/control/settings' // Düzeltildi
   },
   {
     page: 'permissions',
@@ -132,7 +154,8 @@ const sidebarMenuItems = [
         <path d="M12 21V3"></path>
         <path d="M3 12h18"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/permissions' // Düzeltildi
   },
   {
     page: 'contact',
@@ -141,20 +164,23 @@ const sidebarMenuItems = [
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
       </svg>
-    )
+    ),
+    href: '/admin/control/contact' // Düzeltildi
   },
 ];
 
-interface AdminLayoutProps {
-  children: ReactNode;
-  onPageChange: (page: string) => void;
-  currentPage: string;
-  isSidebarOpen: boolean;
-  toggleSidebar: () => void;
+interface AdminsidebarProps {
+  children: React.ReactNode;
 }
 
-// AdminLayout bileşeni, tüm sayfalarda ortak olan arayüzü (sidebar vb.) içerir.
-const AdminLayout = ({ children, onPageChange, currentPage, isSidebarOpen, toggleSidebar }: AdminLayoutProps) => {
+const Adminsidebar = ({ children }: AdminsidebarProps) => {
+  const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen flex font-sans">
       
@@ -177,25 +203,20 @@ const AdminLayout = ({ children, onPageChange, currentPage, isSidebarOpen, toggl
         </div>
         <nav className="flex-grow space-y-2">
           {sidebarMenuItems.map(item => (
-            <a
+            <Link
               key={item.page}
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                onPageChange(item.page);
-                toggleSidebar(); // Mobil cihazlarda kenar çubuğunu kapat
-              }}
+              href={item.href}
               className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${
-                currentPage === item.page ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'
+                pathname.startsWith(item.href) ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'
               }`}
             >
               {item.icon}
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="mt-auto pt-4 border-t border-gray-700">
-          <a
+          <Link
             href="#"
             className="flex items-center p-3 rounded-lg hover:bg-red-600 text-gray-300 transition-colors duration-200"
           >
@@ -205,7 +226,7 @@ const AdminLayout = ({ children, onPageChange, currentPage, isSidebarOpen, toggl
                 <line x1="21" x2="9" y1="12" y2="12"></line>
             </svg>
             Çıkış Yap
-          </a>
+          </Link>
         </div>
       </aside>
       
@@ -230,147 +251,4 @@ const AdminLayout = ({ children, onPageChange, currentPage, isSidebarOpen, toggl
   );
 };
 
-// Sayfa içeriği için placeholder bileşenleri
-const AdminPanelPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Kontrol Paneli</h1>
-    <p>Admin paneline hoş geldiniz.</p>
-  </>
-);
-
-const ProductsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Ürün Yönetimi</h1>
-    <p>Ürün yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const OrdersPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Sipariş Yönetimi</h1>
-    <p>Sipariş yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const UsersPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Kullanıcı Yönetimi</h1>
-    <p>Kullanıcı yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const CategoriesPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Kategori Yönetimi</h1>
-    <p>Kategori yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const SellersPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Satıcı Yönetimi</h1>
-    <p>Satıcı yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const BrandsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Marka Yönetimi</h1>
-    <p>Marka yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const ReportsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">İstatistik & Raporlama</h1>
-    <p>İstatistik ve raporlama sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const ReviewsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Yorum ve Değerlendirme</h1>
-    <p>Yorum ve değerlendirme sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const PaymentsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Fatura ve Ödeme</h1>
-    <p>Fatura ve ödeme sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const SettingsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Genel Ayarlar</h1>
-    <p>Genel ayarlar sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const PermissionsPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Yetki ve Rol Yönetimi</h1>
-    <p>Yetki ve rol yönetimi sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-const ContactPage = () => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">İletişim & Mesajlar</h1>
-    <p>İletişim ve mesajlar sayfası içeriği buraya gelecek.</p>
-  </>
-);
-
-// Ana uygulama bileşeni. Yönetici panelinin tüm mantığını içerir.
-export default function App() {
-  const [currentPage, setCurrentPage] = useState('panel');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const handlePageChange = (page: string) => {
-    setCurrentPage(page);
-  };
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'panel':
-        return <AdminPanelPage />;
-      case 'products':
-        return <ProductsPage />;
-      case 'orders':
-        return <OrdersPage />;
-      case 'users':
-        return <UsersPage />;
-      case 'categories':
-        return <CategoriesPage />;
-      case 'sellers':
-        return <SellersPage />;
-      case 'brands':
-        return <BrandsPage />;
-      case 'reports':
-        return <ReportsPage />;
-      case 'reviews':
-        return <ReviewsPage />;
-      case 'payments':
-        return <PaymentsPage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'permissions':
-        return <PermissionsPage />;
-      case 'contact':
-        return <ContactPage />;
-      default:
-        return <AdminPanelPage />;
-    }
-  };
-
-  return (
-    <AdminLayout onPageChange={handlePageChange} currentPage={currentPage} isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}>
-      {renderPage()}
-    </AdminLayout>
-  );
-}
+export default Adminsidebar;

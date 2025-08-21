@@ -1,18 +1,22 @@
-import React, { ReactNode } from 'react';
+import { Inter } from "next/font/google";
 
-// children prop'unun tipini doğru şekilde belirtmek için ReactNode kullanılır.
-interface LayoutProps {
-  children: ReactNode;
-}
+const inter = Inter({ subsets: ["latin"] });
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  return (
-    <div>
-      {/* Burada tüm giriş sayfası için geçerli bir layout yapısı olabilir. */}
-      {/* Örneğin, bir arka plan, başlıklar veya ortak bir kapsayıcı. */}
-      {children}
-    </div>
-  );
+export const metadata = {
+  title: "Yazilimxyz Admin Giriş",
+  description: "Yönetim paneli için giriş sayfası",
 };
 
-export default Layout;
+export default function LoginLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="tr">
+      <body className={`${inter.className} antialiased`}>
+        {children}
+      </body>
+    </html>
+  );
+}
