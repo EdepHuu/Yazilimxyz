@@ -1,16 +1,14 @@
 // src/app/customer/(account)/bilgilerim/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
 /* =============== Types =============== */
 type ApiResponse<T> = { data: T; success?: boolean; message?: string };
 
-type CustomerProfile = {
-  firstName?: string | null;
-  lastName?: string | null;
+type MerchantLikeProfile = {
   phone?: string | null;
   phoneNumber?: string | null;
 };
@@ -25,39 +23,34 @@ type UserMe = {
 
 /* =============== API =============== */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-// Not: projede müşteri profil PUT'u farklıysa burada ayarla.
-// Kullanım: varsa ekstra senkron için kullanılır; GET zorunlu değil.
-const PROFILE = '/api/customer/profile';
-
+const PROFILE = '/api/merchant/profile';
 const USER_ME = '/api/User/me';
 const USER_CHANGE_PASSWORD = '/api/User/change-password';
 
 /* =============== Helpers =============== */
-function isObject(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null;
-}
-function isApiResponse<T>(x: unknown): x is ApiResponse<T> {
-  return isObject(x) && 'data' in x;
-}
-function unwrap<T>(raw: unknown): T {
-  return isApiResponse<T>(raw) ? (raw as ApiResponse<T>).data : (raw as T);
-}
-function getMessage(raw: unknown): string | undefined {
+const isObject = (x: unknown): x is Record<string, unknown> =>
+  typeof x === 'object' && x !== null;
+
+const isApiResponse = <T,>(x: unknown): x is ApiResponse<T> =>
+  isObject(x) && 'data' in x;
+
+const unwrap = <T,>(raw: unknown): T =>
+  isApiResponse<T>(raw) ? (raw as ApiResponse<T>).data : (raw as T);
+
+const msgOf = (raw: unknown): string | undefined => {
   if (typeof raw === 'string') return raw;
-  if (isObject(raw) && typeof (raw as { message?: string }).message === 'string') {
+  if (isObject(raw) && typeof (raw as { message?: string }).message === 'string')
     return (raw as { message?: string }).message;
-  }
   return undefined;
-}
-function pickPhone(x?: { phone?: string | null; phoneNumber?: string | null } | null): string {
-  if (!x) return '';
-  return (x.phoneNumber ?? x.phone ?? '') || '';
-}
+};
+
+const pickPhone = (x?: { phone?: string | null; phoneNumber?: string | null } | null) =>
+  (!x ? '' : (x.phoneNumber ?? x.phone ?? '') || '');
 
 export default function CustomerProfilePage() {
   const router = useRouter();
 
-  // state
+  /* ---- UI / State ---- */
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -66,15 +59,18 @@ export default function CustomerProfilePage() {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [initialEmail, setInitialEmail] = useState('');
 
+  // değişiklik tespiti için başlangıç snapshot’ı
+  const [snap, setSnap] = useState({ firstName: '', lastName: '', phone: '', email: '' });
+
+  // şifre
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
   const [pwdSaving, setPwdSaving] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showNewPwd, setShowNewPwd] = useState(false);
 
-  // axios
+  /* ---- Axios ---- */
   const api = useMemo(() => {
     const inst = axios.create({ baseURL: API_BASE });
     inst.interceptors.request.use((config) => {
@@ -86,40 +82,43 @@ export default function CustomerProfilePage() {
     return inst;
   }, []);
 
-  // initial load
+  /* ---- Başlangıç verisini çek ---- */
+  const load = useCallback(async () => {
+    // 1) /me
+    const rMe = await api.get<ApiResponse<UserMe> | UserMe>(USER_ME);
+    const me = unwrap<UserMe>(rMe.data);
+
+    const fn = (me.firstName ?? '') || '';
+    const ln = (me.lastName ?? '') || '';
+    const em = me.email ?? '';
+    let ph = pickPhone(me);
+
+    // 2) opsiyonel profil — tel profilde tutuluyorsa onu baz al
+    try {
+      const rProf = await api.get<ApiResponse<MerchantLikeProfile> | MerchantLikeProfile>(PROFILE);
+      const prof = unwrap<MerchantLikeProfile>(rProf.data);
+      const profPhone = pickPhone(prof);
+      if (!ph && profPhone) ph = profPhone;
+    } catch { /* 404/405 olabilir, sorun değil */ }
+
+    setFirstName(fn);
+    setLastName(ln);
+    setEmail(em);
+    setPhone(ph);
+    setSnap({ firstName: fn, lastName: ln, email: em, phone: ph });
+  }, [api]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setMsg(null);
-
-        // 1) User/me: temel tek kaynak
-        const rMe = await api.get<ApiResponse<UserMe> | UserMe>(USER_ME);
-        if (!alive) return;
-        const me = unwrap<UserMe>(rMe.data);
-
-        setEmail(me.email ?? '');
-        setInitialEmail(me.email ?? '');
-        setFirstName((me.firstName ?? '') || '');
-        setLastName((me.lastName ?? '') || '');
-        setPhone(pickPhone(me));
-
-        // 2) (Opsiyonel) Profil GET: varsa ad/soyad/telefonu üzerine yazabilir
-        try {
-          const rProf = await api.get<ApiResponse<CustomerProfile> | CustomerProfile>(PROFILE);
-          const prof = unwrap<CustomerProfile>(rProf.data);
-          setFirstName((prof.firstName ?? firstName) || '');
-          setLastName((prof.lastName ?? lastName) || '');
-          if (!pickPhone(me)) setPhone(pickPhone(prof));
-        } catch (err: unknown) {
-          // 404/405 gibi durumları sessizce yoksay (tasarım gereği)
-          // console.debug('PROFILE GET skipped', err);
-        }
+        await load();
       } catch (err: unknown) {
         if (axios.isAxiosError(err)) {
           const code = err.response?.status;
           if (code === 401) return router.replace('/customer/giris');
-          setMsg(getMessage(err.response?.data) || `Hata: ${code ?? ''}`);
+          setMsg(msgOf(err.response?.data) || `Hata: ${code ?? ''}`);
         } else {
           setMsg('Beklenmeyen bir hata oluştu.');
         }
@@ -127,62 +126,62 @@ export default function CustomerProfilePage() {
         if (alive) setLoading(false);
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, [api, router]);
+    return () => { alive = false; };
+  }, [load, router]);
 
-  // save
+  /* ---- Kaydet (YENİ: sadece değişen alanları PATCH‑vari gönder, refetch YOK) ---- */
   const onSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     setSaving(true);
     setMsg(null);
+
+    // Sadece değişen alanları gönder (me + profil ayrımı)
+    const mePart: Partial<UserMe> = {};
+    const profPart: Partial<MerchantLikeProfile> = {};
+
+    const fnT = firstName.trim();
+    const lnT = lastName.trim();
+    const emT = email.trim();
+    const phT = phone.trim();
+
+    if (fnT !== snap.firstName) mePart.firstName = fnT || null;
+    if (lnT !== snap.lastName)  mePart.lastName  = lnT || null;
+    if (emT !== snap.email)     mePart.email     = emT;
+    if (phT !== snap.phone) {
+      mePart.phone = phT;
+      mePart.phoneNumber = phT;
+      profPart.phone = phT;
+      profPart.phoneNumber = phT;
+    }
+
     try {
-      // 1) User/me üzerinden ana güncelleme (ad/soyad/telefon/e‑posta)
-      // e‑posta değişikliği de burada tek çağrıda yapılır.
-      const rMePut = await api.put<ApiResponse<unknown> | { message?: string } | string>(USER_ME, {
-        email: email.trim(),
-        firstName: firstName.trim() || null,
-        lastName: lastName.trim() || null,
-        phone: phone.trim(),
-        phoneNumber: phone.trim(),
-      });
-
-      // 2) (Opsiyonel) Ek uyumluluk: PROFILE PUT
-      let profPart = '';
-      try {
-        const rProfPut = await api.put<ApiResponse<unknown> | { message?: string } | string>(
-          PROFILE,
-          {
-            firstName: firstName.trim() || null,
-            lastName: lastName.trim() || null,
-            phone: phone.trim(),
-            phoneNumber: phone.trim(),
-          }
-        );
-        profPart = getMessage(rProfPut.data) || '';
-      } catch (err: unknown) {
-        // 404/405 ise sorun etme; tek kaynak User/me zaten güncelledi
-        // console.debug('PROFILE PUT skipped', err);
+      // /me güncelle (ad + soyad + email + tel)
+      if (Object.keys(mePart).length > 0) {
+        const res = await api.put<ApiResponse<unknown> | { message?: string } | string>(USER_ME, mePart);
+        setMsg(msgOf(res.data) || 'Profil güncellendi.');
       }
 
-      const baseMsg = getMessage(rMePut.data) || 'Profil başarıyla güncellendi.';
-      setMsg([baseMsg, profPart].filter(Boolean).join(' '));
-      setInitialEmail(email.trim());
+      // profil (sadece tel için, varsa)
+      if (Object.keys(profPart).length > 0) {
+        try {
+          await api.put<ApiResponse<unknown> | { message?: string } | string>(PROFILE, profPart);
+        } catch { /* profil yoksa dert etmiyoruz */ }
+      }
+
+      // başarılıysa snapshot’ı ileri al — böylece ekranda KALIR, refetch yok.
+      setSnap({ firstName: fnT, lastName: lnT, email: emT, phone: phT });
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const code = err.response?.status;
-        if (code === 401) return router.replace('/customer/giris');
-        setMsg(getMessage(err.response?.data) || '❌ Güncelleme başarısız.');
-      } else {
-        setMsg('❌ Güncelleme sırasında beklenmeyen hata.');
-      }
+      setMsg(
+        axios.isAxiosError(err)
+          ? msgOf(err.response?.data) || '❌ Güncelleme başarısız.'
+          : '❌ Güncelleme sırasında beklenmeyen hata.'
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  // change password
+  /* ---- Şifre (dokunulmadı) ---- */
   const changePassword = async (ev: React.FormEvent) => {
     ev.preventDefault();
     setPwdSaving(true);
@@ -190,49 +189,41 @@ export default function CustomerProfilePage() {
     try {
       const res = await api.post<ApiResponse<unknown> | { message?: string } | string>(
         USER_CHANGE_PASSWORD,
-        {
-          currentPassword,
-          newPassword,
-          confirmNewPassword: newPassword,
-        }
+        { currentPassword, newPassword, confirmNewPassword: newPassword }
       );
-      setPwdMsg(getMessage(res.data) || '✅ Şifre değiştirildi.');
+      setPwdMsg(msgOf(res.data) || '✅ Şifre değiştirildi.');
       setCurrentPassword('');
       setNewPassword('');
       setShowNewPwd(false);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const code = err.response?.status;
-        if (code === 401) return router.replace('/customer/giris');
-        setPwdMsg(getMessage(err.response?.data) || '❌ Şifre değiştirilemedi.');
-      } else {
-        setPwdMsg('❌ Beklenmeyen hata.');
-      }
+      setPwdMsg(
+        axios.isAxiosError(err)
+          ? msgOf(err.response?.data) || '❌ Şifre değiştirilemedi.'
+          : '❌ Beklenmeyen hata.'
+      );
     } finally {
       setPwdSaving(false);
     }
   };
 
   if (loading)
-    return (
-      <div className="container mx-auto max-w-2xl text-slate-600 text-sm py-8">Yükleniyor…</div>
-    );
+    return <div className="container mx-auto max-w-lg text-slate-600 text-sm py-5">Yükleniyor…</div>;
 
-  /* =============== UI: daha küçük ve footer tonuna yakın =============== */
+  /* =============== UI (kutular küçültüldü) =============== */
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-6">
-      <h1 className="text-xl font-semibold text-slate-800 mb-4">Bilgilerim</h1>
+    <div className="container mx-auto max-w-lg px-3 py-4">
+      <h1 className="text-base font-semibold text-slate-800 mb-3">Bilgilerim</h1>
 
-      <div className="rounded-2xl bg-slate-50 border border-slate-200 shadow-sm p-5">
-        {/* Profil + E‑posta */}
-        <form onSubmit={onSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="rounded-xl bg-slate-50 border border-slate-200 shadow-sm p-3.5">
+        {/* Profil */}
+        <form onSubmit={onSubmit} className="space-y-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <Field label="Ad">
               <input
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </Field>
 
@@ -241,7 +232,7 @@ export default function CustomerProfilePage() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </Field>
 
@@ -250,7 +241,7 @@ export default function CustomerProfilePage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-400"
                 required
               />
             </Field>
@@ -261,17 +252,17 @@ export default function CustomerProfilePage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+90__________"
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </Field>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">{saving ? 'Kaydediliyor…' : msg}</span>
+            <span className="text-[11px] text-slate-600">{saving ? 'Kaydediliyor…' : msg}</span>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 rounded-xl shadow-sm border border-slate-300 bg-slate-800 text-white hover:opacity-90 disabled:opacity-60 text-[14px] font-medium"
+              className="px-3 py-1.5 rounded-md shadow-sm border border-slate-300 bg-slate-800 text-white hover:opacity-90 disabled:opacity-60 text-[12px] font-medium"
             >
               Kaydet
             </button>
@@ -279,14 +270,14 @@ export default function CustomerProfilePage() {
         </form>
 
         {/* Şifre Değiştir */}
-        <form onSubmit={changePassword} className="space-y-3 mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <form onSubmit={changePassword} className="space-y-3 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
             <Field label="Mevcut Şifre">
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-400"
                 required
               />
             </Field>
@@ -297,14 +288,14 @@ export default function CustomerProfilePage() {
                   type={showNewPwd ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 pr-10 text-[15px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 pr-8 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-400"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPwd((v) => !v)}
                   aria-label={showNewPwd ? 'Şifreyi gizle' : 'Şifreyi göster'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-slate-200/60 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-slate-200/60 focus:outline-none focus:ring-2 focus:ring-slate-400"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z" />
@@ -316,11 +307,11 @@ export default function CustomerProfilePage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">{pwdSaving ? 'Kaydediliyor…' : pwdMsg}</span>
+            <span className="text-[11px] text-slate-600">{pwdSaving ? 'Kaydediliyor…' : pwdMsg}</span>
             <button
               type="submit"
               disabled={pwdSaving}
-              className="px-3.5 py-2 rounded-xl border border-slate-300 bg-slate-700 text-white hover:opacity-90 disabled:opacity-60 text-[14px]"
+              className="px-2.5 py-1.5 rounded-md border border-slate-300 bg-slate-700 text-white hover:opacity-90 disabled:opacity-60 text-[12px]"
             >
               Şifreyi Değiştir
             </button>
@@ -334,7 +325,7 @@ export default function CustomerProfilePage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[14px] text-slate-700 mb-1.5">{label}</label>
+      <label className="block text-[11px] text-slate-700 mb-1">{label}</label>
       {children}
     </div>
   );
