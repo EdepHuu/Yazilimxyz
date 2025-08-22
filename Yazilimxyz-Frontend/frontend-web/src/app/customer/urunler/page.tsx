@@ -407,7 +407,7 @@ export default function UrunlerPage() {
             ))}
             {Array.isArray(products) && products.length === 0 && !isLoading && (
               <div className="col-span-full text-sm text-gray-500 p-4">
-                Sonuç bulunamadı.
+
               </div>
             )}
           </div>
