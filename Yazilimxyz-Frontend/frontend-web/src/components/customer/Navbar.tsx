@@ -216,7 +216,9 @@ export default function Navbar() {
                       <button
                         type="button"
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-                        onClick={() => go("/customer/kullanici-bilgilerim")}
+
+                        onClick={() => go("/customer/bilgilerim")}
+
                       >
                         Kullanıcı Bilgilerim
                       </button>
@@ -278,7 +280,3 @@ export default function Navbar() {
   );
 }
 
-/* Not: .no-scrollbar yardımcı sınıfını global CSS'ine ekleyebilirsin:
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-*/
