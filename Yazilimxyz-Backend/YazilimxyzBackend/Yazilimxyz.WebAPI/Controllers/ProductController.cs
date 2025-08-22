@@ -92,17 +92,17 @@ namespace Yazilimxyz.WebAPI.Controllers
         public async Task<IActionResult> CreateProductAsync([FromBody] CreateProductDto dto)
         {
             if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
-                return BadRequest("Geçersiz cinsiyet değeri. Lütfen 1 (Male), 2 (Female) veya 3 (Unisex) gönderin.");
+                return BadRequest(Messages.InvalidGenderType);
 
             if (dto.BasePrice <= 0)
                 return BadRequest("Ürün fiyatı 0'dan büyük olmalıdır.");
 
             var category = await _categoryService.GetByIdAsync(dto.CategoryId);
             if (category == null)
-                return BadRequest("Kategori bulunamadı.");
+                return BadRequest(Messages.CategoryNotFound);
 
             await _productService.CreateAsync(dto);
-            return Ok(new { message = "Ürün başarıyla eklendi." });
+            return Ok(new { message = Messages.ProductAdded });
         }
 
 		[HttpPut("update")]
@@ -125,7 +125,7 @@ namespace Yazilimxyz.WebAPI.Controllers
         {
             var existingResult = await _productService.GetDetailedAsync(productId);
             if (!existingResult.Success || existingResult.Data == null)
-                return NotFound("Silinecek ürün bulunamadı.");
+                return NotFound(Messages.ProductAdded);
 
             var existing = existingResult.Data; // DTO
 
@@ -134,11 +134,11 @@ namespace Yazilimxyz.WebAPI.Controllers
                 var userAppUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var merchant = await _merchantRepository.GetByAppUserIdAsync(userAppUserId);
                 if (merchant != null && existing.MerchantId != merchant.Id)
-                    return StatusCode(StatusCodes.Status403Forbidden, "Sadece kendi ürününüzü güncelleyebilirsiniz.");
+                    return StatusCode(StatusCodes.Status403Forbidden, Messages.UnauthorizedProductUpdate);
             }
 
             await _productService.DeleteAsync(productId);
-            return Ok(new { message = "Ürün başarıyla silindi." });
+            return Ok(new { message = Messages.ProductDeleted });
         }
 
         [HttpPost("Filter")]

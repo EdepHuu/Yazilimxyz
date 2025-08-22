@@ -34,11 +34,11 @@ namespace Yazilimxyz.WebAPI.Controllers
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		public async Task<IActionResult> GetVariantById(int id)
 		{
-			if (id <= 0) return BadRequest("Id 0'dan büyük olmalıdır.");
+			if (id <= 0) return BadRequest(Messages.InvalidProductVariantId);
 
 			var result = await _variantService.GetByIdAsync(id);
 			if (!result.Success || result.Data == null)
-				return NotFound("Varyant bulunamadı.");
+				return NotFound(Messages.ProductVariantNotFound);
 
 			return Ok(result.Data);
 		}
@@ -51,7 +51,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (productId <= 0)
 			{
-				return BadRequest("ProductId 0'dan büyük olmalıdır.");
+				return BadRequest(Messages.InvalidProductId);
 			}
 
 			var list = await _variantService.GetByProductIdAsync(productId);
@@ -66,7 +66,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (productId <= 0)
 			{
-				return BadRequest("ProductId 0'dan büyük olmalıdır.");
+				return BadRequest(Messages.InvalidProductId);
 			}
 
 			var list = await _variantService.GetInStockAsync(productId);
@@ -85,21 +85,21 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (productId <= 0)
 			{
-				return BadRequest("ProductId 0'dan büyük olmalıdır.");
+				return BadRequest(Messages.InvalidProductId);
 			}
 			if (string.IsNullOrWhiteSpace(size))
 			{
-				return BadRequest("Beden alanı boş olamaz.");
+				return BadRequest(Messages.InvalidProductVariantSize);
 			}
 			if (string.IsNullOrWhiteSpace(color))
 			{
-				return BadRequest("Renk alanı boş olamaz.");
+				return BadRequest(Messages.InvalidProductVariantColor);
 			}
 
 			var variant = await _variantService.GetByProductAndOptionsAsync(productId, size.Trim(), color.Trim());
 			if (variant == null)
 			{
-				return NotFound("Varyant bulunamadı.");
+				return NotFound(Messages.ProductVariantNotFound);
 			}
 
 			return Ok(variant);
