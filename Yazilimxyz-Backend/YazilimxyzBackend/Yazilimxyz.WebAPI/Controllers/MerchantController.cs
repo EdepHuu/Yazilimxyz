@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Yazilimxyz.BusinessLayer.Abstract;
+using Yazilimxyz.BusinessLayer.Constans;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
 
 namespace Yazilimxyz.WebAPI.Controllers
@@ -26,7 +27,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			var me = await _merchantService.GetMyProfileAsync();
 			if (me == null)
 			{
-				return NotFound("Merchant profili bulunamadı.");
+				return NotFound(Messages.MerchantNotFound);
 			}
 			return Ok(me);
 		}
@@ -63,7 +64,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			}
 
 			await _merchantService.UpdateMyProfileAsync(dto);
-			return Ok("Profil başarıyla güncellendi.");
+			return Ok(Messages.MerchantUpdated);
 		}
 
         // ========== ADMIN ==========
@@ -101,13 +102,13 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (id <= 0)
 			{
-				return BadRequest("Geçersiz id.");
+				return BadRequest(Messages.InvalidMerchantId);
 			}
 
 			var merchant = await _merchantService.GetByIdAsync(id);
 			if (merchant == null)
 			{
-				return NotFound("Merchant bulunamadı.");
+				return NotFound(Messages.MerchantNotFound);
 			}
 
 			return Ok(merchant);
@@ -119,7 +120,7 @@ namespace Yazilimxyz.WebAPI.Controllers
         public async Task<IActionResult> AdminUpdate(int id, [FromBody] UpdateMerchantDto dto)
         {
             if (id <= 0)
-                return BadRequest("Geçersiz id.");
+                return BadRequest(Messages.InvalidMerchantId);
             if (dto == null)
                 return BadRequest("Geçersiz istek gövdesi.");
             if (string.IsNullOrWhiteSpace(dto.CompanyName))
@@ -131,11 +132,11 @@ namespace Yazilimxyz.WebAPI.Controllers
 
             var exists = await _merchantService.GetByIdAsync(id);
             if (exists == null)
-                return NotFound("Merchant bulunamadı.");
+                return NotFound(Messages.MerchantNotFound);
 
             // dto.Id kontrolü artık yok
             await _merchantService.AdminUpdateAsync(id, dto);
-            return Ok("Merchant bilgileri güncellendi.");
+            return Ok(Messages.MerchantUpdated);
         }
 
 
@@ -146,13 +147,13 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (id <= 0)
 			{
-				return BadRequest("Geçersiz id.");
+				return BadRequest(Messages.InvalidMerchantId);
 			}
 
 			var exists = await _merchantService.GetByIdAsync(id);
 			if (exists == null)
 			{
-				return NotFound("Merchant bulunamadı.");
+				return NotFound(Messages.MerchantNotFound);
 			}
 
 			await _merchantService.AdminSetActiveAsync(id, value);
@@ -166,13 +167,13 @@ namespace Yazilimxyz.WebAPI.Controllers
 		{
 			if (id <= 0)
 			{
-				return BadRequest("Geçersiz id.");
+				return BadRequest(Messages.InvalidMerchantId);
 			}
 
 			var exists = await _merchantService.GetByIdAsync(id);
 			if (exists == null)
 			{
-				return NotFound("Merchant bulunamadı.");
+				return NotFound(Messages.MerchantNotFound);
 			}
 
 			var products = await _merchantService.GetProductsByMerchantAsync(id);
