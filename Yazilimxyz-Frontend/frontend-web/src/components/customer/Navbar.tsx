@@ -216,7 +216,7 @@ export default function Navbar() {
                       <button
                         type="button"
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-                        onClick={() => go("/customer/kullanici-bilgilerim")}
+                        onClick={() => go("/customer/bilgilerim")}
                       >
                         Kullanıcı Bilgilerim
                       </button>
