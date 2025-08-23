@@ -34,7 +34,6 @@ function readAuth(): AuthState {
 }
 
 function clearAllAuth() {
-  // local & session storage
   [localStorage, sessionStorage].forEach((store) => {
     const keys: string[] = [];
     for (let i = 0; i < store.length; i++) {
@@ -55,7 +54,6 @@ function clearAllAuth() {
     });
   });
 
-  // yaygın cookie isimleri
   ["token", "access_token", "refresh_token", "customerToken", "id_token"].forEach((name) => {
     document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
   });
@@ -68,6 +66,9 @@ export default function Navbar() {
   const [categories, setCategories] = useState<CategoryName[]>([]);
   const [auth, setAuth] = useState<AuthState>({ isLoggedIn: false });
   const [mounted, setMounted] = useState(false);
+
+  // hydration sonrası premium sınıfları açmak için
+  const [hydrated, setHydrated] = useState(false);
 
   // Hesabım menüsü (hover ile aç/kapa – küçük gecikme)
   const [accountOpen, setAccountOpen] = useState(false);
@@ -97,6 +98,11 @@ export default function Navbar() {
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  /* Hydration sonrası premium class'ları aç */
+  useEffect(() => {
+    setHydrated(true);
   }, []);
 
   /* Dışarı tıklayınca/ESC ile menüyü kapat */
@@ -140,18 +146,23 @@ export default function Navbar() {
     router.push("/customer/giris");
   };
 
+  // SSR ile aynı başlayıp mount'tan sonra premium'a dönen sınıflar
+  const navBase = "fixed top-0 left-0 w-full z-50 bg-white border-b border-neutral-200/50";
+  const navPremium =
+    "bg-white/90 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.04)] border-neutral-200/40";
+
   return (
     <>
       {/* ================= NAVBAR ================= */}
-      <nav className="fixed top-0 left-0 w-full z-50 bg-white border-b">
-        <div className="container">
+      <nav className={`${navBase} ${hydrated ? navPremium : ""}`} suppressHydrationWarning>
+        <div className="container px-3 md:px-6">
           {/* Üst satır */}
           <div className="flex h-14 items-center justify-between">
             <div className="flex h-14 items-center justify-between">
               {/* === LOGO / ANASAYFA === */}
               <Link
                 href="/customer"
-                className="text-xl font-bold tracking-wide text-gray-900 hover:opacity-80 transition"
+                className="text-xl font-semibold tracking-wide text-gray-900 hover:opacity-80 transition"
               >
                 ShopEase
               </Link>
@@ -166,7 +177,7 @@ export default function Navbar() {
                 <input
                   type="text"
                   placeholder="arama yap"
-                  className="w-full pl-3 pr-8 py-2 rounded-lg text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  className="w-full pl-3 pr-8 py-2 rounded-lg text-sm border border-gray-200/70 focus:outline-none focus:ring-2 focus:ring-gray-300/60"
                 />
               </div>
 
@@ -175,7 +186,7 @@ export default function Navbar() {
                 <Link
                   href="/customer/giris"
                   aria-label="Giriş Yap"
-                  className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 whitespace-nowrap"
+                  className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100/70 whitespace-nowrap"
                 >
                   <UserIcon className="w-5 h-5" />
                   <span className="text-sm md:text-base">Giriş Yap</span>
@@ -187,7 +198,7 @@ export default function Navbar() {
                   onMouseEnter={openNow}
                   onMouseLeave={closeWithDelay}
                 >
-                  <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 cursor-pointer select-none">
+                  <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100/70 cursor-pointer select-none">
                     <UserIcon className="w-5 h-5" />
                     <span className="text-sm md:text-base">Hesabım</span>
                   </div>
@@ -195,7 +206,7 @@ export default function Navbar() {
                   {accountOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-52 rounded-lg border border-gray-200 bg-white shadow-lg py-1.5 z-[90]"
+                      className="absolute right-0 mt-2 w-52 rounded-xl border border-gray-200 bg-white shadow-xl shadow-black/5 py-1.5 z-[90]"
                       onMouseEnter={openNow}
                       onMouseLeave={closeWithDelay}
                     >
@@ -216,9 +227,7 @@ export default function Navbar() {
                       <button
                         type="button"
                         className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-
                         onClick={() => go("/customer/bilgilerim")}
-
                       >
                         Kullanıcı Bilgilerim
                       </button>
@@ -247,7 +256,7 @@ export default function Navbar() {
               {/* Sepet */}
               <Link
                 href="/customer/sepetim"
-                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 whitespace-nowrap"
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100/70 whitespace-nowrap"
               >
                 <ShopIcon className="w-5 h-5" />
                 <span className="text-sm md:text-base">Sepetim</span>
@@ -255,22 +264,28 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Kategori şeridi (ince hat) */}
-          <div className="h-8 flex items-center">
+          {/* Kategori şeridi */}
+          <div className="h-9 flex items-center">
             <div className="w-full overflow-x-auto whitespace-nowrap no-scrollbar">
               <div className="inline-flex gap-5 px-1">
-                {categories.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/customer/${c.name.toLowerCase().replace(/\s+/g, "-")}`}
-                    className="text-sm text-gray-800 hover:underline"
-                  >
-                    {c.name}
-                  </Link>
-                ))}
+                {categories.map((c) => {
+                  const slug = (c.name || "").toLowerCase().replace(/\s+/g, "-");
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/customer/${slug}`}
+                      className="text-sm text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
+                    >
+                      {c.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
+
+          {/* Sert çizgi yerine ince gradient hairline */}
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-neutral-200/70 to-transparent" />
         </div>
       </nav>
 
@@ -279,4 +294,3 @@ export default function Navbar() {
     </>
   );
 }
-
