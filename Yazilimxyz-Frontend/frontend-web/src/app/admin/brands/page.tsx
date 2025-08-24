@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 // Bu bileşen, Marka Yönetimi sayfasının içeriğini içerir.
 // This component contains the content for the Brands Management page.
 
-// TypeScript için marka tipi tanımlaması
+// TypeScript için marka tipi tanımlaması elif
 interface Brand {
   id: number;
   name: string;
@@ -23,6 +23,7 @@ export default function BrandsPage() {
   // useEffect hook'u, bileşen ilk yüklendiğinde veri çekme işlemini tetikler.
   // The useEffect hook triggers the data fetching process when the component first mounts.
   useEffect(() => {
+    
     const fetchBrands = () => {
       // Bir API çağrısı simüle etmek için setTimeout kullanıyoruz.
       // In a real project, you would make an API call here using 'fetch' or a library like 'axios'.
