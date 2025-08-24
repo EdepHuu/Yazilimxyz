@@ -10,7 +10,7 @@ using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.BusinessLayer.Concrete
 {
-    public class OrderManager : IOrderService
+	public class OrderManager : IOrderService
 	{
 		private readonly IOrderRepository _orderRepository;
 		private readonly IOrderItemRepository _orderItemRepository;   // çoğunlukla gerekmez; cascade ile eklenir
@@ -182,5 +182,25 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			// Ör: ORD-20250824-7F3A
 			return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
 		}
+
+		public async Task<IResult> ConfirmOrderAsync(int orderId, string userId)
+		{
+			var order = await _orderRepository.GetByIdAsync(orderId);
+			if (order == null)
+				return new ErrorResult("Sipariş bulunamadı.");
+
+			// Order must belong to this user (merchant check)
+			if (order.UserId != userId)
+				return new ErrorResult("Bu siparişi onaylama yetkiniz yok.");
+
+			if (order.Status != OrderStatus.Pending)
+				return new ErrorResult("Sadece beklemede olan siparişler onaylanabilir.");
+
+			order.Status = OrderStatus.Confirmed;
+			await _orderRepository.UpdateAsync(order);
+
+			return new SuccessResult("Sipariş onaylandı.");
+		}
+
 	}
 }

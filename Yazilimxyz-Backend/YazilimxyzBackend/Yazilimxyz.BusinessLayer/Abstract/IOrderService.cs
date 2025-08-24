@@ -20,5 +20,6 @@ namespace Yazilimxyz.BusinessLayer.Abstract
 
 		// Kullanıcı iptal (kargoya verilmeden)
 		Task<IResult> CancelMyOrderAsync(int orderId, string userId);
+		Task<IResult> ConfirmOrderAsync(int orderId, string userId);
 	}
 }

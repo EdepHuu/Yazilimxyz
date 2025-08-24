@@ -76,5 +76,16 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return result.Success ? Ok(result) : BadRequest(result);
 		}
 
+		[HttpPut("{orderId}/confirm")]
+		[Authorize(Roles = "Merchant")]
+		public async Task<IActionResult> ConfirmOrder(int orderId)
+		{
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var result = await _orderService.ConfirmOrderAsync(orderId, userId);
+			if (!result.Success)
+				return BadRequest(result.Message);
+
+			return Ok(result.Message);
+		}
 	}
 }
