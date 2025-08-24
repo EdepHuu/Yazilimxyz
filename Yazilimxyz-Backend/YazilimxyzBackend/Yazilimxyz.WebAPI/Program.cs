@@ -109,6 +109,7 @@ builder.Services.AddScoped<IAppUserService, AppUserManager>();
 builder.Services.AddScoped<IMerchantService, MerchantManager>();
 builder.Services.AddScoped<ICustomerService, CustomerManager>();
 builder.Services.AddScoped<ICustomerAddressService, CustomerAddressManager>();
+builder.Services.AddScoped<ICartItemService, CartItemManager>();
 
 // ---------- DI: Repositories ----------
 builder.Services.AddScoped<IProductRepository, ProductRepository>();

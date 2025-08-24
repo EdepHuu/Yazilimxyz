@@ -20,6 +20,5 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task DeleteAsync(T entity);
         Task<bool> ExistsAsync(int id);
         Task<int> CountAsync(Expression<Func<T, bool>> predicate);
-
     }
 }

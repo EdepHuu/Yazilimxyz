@@ -96,27 +96,58 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<UpdateProductVariantDto, ProductVariant>().ReverseMap();
 			CreateMap<GetByIdProductVariantDto, ProductVariant>().ReverseMap();
 
-			// Order
-			CreateMap<ResultOrderDto, Order>().ReverseMap();
-			CreateMap<CreateOrderDto, Order>().ReverseMap();
+			// ---------------------
+			// CartItem Mappings
+			// ---------------------
+			CreateMap<CreateCartItemDto, CartItem>().ReverseMap();
+			CreateMap<UpdateCartItemDto, CartItem>().ReverseMap();
+			CreateMap<GetByIdCartItemDto, CartItem>().ReverseMap();
+
+			CreateMap<CartItem, ResultCartItemDto>()
+				.ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.Variant.ProductId))
+				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Variant.Product.Name))
+				.ForMember(dest => dest.Size, opt => opt.MapFrom(src => src.Variant.Size))
+				.ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Variant.Color))
+				.ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice)) // DÜZENLENDİ
+				.ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice * src.Quantity)) // DÜZENLENDİ
+				.ForMember(dest => dest.ProductImageUrl, opt => opt.MapFrom(src =>
+					src.Variant.Product.ProductImages.FirstOrDefault(i => i.IsMain).ImageUrl));
+
+
+			// ---------------------
+			// Order Mappings
+			// ---------------------
+			CreateMap<CreateOrderDto, Order>()
+				.ForMember(dest => dest.OrderItems, opt => opt.Ignore()) // manuel eklenecek
+				.ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
+				.ForMember(dest => dest.UserId, opt => opt.Ignore())
+				.ForMember(dest => dest.Status, opt => opt.Ignore())
+				.ForMember(dest => dest.PaymentStatus, opt => opt.Ignore())
+				.ForMember(dest => dest.SubTotal, opt => opt.Ignore())
+				.ForMember(dest => dest.TotalAmount, opt => opt.Ignore())
+				.ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
+
 			CreateMap<UpdateOrderDto, Order>().ReverseMap();
 			CreateMap<GetByIdOrderDto, Order>().ReverseMap();
 
-            CreateMap<Order, ResultOrderWithItemsDto>()
-				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems));
+			CreateMap<Order, ResultOrderDto>();
 
-            // OrderItem (Sadece tek yönlü, reverseMap yok!)
-            CreateMap<OrderItem, ResultOrderItemDto>()
-				.ForMember(dest => dest.OrderItemId, opt => opt.MapFrom(src => src.OrderItemId))
-				.ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
-				.ForMember(dest => dest.ProductVariantId, opt => opt.MapFrom(src => src.ProductVariantId))
-				.ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
-				.ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.UnitPrice))
-				.ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.TotalPrice))
-				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductName))
-				.ForMember(dest => dest.Size, opt => opt.MapFrom(src => src.Size))
-				.ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Color))
-				.ForAllMembers(opt => opt.Ignore()); // ✅ Doğru yer burası
+			CreateMap<Order, ResultOrderWithItemsDto>()
+				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems))
+				.ForMember(dest => dest.ShippingAddressLine, opt => opt.MapFrom(src =>
+					$"{src.ShippingAddress.Title} - {src.ShippingAddress.Address}, {src.ShippingAddress.District}/{src.ShippingAddress.City}")); // GÜNCELLENDİ
+																																	 // örnek: "İstanbul, Kadıköy, Acıbadem Mah."
+
+			// ---------------------
+			// OrderItem Mappings
+			// ---------------------
+			CreateMap<CreateOrderItemDto, OrderItem>().ReverseMap();
+			CreateMap<UpdateOrderItemDto, OrderItem>().ReverseMap();
+			CreateMap<GetByIdOrderItemDto, OrderItem>().ReverseMap();
+
+			CreateMap<OrderItem, ResultOrderItemDto>()
+				.ForMember(dest => dest.ProductImageUrl, opt => opt.MapFrom(src =>
+					src.Product.ProductImages.FirstOrDefault(i => i.IsMain).ImageUrl));
 
 
 
@@ -219,13 +250,6 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 				// Customer nesnesinin null olma ihtimaline karşı null kontrolü ekliyoruz
 				.ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.Customer != null ? (int?)src.Customer.Id : null))
 				.ForMember(dest => dest.AddressCount, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Addresses.Count : 0));
-
-            // CartItem
-            CreateMap<ResultCartItemDto, CartItem>().ReverseMap();
-			CreateMap<CreateCartItemDto, CartItem>().ReverseMap();
-			CreateMap<UpdateCartItemDto, CartItem>().ReverseMap();
-			CreateMap<GetByIdCartItemDto, CartItem>().ReverseMap();
-
 		}
 	}
 }

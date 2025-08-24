@@ -9,127 +9,75 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.BusinessLayer.Concrete
 {
-    public class CartItemManager : ICartItemService
-    {
-        private readonly ICartItemRepository _cartItemRepository;
-        private readonly IMapper _mapper;
+	public class CartItemManager : ICartItemService
+	{
+		private readonly ICartItemRepository _cartItemRepository;
+		private readonly IMapper _mapper;
 
-        public CartItemManager(ICartItemRepository cartItemRepository, IMapper mapper)
-        {
-            _cartItemRepository = cartItemRepository;
-            _mapper = mapper;
-        }
+		public CartItemManager(ICartItemRepository cartItemRepository, IMapper mapper)
+		{
+			_cartItemRepository = cartItemRepository;
+			_mapper = mapper;
+		}
 
-        [CacheAspect]
-        public async Task<IDataResult<List<ResultCartItemDto>>> GetByUserIdAsync(string userId)
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                return new ErrorDataResult<List<ResultCartItemDto>>(Messages.CartItemNotFound);
+		public async Task<IDataResult<List<ResultCartItemDto>>> GetByUserIdAsync(string userId)
+		{
+			var items = await _cartItemRepository.GetUserCartWithDetailsAsync(userId);
 
-            var items = await _cartItemRepository.GetByUserIdAsync(userId);
-            var resultDto = _mapper.Map<List<ResultCartItemDto>>(items);
+			var result = _mapper.Map<List<ResultCartItemDto>>(items);
+			return new SuccessDataResult<List<ResultCartItemDto>>(result);
+		}
 
-            return new SuccessDataResult<List<ResultCartItemDto>>(resultDto, Messages.CategoriesListed);
-        }
+		public async Task<IResult> AddOrUpdateAsync(CreateCartItemDto dto, string userId)
+		{
+			var existing = await _cartItemRepository.FirstOrDefaultAsync(x =>
+				x.UserId == userId && x.ProductVariantId == dto.ProductVariantId);
 
-        [CacheAspect]
-        public async Task<IDataResult<ResultCartItemDto?>> GetByUserAndVariantAsync(string userId, int variantId)
-        {
-            if (string.IsNullOrWhiteSpace(userId) || variantId <= 0)
-                return new ErrorDataResult<ResultCartItemDto?>(null, Messages.CartItemNotFound);
+			if (existing != null)
+			{
+				existing.Quantity += dto.Quantity;
+				await _cartItemRepository.UpdateAsync(existing);
+			}
+			else
+			{
+				var entity = _mapper.Map<CartItem>(dto);
+				entity.UserId = userId;
+				await _cartItemRepository.AddAsync(entity);
+			}
 
-            var item = await _cartItemRepository.GetByUserAndVariantAsync(userId, variantId);
-            var mappedItem = _mapper.Map<ResultCartItemDto?>(item);
+			return new SuccessResult("Ürün sepete eklendi.");
+		}
 
-            if (mappedItem == null)
-                return new ErrorDataResult<ResultCartItemDto?>(null, Messages.CartItemNotFound);
+		public async Task<IResult> UpdateQuantityAsync(int cartItemId, int quantity, string userId)
+		{
+			var item = await _cartItemRepository.FirstOrDefaultAsync(
+				x => x.Id == cartItemId && x.UserId == userId);
 
-            return new SuccessDataResult<ResultCartItemDto?>(mappedItem);
-        }
+			if (item == null)
+				return new ErrorResult("Ürün sepette bulunamadı.");
 
-        [CacheRemoveAspect("ICartItemService.Get")]
-        public async Task<IResult> AddAsync(CreateCartItemDto dto)
-        {
-            if (dto == null)
-                return new ErrorResult("Geçersiz istek.");
+			item.Quantity = quantity;
+			await _cartItemRepository.UpdateAsync(item);
+			return new SuccessResult("Sepet güncellendi.");
+		}
 
-            if (string.IsNullOrWhiteSpace(dto.UserId))
-                return new ErrorResult("Kullanıcı Id boş olamaz.");
+		public async Task<IResult> RemoveAsync(int cartItemId, string userId)
+		{
+			var item = await _cartItemRepository.FirstOrDefaultAsync(x =>
+				x.Id == cartItemId && x.UserId == userId);
 
-            if (dto.ProductVariantId <= 0)
-                return new ErrorResult("Geçersiz ürün varyantı Id.");
+			if (item == null)
+				return new ErrorResult("Ürün sepette bulunamadı.");
 
-            if (dto.Quantity < 1)
-                return new ErrorResult(Messages.CartItemQuantityInvalid);
+			await _cartItemRepository.DeleteAsync(item);
+			return new SuccessResult("Ürün sepetten silindi.");
+		}
 
-            // Kontrol: Aynı ürün varyantı zaten sepette var mı?
-            var exists = await _cartItemRepository.GetByUserAndVariantAsync(dto.UserId, dto.ProductVariantId);
-            if (exists != null)
-                return new ErrorResult(Messages.CartItemAlreadyExists);
-
-            var item = _mapper.Map<CartItem>(dto);
-            await _cartItemRepository.AddAsync(item);
-
-            return new SuccessResult(Messages.CartItemAdded);
-        }
-
-        [CacheRemoveAspect("ICartItemService.Get")]
-        public async Task<IResult> UpdateAsync(UpdateCartItemDto dto)
-        {
-            if (dto == null)
-                return new ErrorResult("Geçersiz istek.");
-
-            if (dto.Id <= 0)
-                return new ErrorResult("Geçersiz sepet öğesi Id.");
-
-            if (dto.Quantity < 1)
-                return new ErrorResult(Messages.CartItemQuantityInvalid);
-
-            var existingItem = await _cartItemRepository.GetByIdAsync(dto.Id);
-            if (existingItem == null)
-                return new ErrorResult(Messages.CartItemNotFound);
-
-            var item = _mapper.Map<CartItem>(dto);
-            await _cartItemRepository.UpdateAsync(item);
-
-            return new SuccessResult(Messages.CartItemUpdated);
-        }
-
-        [CacheRemoveAspect("ICartItemService.Get")]
-        public async Task<IResult> DeleteAsync(int id)
-        {
-            if (id <= 0)
-                return new ErrorResult("Geçersiz sepet öğesi Id.");
-
-            var existingItem = await _cartItemRepository.GetByIdAsync(id);
-            if (existingItem == null)
-                return new ErrorResult(Messages.CartItemNotFound);
-
-            await _cartItemRepository.DeleteAsync(id);
-
-            return new SuccessResult(Messages.CartItemDeleted);
-        }
-
-        [CacheRemoveAspect("ICartItemService.Get")]
-        public async Task<IResult> ClearUserCartAsync(string userId)
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                return new ErrorResult("Kullanıcı Id boş olamaz.");
-
-            await _cartItemRepository.ClearUserCartAsync(userId);
-
-            return new SuccessResult(Messages.CartCleared);
-        }
-
-        [CacheAspect]
-        public async Task<IDataResult<int>> GetCartItemCountAsync(string userId)
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                return new SuccessDataResult<int>(0);
-
-            int count = await _cartItemRepository.GetCartItemCountAsync(userId);
-
-            return new SuccessDataResult<int>(count, Messages.CartItemCountRetrieved);
-        }
-    }
+		public async Task<IResult> ClearCartAsync(string userId)
+		{
+			var items = await _cartItemRepository.FindAsync(x => x.UserId == userId);
+			await _cartItemRepository.DeleteRangeAsync(items);
+			return new SuccessResult("Sepet temizlendi.");
+		}
+	}
 }

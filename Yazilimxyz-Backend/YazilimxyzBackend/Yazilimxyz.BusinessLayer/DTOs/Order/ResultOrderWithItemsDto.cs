@@ -3,33 +3,27 @@ using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.BusinessLayer.DTOs.Order
 {
-    public class ResultOrderWithItemsDto
-    {
-        public int Id { get; set; }
-        public string OrderNumber { get; set; }
+	public class ResultOrderWithItemsDto
+	{
+		public int Id { get; set; }
+		public string OrderNumber { get; set; }
 
-        // Kullanıcı bilgileri
-        public string UserName { get; set; }
-        public string UserEmail { get; set; }
+		public decimal SubTotal { get; set; }
+		public decimal ShippingFee { get; set; }
+		public decimal DiscountAmount { get; set; }
+		public decimal TotalAmount { get; set; }
 
-        // Fiyat ve durum bilgileri
-        public decimal ShippingFee { get; set; }
-        public decimal SubTotal { get; set; }
-        public decimal TotalAmount { get; set; }
-        public decimal DiscountAmount { get; set; }
-        public OrderStatus Status { get; set; }
-        public PaymentStatus PaymentStatus { get; set; }
+		public OrderStatus Status { get; set; }
+		public PaymentStatus PaymentStatus { get; set; }
 
-        // Tarihler
-        public DateTime CreatedDate { get; set; }
-        public DateTime? ShippedAt { get; set; }
+		public DateTime CreatedDate { get; set; }
+		public DateTime? ShippedAt { get; set; }
 
-        // Teslimat adresi
-        public string ShippingAddressLine { get; set; }
-        public string ShippingCity { get; set; }
-        public string ShippingDistrict { get; set; }
+		// Adres tek satır string (CustomerAddress’tan derlenecek)
+		public string ShippingAddressLine { get; set; } // "Ev - Selamiçeşme Cd. No:10, Kadıköy/İstanbul"
+		public string? Note { get; set; }
 
-        // Siparişteki ürünler
-        public List<ResultOrderItemDto> Items { get; set; } = new();
-    }
+		public List<ResultOrderItemDto> Items { get; set; } = new();
+	}
+
 }
