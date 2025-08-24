@@ -23,8 +23,8 @@ namespace Yazilimxyz.EntityLayer.Entities
         // Shipping Address
         public int? ShippingAddressId { get; set; }
         public required CustomerAddress ShippingAddress { get; set; }
-
-        public DateTime? ShippedAt { get; set; }
+		public string? Note { get; set; }
+		public DateTime? ShippedAt { get; set; }
 
         // Navigation Properties
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

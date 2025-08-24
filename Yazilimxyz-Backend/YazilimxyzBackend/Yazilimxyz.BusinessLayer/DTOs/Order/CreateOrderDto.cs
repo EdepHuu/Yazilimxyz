@@ -1,17 +1,13 @@
-﻿using Yazilimxyz.EntityLayer.Enums;
+﻿using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
+using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.BusinessLayer.DTOs.Order
 {
-    public class CreateOrderDto
-    {
-        public string UserId { get; set; }
-        public decimal ShippingFee { get; set; }
-        public decimal SubTotal { get; set; }
-        public decimal TotalAmount { get; set; }
-        public decimal DiscountAmount { get; set; } = 0;
-        public OrderStatus Status { get; set; } = OrderStatus.Pending;
-        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
-        public int ShippingAddressId { get; set; }
-
-    }
+	public class CreateOrderDto
+	{
+		public int ShippingAddressId { get; set; }   // CustomerAddress.Id
+		public decimal ShippingFee { get; set; }     // kargo ücreti
+		public decimal DiscountAmount { get; set; } = 0; // kupon/indirim (varsa)
+		public string? Note { get; set; }            // opsiyonel: “kapıya bırakın” gibi
+	}
 }

@@ -10,11 +10,6 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
 {
     public interface IOrderRepository : IGenericRepository<Order>
     {
-        Task<IEnumerable<Order>> GetByUserIdAsync(string userId);
-        Task<Order?> GetByOrderNumberAsync(string orderNumber);
-        Task<Order?> GetWithItemAsync(int id);
-        Task<IEnumerable<Order>> GetByStatusAsync(OrderStatus status);
-        Task<IEnumerable<Order>>  GetByPaymentStatusAsync(PaymentStatus status);
-
-    }
+		Task<Order?> GetByIdWithItemsAsync(int orderId);
+	}
 }

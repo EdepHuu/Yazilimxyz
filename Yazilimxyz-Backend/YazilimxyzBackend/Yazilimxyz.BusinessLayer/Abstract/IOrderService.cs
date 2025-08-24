@@ -4,19 +4,21 @@ using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.BusinessLayer.Abstract
 {
-    public interface IOrderService
-    {
-        Task<IDataResult<ResultOrderDto>> GetByIdAsync(int id);
-        Task<IDataResult<ResultOrderDto>> GetByOrderNumberAsync(string orderNumber);
-        Task<IDataResult<ResultOrderWithItemsDto>> GetWithItemAsync(int id);
+	public interface IOrderService
+	{
+		// Sepetten sipariş oluştur (kullanıcının açık sepeti alınır, kalemler o sepetten üretilir)
+		Task<IDataResult<ResultOrderWithItemsDto>> CreateFromCartAsync(CreateOrderDto dto, string userId);
 
-        Task<IDataResult<List<ResultOrderDto>>> GetAllAsync();
-        Task<IDataResult<List<ResultOrderDto>>> GetByUserIdAsync(string userId);
-        Task<IDataResult<List<ResultOrderDto>>> GetByStatusAsync(OrderStatus status);
-        Task<IDataResult<List<ResultOrderDto>>> GetByPaymentStatusAsync(PaymentStatus status);
+		// Kullanıcının sipariş listesi
+		Task<IDataResult<List<ResultOrderDto>>> GetMyOrdersAsync(string userId);
 
-        Task<IResult> CreateAsync(CreateOrderDto dto);
-        Task<IResult> UpdateAsync(UpdateOrderDto dto);
-        Task<IResult> DeleteAsync(int id);
-    }
+		// Kullanıcının tek sipariş detayı (kalemler + adres)
+		Task<IDataResult<ResultOrderWithItemsDto>> GetMyOrderDetailAsync(int orderId, string userId);
+
+		// Admin / operasyon: sipariş güncelle
+		Task<IResult> UpdateAsync(UpdateOrderDto dto);
+
+		// Kullanıcı iptal (kargoya verilmeden)
+		Task<IResult> CancelMyOrderAsync(int orderId, string userId);
+	}
 }

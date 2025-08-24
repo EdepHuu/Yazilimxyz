@@ -7,11 +7,9 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Abstract
 {
-    public interface ICartItemRepository : IGenericRepository<CartItem>
-    {
-        Task<IEnumerable<CartItem>> GetByUserIdAsync(string userId);
-        Task<CartItem?> GetByUserAndVariantAsync(string userId, int variantId);
-        Task ClearUserCartAsync(string userId);
-        Task<int> GetCartItemCountAsync(string userId);
-    }
+	public interface ICartItemRepository : IGenericRepository<CartItem>
+	{
+		Task DeleteRangeAsync(IEnumerable<CartItem> items);
+		Task<List<CartItem>> GetUserCartWithDetailsAsync(string userId);
+	}
 }
