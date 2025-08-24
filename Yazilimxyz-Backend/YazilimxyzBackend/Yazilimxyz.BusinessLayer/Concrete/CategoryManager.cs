@@ -86,33 +86,29 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<List<ResultCategoryHierarchyDto>>(mapped);
         }
 
-        [CacheRemoveAspect("ICategoryService.Get")]
-        public async Task<IResult> CreateAsync(CreateCategoryDto dto)
-        {
-            // 1) Senkron kurallar (BusinessRules.Run ile)
-            var syncRuleResult = BusinessRules.Run(
-                CheckIfNameValid(dto?.Name),
-                CheckIfSortOrderValid(dto?.SortOrder),
-                CheckIfParentIdNonNegative(dto?.ParentCategoryId)
-            );
-            if (syncRuleResult != null)
-                return syncRuleResult;
+		[CacheRemoveAspect("ICategoryService.Get")]
+		public async Task<IResult> CreateAsync(CreateCategoryDto dto)
+		{
+			// Asenkron kurallar sırasıyla çalıştırılır (EF DbContext aynı anda kullanılamaz!)
+			var rule1 = await CheckIfParentExistsAsync(dto?.ParentCategoryId);
+			if (rule1 == null)
+				return rule1;
 
-            // 2) Asenkron kurallar (repo erişimi gerektirir)
-            var asyncRuleResult = await BusinessRunAsync(
-                CheckIfParentExistsAsync(dto?.ParentCategoryId),
-                CheckIfCategoryNameExistsAsync(dto!.Name),
-                CheckIfCategoryLimitExceededAsync()
-            );
-            if (asyncRuleResult != null)
-                return asyncRuleResult;
+			var rule2 = await CheckIfCategoryNameExistsAsync(dto!.Name);
+			if (rule2 == null)
+				return rule2;
 
-            var category = _mapper.Map<Category>(dto);
-            await _categoryRepository.AddAsync(category);
-            return new SuccessResult(Messages.CategoryAdded);
-        }
+			var rule3 = await CheckIfCategoryLimitExceededAsync();
+			if (rule3 == null)
+				return rule3;
 
-        [CacheRemoveAspect("ICategoryService.Get")]
+			var category = _mapper.Map<Category>(dto);
+			await _categoryRepository.AddAsync(category);
+
+			return new SuccessResult(Messages.CategoryAdded);
+		}
+
+		[CacheRemoveAspect("ICategoryService.Get")]
         public async Task<IResult> UpdateAsync(UpdateCategoryDto dto)
         {
             // 1) Senkron kurallar

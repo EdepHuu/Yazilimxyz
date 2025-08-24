@@ -21,10 +21,9 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 		{
 			return await _appDbContext.Orders
 				.Include(o => o.OrderItems)
-					.ThenInclude(oi => oi.Product)
-						.ThenInclude(p => p.ProductImages)
-				.Include(o => o.OrderItems)
 					.ThenInclude(oi => oi.ProductVariant)
+						.ThenInclude(pv => pv.Product)
+							.ThenInclude(p => p.ProductImages)
 				.Include(o => o.ShippingAddress)
 				.FirstOrDefaultAsync(o => o.Id == orderId);
 		}

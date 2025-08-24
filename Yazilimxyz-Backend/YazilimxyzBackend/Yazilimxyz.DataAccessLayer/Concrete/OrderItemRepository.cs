@@ -12,25 +12,16 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 {
     public class OrderItemRepository : Repository<OrderItem>, IOrderItemRepository
     {
-        public OrderItemRepository(AppDbContext context) : base(context)
-        {
-        }
+		public OrderItemRepository(AppDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<OrderItem>> GetByOrderIdAsync(int orderId) // belirli bir siparişe ait tüm sipariş öğelerini(özelliklerini) getirir.
-        {
-            return await _dbSet
-                .Include(oi => oi.Product)
-                .Include(oi => oi.ProductVariant)
-                .Where(oi => oi.OrderId == orderId)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<OrderItem>> GetByProductIdAsync(int productId) // belirli bir ürüne ait tüm siparişleri getirir.
-        {
-            return await _dbSet
-                .Include(oi => oi.Order)
-                .Where(oi => oi.ProductId == productId)
-                .ToListAsync();
-        }
-    }
+		public async Task<List<OrderItem>> GetByOrderIdAsync(int orderId)
+		{
+			return await _appDbContext.OrderItems
+				.Where(x => x.OrderId == orderId)
+				.Include(x => x.Product)
+					.ThenInclude(p => p.ProductImages)
+				.Include(x => x.ProductVariant)
+				.ToListAsync();
+		}
+	}
 }

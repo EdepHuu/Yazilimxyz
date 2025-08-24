@@ -48,7 +48,10 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (!ModelState.IsValid)
 				return BadRequest(ModelState);
 
-			await _categoryService.CreateAsync(dto);
+			var result = await _categoryService.CreateAsync(dto);
+			if (!result.Success)
+				return BadRequest(result.Message);
+
 			return Ok(new { message = Messages.CategoryAdded });
 		}
 

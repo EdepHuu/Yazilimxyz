@@ -15,7 +15,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Order
 		public OrderStatus Status { get; set; }
 		public PaymentStatus PaymentStatus { get; set; }
 
-		public DateTime CreatedDate { get; set; }
+		public DateTime CreatedAt { get; set; }
 		public DateTime? ShippedAt { get; set; }
 	}
 }

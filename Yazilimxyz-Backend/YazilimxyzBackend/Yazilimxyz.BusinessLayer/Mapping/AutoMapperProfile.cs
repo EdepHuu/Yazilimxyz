@@ -5,6 +5,7 @@ using Yazilimxyz.BusinessLayer.DTOs.Category;
 using Yazilimxyz.BusinessLayer.DTOs.Customer;
 using Yazilimxyz.BusinessLayer.DTOs.CustomerAddress;
 using Yazilimxyz.BusinessLayer.DTOs.Merchant;
+using Yazilimxyz.BusinessLayer.DTOs.MerchantOrder;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
 using Yazilimxyz.BusinessLayer.DTOs.OrderItem;
 using Yazilimxyz.BusinessLayer.DTOs.Product;
@@ -30,6 +31,8 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 
 			CreateMap<Category, ResultCategoryHierarchyDto>()
 				.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count));
+
+			CreateMap<CreateCategoryDto, Category>();
 
 			// AutoMapper, Category'nin SubCategories ve ParentCategory özelliklerini 
 			// ResultCategoryHierarchyDto'nun aynı isimli özelliklerine otomatik olarak eşleştirecektir.
@@ -108,17 +111,16 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Variant.Product.Name))
 				.ForMember(dest => dest.Size, opt => opt.MapFrom(src => src.Variant.Size))
 				.ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Variant.Color))
-				.ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice)) // DÜZENLENDİ
-				.ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice * src.Quantity)) // DÜZENLENDİ
+				.ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice))
+				.ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice * src.Quantity))
 				.ForMember(dest => dest.ProductImageUrl, opt => opt.MapFrom(src =>
 					src.Variant.Product.ProductImages.FirstOrDefault(i => i.IsMain).ImageUrl));
-
 
 			// ---------------------
 			// Order Mappings
 			// ---------------------
 			CreateMap<CreateOrderDto, Order>()
-				.ForMember(dest => dest.OrderItems, opt => opt.Ignore()) // manuel eklenecek
+				.ForMember(dest => dest.OrderItems, opt => opt.Ignore())
 				.ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
 				.ForMember(dest => dest.UserId, opt => opt.Ignore())
 				.ForMember(dest => dest.Status, opt => opt.Ignore())
@@ -129,14 +131,12 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 
 			CreateMap<UpdateOrderDto, Order>().ReverseMap();
 			CreateMap<GetByIdOrderDto, Order>().ReverseMap();
-
 			CreateMap<Order, ResultOrderDto>();
 
 			CreateMap<Order, ResultOrderWithItemsDto>()
 				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems))
 				.ForMember(dest => dest.ShippingAddressLine, opt => opt.MapFrom(src =>
-					$"{src.ShippingAddress.Title} - {src.ShippingAddress.Address}, {src.ShippingAddress.District}/{src.ShippingAddress.City}")); // GÜNCELLENDİ
-																																	 // örnek: "İstanbul, Kadıköy, Acıbadem Mah."
+					$"{src.ShippingAddress.Title} - {src.ShippingAddress.Address}, {src.ShippingAddress.District}/{src.ShippingAddress.City}"));
 
 			// ---------------------
 			// OrderItem Mappings
@@ -149,11 +149,25 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 				.ForMember(dest => dest.ProductImageUrl, opt => opt.MapFrom(src =>
 					src.Product.ProductImages.FirstOrDefault(i => i.IsMain).ImageUrl));
 
+			// ---------------------
+			// MerchantOrder Mappings
+			// ---------------------
+			CreateMap<CreateMerchantOrderDto, MerchantOrder>()
+				.ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.MerchantId))
+				.ForMember(dest => dest.MerchantOrderItems, opt => opt.Ignore());
 
-
-			CreateMap<CreateOrderItemDto, OrderItem>().ReverseMap();
-			CreateMap<UpdateOrderItemDto, OrderItem>().ReverseMap();
-			CreateMap<GetByIdOrderItemDto, OrderItem>().ReverseMap();
+			// ---------------------
+			// MerchantOrderItem Mappings
+			// ---------------------
+			CreateMap<CartItem, MerchantOrderItem>()
+				.ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.Variant.ProductId))
+				.ForMember(dest => dest.ProductVariantId, opt => opt.MapFrom(src => src.ProductVariantId))
+				.ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
+				.ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice))
+				.ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.Variant.Product.BasePrice * src.Quantity))
+				.ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Variant.Product.Name))
+				.ForMember(dest => dest.Size, opt => opt.MapFrom(src => src.Variant.Size))
+				.ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Variant.Color));
 
 			// Merchant
 			CreateMap<Merchant, ResultMerchantDto>().ReverseMap();

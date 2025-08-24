@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class FirstMigration : Migration
+    public partial class RecreateOrdersRelations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -130,29 +130,27 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SupportMessages",
+                name: "SupportConversations",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    SenderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ReceiverId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsFromSupport = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CustomerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    SupportAgentId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    LastMessageAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SupportMessages", x => x.Id);
+                    table.PrimaryKey("PK_SupportConversations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SupportMessages_AppUsers_ReceiverId",
-                        column: x => x.ReceiverId,
+                        name: "FK_SupportConversations_AppUsers_CustomerId",
+                        column: x => x.CustomerId,
                         principalTable: "AppUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_SupportMessages_AppUsers_SenderId",
-                        column: x => x.SenderId,
+                        name: "FK_SupportConversations_AppUsers_SupportAgentId",
+                        column: x => x.SupportAgentId,
                         principalTable: "AppUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -231,6 +229,41 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SupportMessages",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SenderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ReceiverId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ConversationId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SupportMessages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SupportMessages_AppUsers_ReceiverId",
+                        column: x => x.ReceiverId,
+                        principalTable: "AppUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SupportMessages_AppUsers_SenderId",
+                        column: x => x.SenderId,
+                        principalTable: "AppUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SupportMessages_SupportConversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "SupportConversations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
@@ -239,13 +272,14 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     OrderNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ShippingFee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DiscountAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     SubTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    DiscountAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     PaymentStatus = table.Column<int>(type: "int", nullable: false),
-                    ShippingAddressId = table.Column<int>(type: "int", nullable: true),
                     ShippedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Note = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ShippingAddressId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -313,6 +347,40 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MerchantOrders",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    OrderId = table.Column<int>(type: "int", nullable: false),
+                    MerchantId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    IsConfirmedByMerchant = table.Column<bool>(type: "bit", nullable: false),
+                    MerchantId1 = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MerchantOrders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MerchantOrders_AppUsers_MerchantId",
+                        column: x => x.MerchantId,
+                        principalTable: "AppUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MerchantOrders_Merchants_MerchantId1",
+                        column: x => x.MerchantId1,
+                        principalTable: "Merchants",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MerchantOrders_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CartItems",
                 columns: table => new
                 {
@@ -341,12 +409,11 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrderItems",
+                name: "MerchantOrderItems",
                 columns: table => new
                 {
-                    OrderItemId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
                     ProductId = table.Column<int>(type: "int", nullable: false),
                     ProductVariantId = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
@@ -354,29 +421,76 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     ProductName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Size = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Color = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Color = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MerchantOrderId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrderItems", x => x.OrderItemId);
+                    table.PrimaryKey("PK_MerchantOrderItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MerchantOrderItems_MerchantOrders_MerchantOrderId",
+                        column: x => x.MerchantOrderId,
+                        principalTable: "MerchantOrders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OrderItems",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MerchantOrderId = table.Column<int>(type: "int", nullable: false),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    OrderId = table.Column<int>(type: "int", nullable: false),
+                    ProductVariantId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ProductName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Size = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Color = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ProductId1 = table.Column<int>(type: "int", nullable: true),
+                    ProductVariantId1 = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_MerchantOrders_MerchantOrderId",
+                        column: x => x.MerchantOrderId,
+                        principalTable: "MerchantOrders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_OrderItems_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OrderItems_ProductVariants_ProductVariantId",
                         column: x => x.ProductVariantId,
                         principalTable: "ProductVariants",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OrderItems_ProductVariants_ProductVariantId1",
+                        column: x => x.ProductVariantId1,
+                        principalTable: "ProductVariants",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_OrderItems_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Products_ProductId1",
+                        column: x => x.ProductId1,
+                        principalTable: "Products",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -413,10 +527,35 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_MerchantOrderItems_MerchantOrderId",
+                table: "MerchantOrderItems",
+                column: "MerchantOrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MerchantOrders_MerchantId",
+                table: "MerchantOrders",
+                column: "MerchantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MerchantOrders_MerchantId1",
+                table: "MerchantOrders",
+                column: "MerchantId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MerchantOrders_OrderId",
+                table: "MerchantOrders",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Merchants_AppUserId",
                 table: "Merchants",
                 column: "AppUserId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_MerchantOrderId",
+                table: "OrderItems",
+                column: "MerchantOrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_OrderId",
@@ -429,9 +568,19 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_ProductId1",
+                table: "OrderItems",
+                column: "ProductId1");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_ProductVariantId",
                 table: "OrderItems",
                 column: "ProductVariantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_ProductVariantId1",
+                table: "OrderItems",
+                column: "ProductVariantId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_ShippingAddressId",
@@ -469,6 +618,21 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SupportConversations_CustomerId",
+                table: "SupportConversations",
+                column: "CustomerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportConversations_SupportAgentId",
+                table: "SupportConversations",
+                column: "SupportAgentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportMessages_ConversationId",
+                table: "SupportMessages",
+                column: "ConversationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SupportMessages_ReceiverId",
                 table: "SupportMessages",
                 column: "ReceiverId");
@@ -489,6 +653,9 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 name: "CartItems");
 
             migrationBuilder.DropTable(
+                name: "MerchantOrderItems");
+
+            migrationBuilder.DropTable(
                 name: "OrderItems");
 
             migrationBuilder.DropTable(
@@ -498,25 +665,31 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 name: "SupportMessages");
 
             migrationBuilder.DropTable(
-                name: "Orders");
+                name: "MerchantOrders");
 
             migrationBuilder.DropTable(
                 name: "ProductVariants");
 
             migrationBuilder.DropTable(
-                name: "CustomerAddresses");
+                name: "SupportConversations");
+
+            migrationBuilder.DropTable(
+                name: "Orders");
 
             migrationBuilder.DropTable(
                 name: "Products");
 
             migrationBuilder.DropTable(
-                name: "Customers");
+                name: "CustomerAddresses");
 
             migrationBuilder.DropTable(
                 name: "Categories");
 
             migrationBuilder.DropTable(
                 name: "Merchants");
+
+            migrationBuilder.DropTable(
+                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "AppUsers");

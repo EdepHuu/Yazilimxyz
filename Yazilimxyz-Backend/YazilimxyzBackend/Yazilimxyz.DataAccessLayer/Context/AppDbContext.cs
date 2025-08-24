@@ -29,8 +29,9 @@ namespace Yazilimxyz.DataAccessLayer.Context
         // Support Entities
         public DbSet<SupportMessage> SupportMessages { get; set; }
         public DbSet<SupportConversation> SupportConversations { get; set; }
-
-        public DbSet<Merchant> Merchants { get; set; }
+		public DbSet<MerchantOrder> MerchantOrders { get; set; }
+		public DbSet<MerchantOrderItem> MerchantOrderItems { get; set; }
+		public DbSet<Merchant> Merchants { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<CustomerAddress> CustomerAddresses { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
@@ -39,25 +40,30 @@ namespace Yazilimxyz.DataAccessLayer.Context
         {
             base.OnModelCreating(modelBuilder);
 
-            // OrderItem → ProductVariant
-            modelBuilder.Entity<OrderItem>()
-                .HasOne(oi => oi.ProductVariant)
-                .WithMany(pv => pv.OrderItems)
-                .HasForeignKey(oi => oi.ProductVariantId)
-                .OnDelete(DeleteBehavior.Restrict);
+			// OrderItem → ProductVariant
+			modelBuilder.Entity<OrderItem>()
+	            .HasOne(x => x.Product)
+	            .WithMany()
+	            .HasForeignKey(x => x.ProductId)
+	            .OnDelete(DeleteBehavior.NoAction);
 
-            // OrderItem → Product
-            modelBuilder.Entity<OrderItem>()
-                .HasOne(oi => oi.Product)
-                .WithMany(p => p.OrderItems)
-                .HasForeignKey(oi => oi.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<OrderItem>()
+				.HasOne(x => x.ProductVariant)
+				.WithMany()
+				.HasForeignKey(x => x.ProductVariantId)
+				.OnDelete(DeleteBehavior.NoAction);
 
-            // OrderItem → Order
-            modelBuilder.Entity<OrderItem>()
+
+			modelBuilder.Entity<OrderItem>()
                 .HasOne(oi => oi.Order)
                 .WithMany(o => o.OrderItems)
                 .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.MerchantOrder)
+                .WithMany(mo => mo.Items)
+                .HasForeignKey(oi => oi.MerchantOrderId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ProductVariant → Product
@@ -117,12 +123,12 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasForeignKey(c => c.SupportAgentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-        // Merchant → AppUser
-        modelBuilder.Entity<Merchant>()
-                .HasOne(m => m.AppUser)
-                .WithOne(u => u.Merchant)
-                .HasForeignKey<Merchant>(m => m.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Merchant → AppUser
+            modelBuilder.Entity<Merchant>()
+                    .HasOne(m => m.AppUser)
+                    .WithOne(u => u.Merchant)
+                    .HasForeignKey<Merchant>(m => m.AppUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
             // Customer → AppUser
             modelBuilder.Entity<Customer>()
@@ -171,6 +177,49 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasIndex(x => new { x.CustomerId, x.IsDefault })
                 .HasFilter("[IsDefault] = 1")
                 .IsUnique();
-        }
-    }
+
+			// Merchant - MerchantOrder (One to Many)
+			modelBuilder.Entity<MerchantOrder>()
+				.HasOne(mo => mo.Merchant)
+				.WithMany() // AppUser veya Merchant içinde listeyi kullanmıyorsan boş bırak
+				.HasForeignKey(mo => mo.MerchantId)
+				.OnDelete(DeleteBehavior.Cascade);
+
+			// Order - MerchantOrder (One to Many)
+			modelBuilder.Entity<MerchantOrder>()
+				.HasOne(mo => mo.Order)
+				.WithMany(o => o.MerchantOrders)
+				.HasForeignKey(mo => mo.OrderId)
+				.OnDelete(DeleteBehavior.Cascade);
+
+			// MerchantOrder - OrderItem (One to Many)
+			modelBuilder.Entity<OrderItem>()
+                .HasOne(x => x.Order)
+                .WithMany(x => x.OrderItems)
+                .HasForeignKey(x => x.OrderId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+			// Order - OrderItem (One to Many)
+			modelBuilder.Entity<OrderItem>()
+				.HasOne(oi => oi.Order)
+				.WithMany(o => o.OrderItems)
+				.HasForeignKey(oi => oi.OrderId)
+				.OnDelete(DeleteBehavior.Cascade);
+
+			// MerchantOrder - MerchantOrderItem (One to Many)
+			modelBuilder.Entity<MerchantOrderItem>()
+				.HasOne(moi => moi.MerchantOrder)
+				.WithMany(mo => mo.MerchantOrderItems)
+				.HasForeignKey(moi => moi.MerchantOrderId)
+				.OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<MerchantOrder>()
+	            .HasOne(mo => mo.Merchant)
+	            .WithMany()
+	            .HasForeignKey(mo => mo.MerchantId)
+	            .HasPrincipalKey(u => u.Id)
+	            .OnDelete(DeleteBehavior.Restrict); // optional
+
+		}
+	}
 }

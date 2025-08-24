@@ -16,5 +16,6 @@ namespace Yazilimxyz.EntityLayer.Entities
         public string TaxNumber { get; set; }
         public string CompanyAddress { get; set; }
         public string Phone { get; set; }
-    }
+		public ICollection<MerchantOrder> MerchantOrders { get; set; }
+	}
 }

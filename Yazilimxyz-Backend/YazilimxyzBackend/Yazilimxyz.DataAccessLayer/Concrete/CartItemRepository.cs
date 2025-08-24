@@ -25,10 +25,10 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 		public async Task<List<CartItem>> GetUserCartWithDetailsAsync(string userId)
 		{
 			return await _appDbContext.CartItems
-				.Where(x => x.UserId == userId)
-				.Include(i => i.Variant)
+				.Where(ci => ci.UserId == userId)
+				.Include(ci => ci.Variant)
 					.ThenInclude(v => v.Product)
-						.ThenInclude(p => p.ProductImages)
+						.ThenInclude(p => p.Merchant)
 				.ToListAsync();
 		}
 	}

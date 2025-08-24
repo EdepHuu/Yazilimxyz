@@ -13,7 +13,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 	public class OrderManager : IOrderService
 	{
 		private readonly IOrderRepository _orderRepository;
-		private readonly IOrderItemRepository _orderItemRepository;   // çoğunlukla gerekmez; cascade ile eklenir
+		private readonly IOrderItemRepository _orderItemRepository;
 		private readonly ICartItemRepository _cartItemRepository;
 		private readonly IProductVariantRepository _productVariantRepository;
 		private readonly ICustomerAddressRepository _customerAddressRepository;
@@ -35,101 +35,113 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			_mapper = mapper;
 		}
 
-		// -----------------------------
-		// 1) Sepetten Sipariş Oluşturma
-		// -----------------------------
+		// 1. Sepetten Sipariş Oluştur
 		public async Task<IDataResult<ResultOrderWithItemsDto>> CreateFromCartAsync(CreateOrderDto dto, string userId)
 		{
-			// 1. Sepeti (tüm include’larıyla) çek
 			var cartItems = await _cartItemRepository.GetUserCartWithDetailsAsync(userId);
 			if (!cartItems.Any())
 				return new ErrorDataResult<ResultOrderWithItemsDto>("Sepetiniz boş.");
 
-			// 2. Adresi doğrula (kullanıcıya ait mi kontrol edilebilir)
 			var address = await _customerAddressRepository.GetByIdAsync(dto.ShippingAddressId);
 			if (address == null)
 				return new ErrorDataResult<ResultOrderWithItemsDto>("Adres bulunamadı.");
-			// TODO: adresin gerçekten bu kullanıcıya ait olduğunu doğrula (modeline göre)
 
-			// 3. Stok kontrolü
+			// Stok kontrolü
 			foreach (var ci in cartItems)
 			{
 				if (ci.Variant.Stock < ci.Quantity)
-					return new ErrorDataResult<ResultOrderWithItemsDto>($"{ci.Variant.Product.Name} - {ci.Variant.Size}/{ci.Variant.Color} için yeterli stok yok.");
+					return new ErrorDataResult<ResultOrderWithItemsDto>($"{ci.Variant.Product.Name} için stok yetersiz.");
 			}
 
-			// 4. Tutarları hesapla
 			decimal subTotal = cartItems.Sum(ci => ci.Variant.Product.BasePrice * ci.Quantity);
-			decimal total = subTotal + dto.ShippingFee - dto.DiscountAmount;
+			decimal shippingFee = 50;
+			decimal discount = 0;
+			decimal total = subTotal + shippingFee - discount;
 
-			// 5. Order oluştur
 			var order = new Order
 			{
 				OrderNumber = GenerateOrderNumber(),
 				UserId = userId,
-				ShippingFee = dto.ShippingFee,
-				DiscountAmount = dto.DiscountAmount,
+				ShippingFee = shippingFee,
+				DiscountAmount = discount,
 				SubTotal = subTotal,
 				TotalAmount = total,
 				Status = OrderStatus.Pending,
 				PaymentStatus = PaymentStatus.Pending,
 				ShippingAddressId = dto.ShippingAddressId,
 				ShippingAddress = address,
-				Note = dto.Note                     // eklendi
+				Note = dto.Note,
+				OrderItems = new List<OrderItem>(),
+				MerchantOrders = new List<MerchantOrder>()
 			};
 
-			// 6. OrderItem’ları sepetten üret
-			foreach (var ci in cartItems)
-			{
-				var unit = ci.Variant.Product.BasePrice;
-				var oi = new OrderItem
-				{
-					ProductId = ci.Variant.ProductId,
-					ProductVariantId = ci.ProductVariantId,
-					Quantity = ci.Quantity,
-					UnitPrice = unit,
-					TotalPrice = unit * ci.Quantity,
+			// 🟩 Merchant bazlı gruplama (int → string dönüşümü ile)
+			var groupedByMerchant = cartItems.GroupBy(ci => ci.Variant.Product.Merchant.AppUserId);
 
-					// snapshot
-					ProductName = ci.Variant.Product.Name,
-					Size = ci.Variant.Size,
-					Color = ci.Variant.Color
+			foreach (var group in groupedByMerchant)
+			{
+				string merchantAppUserId = group.Key;
+
+				var merchantOrder = new MerchantOrder
+				{
+					MerchantId = merchantAppUserId, // FK to AppUser.Id
+					IsConfirmedByMerchant = false,
+					MerchantOrderItems = new List<MerchantOrderItem>(),
+					Items = new List<OrderItem>()
 				};
-				order.OrderItems.Add(oi);
+
+				foreach (var ci in group)
+				{
+					var unitPrice = ci.Variant.Product.BasePrice;
+
+					var orderItem = new OrderItem
+					{
+						ProductId = ci.Variant.ProductId,
+						ProductVariantId = ci.ProductVariantId,
+						Quantity = ci.Quantity,
+						UnitPrice = unitPrice,
+						TotalPrice = unitPrice * ci.Quantity,
+						ProductName = ci.Variant.Product.Name,
+						Size = ci.Variant.Size,
+						Color = ci.Variant.Color
+					};
+
+					order.OrderItems.Add(orderItem);
+					merchantOrder.Items.Add(orderItem);
+				}
+
+				order.MerchantOrders.Add(merchantOrder);
 			}
 
-			// 7. Kaydet (Order + Items)
+			// Kaydet
 			var added = await _orderRepository.AddAsync(order);
 
-			// 8. Stok düş ve sepeti temizle
+			// 🟩 Stok güncelleme
 			foreach (var ci in cartItems)
 			{
 				ci.Variant.Stock -= ci.Quantity;
 				await _productVariantRepository.UpdateAsync(ci.Variant);
 			}
+
+			// 🟩 Sepeti temizle
 			await _cartItemRepository.DeleteRangeAsync(cartItems);
 
-			// 9. Sonuç DTO
-			// (güncel halini include’lu çekmek istersen _orderRepository.GetByIdWithItemsAsync kullan)
+			// 🟩 DTO dön
 			var detailed = await _orderRepository.GetByIdWithItemsAsync(added.Id);
-			var dtoResult = _mapper.Map<ResultOrderWithItemsDto>(detailed);
-			return new SuccessDataResult<ResultOrderWithItemsDto>(dtoResult, "Sipariş oluşturuldu.");
+			var mapped = _mapper.Map<ResultOrderWithItemsDto>(detailed);
+			return new SuccessDataResult<ResultOrderWithItemsDto>(mapped, "Sipariş başarıyla oluşturuldu.");
 		}
 
-		// -----------------------------
-		// 2) Kullanıcının Sipariş Listesi
-		// -----------------------------
+
+		// 2. Sipariş Listesi
 		public async Task<IDataResult<List<ResultOrderDto>>> GetMyOrdersAsync(string userId)
 		{
-			var orders = await _orderRepository.FindAsync(x => x.UserId == userId);
-			// İstersen tarihe göre sırala: orders = orders.OrderByDescending(o => o.CreatedDate);
+			var orders = await _orderRepository.FindAsync(o => o.UserId == userId);
 			var mapped = _mapper.Map<List<ResultOrderDto>>(orders);
 			return new SuccessDataResult<List<ResultOrderDto>>(mapped);
 		}
 
-		// -----------------------------
-		// 3) Kullanıcının Sipariş Detayı
-		// -----------------------------
+		// 3. Sipariş Detayı
 		public async Task<IDataResult<ResultOrderWithItemsDto>> GetMyOrderDetailAsync(int orderId, string userId)
 		{
 			var order = await _orderRepository.GetByIdWithItemsAsync(orderId);
@@ -140,17 +152,17 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			return new SuccessDataResult<ResultOrderWithItemsDto>(mapped);
 		}
 
-		// -----------------------------
-		// 4) Admin/Operasyon Güncelleme
-		// -----------------------------
-		public async Task<IResult> UpdateAsync(UpdateOrderDto dto)
+		// 4. Admin/Operasyon Güncelleme
+		public async Task<IResult> UpdateAsync(int orderId, UpdateOrderDto dto)
 		{
-			var order = await _orderRepository.GetByIdAsync(dto.OrderId);
-			if (order == null) return new ErrorResult("Sipariş bulunamadı.");
+			var order = await _orderRepository.GetByIdAsync(orderId);
+			if (order == null)
+				return new ErrorResult("Sipariş bulunamadı.");
 
 			order.Status = dto.Status;
 			order.PaymentStatus = dto.PaymentStatus;
 			order.ShippedAt = dto.ShippedAt;
+
 			if (!string.IsNullOrWhiteSpace(dto.Note))
 				order.Note = dto.Note;
 
@@ -158,9 +170,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			return new SuccessResult("Sipariş güncellendi.");
 		}
 
-		// -----------------------------
-		// 5) Kullanıcı İptali
-		// -----------------------------
+		// 5. Kullanıcı Sipariş İptali
 		public async Task<IResult> CancelMyOrderAsync(int orderId, string userId)
 		{
 			var order = await _orderRepository.GetByIdAsync(orderId);
@@ -172,35 +182,65 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
 			order.Status = OrderStatus.Cancelled;
 			await _orderRepository.UpdateAsync(order);
-
-			// (İsteğe bağlı) stok iadesi ve ödeme iadesi akışı burada ele alınabilir.
 			return new SuccessResult("Sipariş iptal edildi.");
 		}
 
-		private static string GenerateOrderNumber()
+		// 6. Siparişi Merchant Onaylar
+		public async Task<IResult> ConfirmOrderAsync(int orderId, string merchantId)
 		{
-			// Ör: ORD-20250824-7F3A
-			return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
-		}
-
-		public async Task<IResult> ConfirmOrderAsync(int orderId, string userId)
-		{
-			var order = await _orderRepository.GetByIdAsync(orderId);
+			var order = await _orderRepository.GetByIdWithItemsAsync(orderId);
 			if (order == null)
 				return new ErrorResult("Sipariş bulunamadı.");
 
-			// Order must belong to this user (merchant check)
-			if (order.UserId != userId)
-				return new ErrorResult("Bu siparişi onaylama yetkiniz yok.");
-
 			if (order.Status != OrderStatus.Pending)
-				return new ErrorResult("Sadece beklemede olan siparişler onaylanabilir.");
+				return new ErrorResult("Sadece bekleyen sipariş onaylanabilir.");
+
+			foreach (var item in order.OrderItems)
+			{
+				if (item.ProductVariant?.Product?.MerchantId.ToString() != merchantId)
+					return new ErrorResult("Bu siparişi onaylama yetkiniz yok.");
+			}
 
 			order.Status = OrderStatus.Confirmed;
 			await _orderRepository.UpdateAsync(order);
-
 			return new SuccessResult("Sipariş onaylandı.");
 		}
 
+		// 7. Kullanıcı: Siparişi bir ileri duruma taşır
+		public async Task<IResult> AdvanceOrderStatusAsync(int orderId, string userId)
+		{
+			var order = await _orderRepository.GetByIdAsync(orderId);
+			if (order == null || order.UserId != userId)
+				return new ErrorResult("Sipariş bulunamadı.");
+
+			if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Returned)
+				return new ErrorResult("İptal edilen sipariş ilerletilemez.");
+
+			OrderStatus next = order.Status switch
+			{
+				OrderStatus.Pending => OrderStatus.Confirmed,
+				OrderStatus.Confirmed => OrderStatus.Processing,
+				OrderStatus.Processing => OrderStatus.Shipped,
+				OrderStatus.Shipped => OrderStatus.Delivered,
+				_ => order.Status
+			};
+
+			if (next == order.Status)
+				return new ErrorResult("Sipariş daha fazla ilerletilemez.");
+
+			if (next == OrderStatus.Shipped)
+				order.ShippedAt = DateTime.UtcNow;
+
+			order.Status = next;
+			await _orderRepository.UpdateAsync(order);
+
+			return new SuccessResult($"Sipariş durumu '{next}' olarak güncellendi.");
+		}
+
+		// Yardımcı metot
+		private static string GenerateOrderNumber()
+		{
+			return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+		}
 	}
 }

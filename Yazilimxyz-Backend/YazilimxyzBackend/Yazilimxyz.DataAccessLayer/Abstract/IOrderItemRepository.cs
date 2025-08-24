@@ -7,9 +7,8 @@ using Yazilimxyz.EntityLayer.Entities;
 
 namespace Yazilimxyz.DataAccessLayer.Abstract
 {
-    public interface IOrderItemRepository : IGenericRepository<OrderItem>
-    {
-        Task<IEnumerable<OrderItem>> GetByOrderIdAsync(int orderId);
-        Task<IEnumerable<OrderItem>> GetByProductIdAsync(int productId);
-    }
+	public interface IOrderItemRepository : IGenericRepository<OrderItem>
+	{
+		Task<List<OrderItem>> GetByOrderIdAsync(int orderId);
+	}
 }

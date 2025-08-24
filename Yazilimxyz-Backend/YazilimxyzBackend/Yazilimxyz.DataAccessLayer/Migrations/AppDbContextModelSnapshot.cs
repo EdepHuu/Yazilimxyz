@@ -307,6 +307,89 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.ToTable("Merchants");
                 });
 
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.MerchantOrder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsConfirmedByMerchant")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MerchantId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("MerchantId1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MerchantId");
+
+                    b.HasIndex("MerchantId1");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("MerchantOrders");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.MerchantOrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MerchantOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProductVariantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Size")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MerchantOrderId");
+
+                    b.ToTable("MerchantOrderItems");
+                });
+
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -321,6 +404,10 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -331,7 +418,7 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<DateTime?>("ShippedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ShippingAddressId")
+                    b.Property<int>("ShippingAddressId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("ShippingFee")
@@ -361,15 +448,21 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
 
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.OrderItem", b =>
                 {
-                    b.Property<int>("OrderItemId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Color")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MerchantOrderId")
+                        .HasColumnType("int");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
@@ -377,11 +470,17 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ProductId1")
+                        .HasColumnType("int");
+
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ProductVariantId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProductVariantId1")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")
@@ -397,13 +496,19 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
 
-                    b.HasKey("OrderItemId");
+                    b.HasKey("Id");
+
+                    b.HasIndex("MerchantOrderId");
 
                     b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
 
+                    b.HasIndex("ProductId1");
+
                     b.HasIndex("ProductVariantId");
+
+                    b.HasIndex("ProductVariantId1");
 
                     b.ToTable("OrderItems");
                 });
@@ -536,6 +641,34 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.ToTable("ProductVariants");
                 });
 
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportConversation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("LastMessageAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SupportAgentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("SupportAgentId");
+
+                    b.ToTable("SupportConversations");
+                });
+
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportMessage", b =>
                 {
                     b.Property<int>("Id")
@@ -544,15 +677,12 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsFromSupport")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
+                    b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ConversationId")
+                        .HasColumnType("int");
 
                     b.Property<string>("ReceiverId")
                         .IsRequired()
@@ -562,7 +692,12 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
 
                     b.HasIndex("ReceiverId");
 
@@ -643,12 +778,47 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Navigation("AppUser");
                 });
 
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.MerchantOrder", b =>
+                {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "Merchant")
+                        .WithMany()
+                        .HasForeignKey("MerchantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Merchant", null)
+                        .WithMany("MerchantOrders")
+                        .HasForeignKey("MerchantId1");
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Order", "Order")
+                        .WithMany("MerchantOrders")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Merchant");
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.MerchantOrderItem", b =>
+                {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.MerchantOrder", "MerchantOrder")
+                        .WithMany("MerchantOrderItems")
+                        .HasForeignKey("MerchantOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MerchantOrder");
+                });
+
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Order", b =>
                 {
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.CustomerAddress", "ShippingAddress")
                         .WithMany()
                         .HasForeignKey("ShippingAddressId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "User")
                         .WithMany("Orders")
@@ -663,23 +833,39 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
 
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.OrderItem", b =>
                 {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.MerchantOrder", "MerchantOrder")
+                        .WithMany("Items")
+                        .HasForeignKey("MerchantOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", "Product")
-                        .WithMany("OrderItems")
+                        .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("Yazilimxyz.EntityLayer.Entities.ProductVariant", "ProductVariant")
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", null)
                         .WithMany("OrderItems")
+                        .HasForeignKey("ProductId1");
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.ProductVariant", "ProductVariant")
+                        .WithMany()
                         .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.ProductVariant", null)
+                        .WithMany("OrderItems")
+                        .HasForeignKey("ProductVariantId1");
+
+                    b.Navigation("MerchantOrder");
 
                     b.Navigation("Order");
 
@@ -735,8 +921,32 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportConversation", b =>
+                {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "SupportAgent")
+                        .WithMany()
+                        .HasForeignKey("SupportAgentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("SupportAgent");
+                });
+
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportMessage", b =>
                 {
+                    b.HasOne("Yazilimxyz.EntityLayer.Entities.SupportConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "Receiver")
                         .WithMany("ReceivedMessages")
                         .HasForeignKey("ReceiverId")
@@ -748,6 +958,8 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Conversation");
 
                     b.Navigation("Receiver");
 
@@ -783,8 +995,22 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Navigation("Addresses");
                 });
 
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Merchant", b =>
+                {
+                    b.Navigation("MerchantOrders");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.MerchantOrder", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("MerchantOrderItems");
+                });
+
             modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.Order", b =>
                 {
+                    b.Navigation("MerchantOrders");
+
                     b.Navigation("OrderItems");
                 });
 
@@ -802,6 +1028,11 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Navigation("CartItems");
 
                     b.Navigation("OrderItems");
+                });
+
+            modelBuilder.Entity("Yazilimxyz.EntityLayer.Entities.SupportConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

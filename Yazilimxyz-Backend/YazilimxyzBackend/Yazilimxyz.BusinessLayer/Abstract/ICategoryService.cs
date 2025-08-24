@@ -12,11 +12,8 @@ namespace Yazilimxyz.BusinessLayer.Abstract
         Task<IDataResult<List<ResultCategoryDto>>> GetSubCategoriesAsync(int parentId);
         Task<IDataResult<ResultCategoryWithSubDto>> GetWithSubCategoriesAsync(int id);
         Task<IDataResult<List<ResultCategoryHierarchyDto>>> GetCategoryHierarchyAsync();
-
-        Task<IResult> CreateAsync(CreateCategoryDto dto);
-        Task<IResult> UpdateAsync(UpdateCategoryDto dto);
+		Task<IResult> CreateAsync(CreateCategoryDto dto);
+		Task<IResult> UpdateAsync(UpdateCategoryDto dto);
         Task<IResult> DeleteAsync(int id);
-
-
     }
 }
