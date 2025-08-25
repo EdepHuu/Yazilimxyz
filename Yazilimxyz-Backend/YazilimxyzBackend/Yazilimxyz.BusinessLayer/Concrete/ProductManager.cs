@@ -155,42 +155,42 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessResult(Messages.ProductAdded);
         }
 
-		[CacheRemoveAspect("IProductService.Get")]
-		public async Task<IResult> UpdateAsync(UpdateProductDto dto)
-		{
-			var httpContext = _httpContextAccessor.HttpContext;
-			var userId = httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        [CacheRemoveAspect("IProductService.Get")]
+        public async Task<IResult> UpdateAsync(UpdateProductDto dto)
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            var userId = httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-			if (string.IsNullOrEmpty(userId))
-				return new ErrorResult("Kullanıcı bilgisi alınamadı.");
+            if (string.IsNullOrEmpty(userId))
+                return new ErrorResult("Kullanıcı bilgisi alınamadı.");
 
-			var isAdmin = httpContext.User.IsInRole("AppAdmin");
-			var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
+            var isAdmin = httpContext.User.IsInRole("AppAdmin");
+            var merchant = await _merchantRepository.GetByAppUserIdAsync(userId);
 
-			var product = await _productRepository.GetByIdAsync(dto.Id);
-			if (product == null)
-				return new ErrorResult("Güncellenmek istenen ürün bulunamadı.");
+            var product = await _productRepository.GetByIdAsync(dto.Id);
+            if (product == null)
+                return new ErrorResult("Güncellenmek istenen ürün bulunamadı.");
 
-			if (!isAdmin && (merchant == null || product.AppUserId != merchant.AppUserId))
-				return new ErrorResult("Bu ürünü güncelleme yetkiniz bulunmamaktadır.");
+            if (!isAdmin && (merchant == null || product.AppUserId != merchant.AppUserId))
+                return new ErrorResult("Bu ürünü güncelleme yetkiniz bulunmamaktadır.");
 
-			if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
-				return new ErrorResult("Geçersiz bir cinsiyet türü gönderildi.");
+            if (!Enum.IsDefined(typeof(GenderType), dto.Gender))
+                return new ErrorResult("Geçersiz bir cinsiyet türü gönderildi.");
 
-			if (dto.BasePrice <= 0)
-				return new ErrorResult("Ürün fiyatı 0 veya daha düşük olamaz.");
+            if (dto.BasePrice <= 0)
+                return new ErrorResult("Ürün fiyatı 0 veya daha düşük olamaz.");
 
-			var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
-			if (category == null)
-				return new ErrorResult($"Kategori bulunamadı. (Kategori ID: {dto.CategoryId})");
+            var category = await _categoryRepository.GetByIdAsync(dto.CategoryId);
+            if (category == null)
+                return new ErrorResult($"Kategori bulunamadı. (Kategori ID: {dto.CategoryId})");
 
-			_mapper.Map(dto, product);
-			await _productRepository.UpdateAsync(product);
+            _mapper.Map(dto, product);
+            await _productRepository.UpdateAsync(product);
 
-			return new SuccessResult(Messages.ProductUpdated);
-		}
+            return new SuccessResult(Messages.ProductUpdated);
+        }
 
-		[CacheRemoveAspect("IProductService.Get")]
+        [CacheRemoveAspect("IProductService.Get")]
         public async Task<IResult> DeleteAsync(int id)
         {
             var userId = _httpContextAccessor.HttpContext?.User
@@ -220,6 +220,60 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
 
             var q = _productRepository.Query();
+
+            // ======================= NEW: Gender & Category Filters =======================
+
+            // NEW: Cinsiyet filtresi (req.Genders = ["kadin","erkek","unisex"] veya enum adları)
+            if (req.Genders is { Length: > 0 })
+            {
+                var genderSet = new HashSet<GenderType>();
+                foreach (var raw in req.Genders.Where(s => !string.IsNullOrWhiteSpace(s)))
+                {
+                    if (TryMapGender(raw.Trim(), out var g)) // NEW: helper metot
+                        genderSet.Add(g);
+                }
+
+                if (genderSet.Count > 0)
+                {
+                    // NEW: Kadın/Erkek seçildiyse Unisex'i de dahil et (isteğe bağlı)
+                    if ((genderSet.Contains(GenderType.Female) || genderSet.Contains(GenderType.Male))
+                        && !genderSet.Contains(GenderType.Unisex))
+                    {
+                        genderSet.Add(GenderType.Unisex);
+                    }
+
+                    q = q.Where(p => genderSet.Contains(p.Gender));
+                }
+            }
+
+            // NEW: Kategori filtresi (ana veya alt). Alt kategorileri de kapsamak için
+            // ürünün Category.ParentCategoryId'sine bakıyoruz (2 seviye hiyerarşi için yeterli).
+            if (req.CategoryId.HasValue || (req.CategoryIds is { Length: > 0 }))
+            {
+                var selected = new HashSet<int>();
+                if (req.CategoryId.HasValue) selected.Add(req.CategoryId.Value);
+                if (req.CategoryIds is { Length: > 0 })
+                    foreach (var cid in req.CategoryIds) selected.Add(cid);
+
+                if (selected.Count > 0)
+                {
+                    q = q.Include(p => p.Category); // NEW: parent'a bakabilmek için
+
+                    if (req.IncludeSubCategories)
+                    {
+                        q = q.Where(p =>
+                            selected.Contains(p.CategoryId) ||
+                            (p.Category.ParentCategoryId.HasValue &&
+                             selected.Contains(p.Category.ParentCategoryId.Value)));
+                    }
+                    else
+                    {
+                        q = q.Where(p => selected.Contains(p.CategoryId));
+                    }
+                }
+            }
+
+            // ===================== /NEW: Gender & Category Filters =======================
 
             if (req.MerchantIds is { Length: > 0 })
                 q = q.Where(p => req.MerchantIds.Contains(p.MerchantId));
@@ -474,50 +528,78 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<CustomerProductDetailDto>(dto);
         }
 
-		public async Task<ProductFilterOptionsDto> GetFilterOptionsAsync()
-		{
-			var query = _productRepository.Query();
+        public async Task<ProductFilterOptionsDto> GetFilterOptionsAsync()
+        {
+            var query = _productRepository.Query();
 
-			var sizes = await query
-				.SelectMany(p => p.ProductVariants.Select(v => v.Size))
-				.Where(s => !string.IsNullOrWhiteSpace(s))
-				.Distinct()
-				.OrderBy(s => s)
-				.ToListAsync();
+            var sizes = await query
+                .SelectMany(p => p.ProductVariants.Select(v => v.Size))
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct()
+                .OrderBy(s => s)
+                .ToListAsync();
 
-			var colors = await query
-				.SelectMany(p => p.ProductVariants.Select(v => v.Color))
-				.Where(c => !string.IsNullOrWhiteSpace(c))
-				.Distinct()
-				.OrderBy(c => c)
-				.ToListAsync();
+            var colors = await query
+                .SelectMany(p => p.ProductVariants.Select(v => v.Color))
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
 
-			var genders = Enum.GetNames(typeof(GenderType)).ToList();
+            var genders = Enum.GetNames(typeof(GenderType)).ToList();
 
-			var merchants = await _merchantRepository.GetAllAsync();
-			var brands = merchants
-				.Select(m => new BrandOptionDto
-				{
-					Id = m.Id,
-					Name = m.CompanyName
-				}).ToList();
+            var merchants = await _merchantRepository.GetAllAsync();
+            var brands = merchants
+                .Select(m => new BrandOptionDto
+                {
+                    Id = m.Id,
+                    Name = m.CompanyName
+                }).ToList();
 
-			var prices = await query.Select(p => p.BasePrice).ToListAsync();
-			var minPrice = prices.Min();
-			var maxPrice = prices.Max();
+            var prices = await query.Select(p => p.BasePrice).ToListAsync();
+            var minPrice = prices.Min();
+            var maxPrice = prices.Max();
 
-			return new ProductFilterOptionsDto
-			{
-				Sizes = sizes,
-				Colors = colors,
-				Genders = genders,
-				Brands = brands,
-				PriceRange = new PriceRangeDto
-				{
-					Min = (double)minPrice,
-					Max = (double)maxPrice
-				}
-			};
-		}
-	}
+            return new ProductFilterOptionsDto
+            {
+                Sizes = sizes,
+                Colors = colors,
+                Genders = genders,
+                Brands = brands,
+                PriceRange = new PriceRangeDto
+                {
+                    Min = (double)minPrice,
+                    Max = (double)maxPrice
+                }
+            };
+        }
+
+        // ======================= NEW: helper for gender parsing =======================
+        private static bool TryMapGender(string input, out GenderType gender)
+        {
+            switch (input.ToLowerInvariant())
+            {
+                case "kadin":
+                case "kadın":
+                case "female":
+                    gender = GenderType.Female; return true;
+
+                case "erkek":
+                case "male":
+                    gender = GenderType.Male; return true;
+
+                case "unisex":
+                    gender = GenderType.Unisex; return true;
+
+                default:
+                    if (Enum.TryParse<GenderType>(input, true, out var parsed))
+                    {
+                        gender = parsed; return true;
+                    }
+                    gender = default;
+                    return false;
+            }
+        }
+        // ===================== /NEW: helper for gender parsing =======================
+    }
 }
