@@ -11,7 +11,8 @@ namespace Yazilimxyz.BusinessLayer.Abstract
 		Task<IDataResult<ResultOrderWithItemsDto>> GetMyOrderDetailAsync(int orderId, string userId);
 		Task<IResult> UpdateAsync(int orderId, UpdateOrderDto dto);
 		Task<IResult> CancelMyOrderAsync(int orderId, string userId);
+		Task<IResult> CancelOrderByMerchantAsync(int orderId, string merchantAppUserId);
 		Task<IResult> ConfirmOrderAsync(int orderId, string userId);
-		Task<IResult> AdvanceOrderStatusAsync(int orderId, string userId);
+		Task<IDataResult<List<ResultOrderWithItemsDto>>> GetMyMerchantOrdersAsync(string merchantAppUserId);
 	}
 }

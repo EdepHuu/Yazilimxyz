@@ -46,13 +46,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			if (address == null)
 				return new ErrorDataResult<ResultOrderWithItemsDto>("Adres bulunamadı.");
 
-			// Stok kontrolü
-			foreach (var ci in cartItems)
-			{
-				if (ci.Variant.Stock < ci.Quantity)
-					return new ErrorDataResult<ResultOrderWithItemsDto>($"{ci.Variant.Product.Name} için stok yetersiz.");
-			}
-
 			decimal subTotal = cartItems.Sum(ci => ci.Variant.Product.BasePrice * ci.Quantity);
 			decimal shippingFee = 50;
 			decimal discount = 0;
@@ -75,7 +68,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				MerchantOrders = new List<MerchantOrder>()
 			};
 
-			// 🟩 Merchant bazlı gruplama (int → string dönüşümü ile)
+			// AppUserId ile grupla
 			var groupedByMerchant = cartItems.GroupBy(ci => ci.Variant.Product.Merchant.AppUserId);
 
 			foreach (var group in groupedByMerchant)
@@ -84,8 +77,9 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
 				var merchantOrder = new MerchantOrder
 				{
-					MerchantId = merchantAppUserId, // FK to AppUser.Id
+					MerchantId = merchantAppUserId, // burası artık string olacak
 					IsConfirmedByMerchant = false,
+					ConfirmedAt = null,
 					MerchantOrderItems = new List<MerchantOrderItem>(),
 					Items = new List<OrderItem>()
 				};
@@ -93,7 +87,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				foreach (var ci in group)
 				{
 					var unitPrice = ci.Variant.Product.BasePrice;
-
 					var orderItem = new OrderItem
 					{
 						ProductId = ci.Variant.ProductId,
@@ -105,7 +98,6 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 						Size = ci.Variant.Size,
 						Color = ci.Variant.Color
 					};
-
 					order.OrderItems.Add(orderItem);
 					merchantOrder.Items.Add(orderItem);
 				}
@@ -113,25 +105,25 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				order.MerchantOrders.Add(merchantOrder);
 			}
 
-			// Kaydet
-			var added = await _orderRepository.AddAsync(order);
+			await _orderRepository.AddAsync(order);
 
-			// 🟩 Stok güncelleme
 			foreach (var ci in cartItems)
 			{
 				ci.Variant.Stock -= ci.Quantity;
 				await _productVariantRepository.UpdateAsync(ci.Variant);
 			}
 
-			// 🟩 Sepeti temizle
 			await _cartItemRepository.DeleteRangeAsync(cartItems);
 
-			// 🟩 DTO dön
-			var detailed = await _orderRepository.GetByIdWithItemsAsync(added.Id);
-			var mapped = _mapper.Map<ResultOrderWithItemsDto>(detailed);
-			return new SuccessDataResult<ResultOrderWithItemsDto>(mapped, "Sipariş başarıyla oluşturuldu.");
+			var resultDto = _mapper.Map<ResultOrderWithItemsDto>(order);
+			return new SuccessDataResult<ResultOrderWithItemsDto>(resultDto, "Sipariş başarıyla oluşturuldu.");
 		}
 
+		// Helper
+		private static string GenerateOrderNumber()
+		{
+			return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+		}
 
 		// 2. Sipariş Listesi
 		public async Task<IDataResult<List<ResultOrderDto>>> GetMyOrdersAsync(string userId)
@@ -152,40 +144,14 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			return new SuccessDataResult<ResultOrderWithItemsDto>(mapped);
 		}
 
-		// 4. Admin/Operasyon Güncelleme
-		public async Task<IResult> UpdateAsync(int orderId, UpdateOrderDto dto)
+		public async Task<IDataResult<List<ResultOrderWithItemsDto>>> GetMyMerchantOrdersAsync(string merchantAppUserId)
 		{
-			var order = await _orderRepository.GetByIdAsync(orderId);
-			if (order == null)
-				return new ErrorResult("Sipariş bulunamadı.");
-
-			order.Status = dto.Status;
-			order.PaymentStatus = dto.PaymentStatus;
-			order.ShippedAt = dto.ShippedAt;
-
-			if (!string.IsNullOrWhiteSpace(dto.Note))
-				order.Note = dto.Note;
-
-			await _orderRepository.UpdateAsync(order);
-			return new SuccessResult("Sipariş güncellendi.");
+			var orders = await _orderRepository.GetOrdersByMerchantAppUserIdAsync(merchantAppUserId);
+			var mapped = _mapper.Map<List<ResultOrderWithItemsDto>>(orders);
+			return new SuccessDataResult<List<ResultOrderWithItemsDto>>(mapped);
 		}
 
-		// 5. Kullanıcı Sipariş İptali
-		public async Task<IResult> CancelMyOrderAsync(int orderId, string userId)
-		{
-			var order = await _orderRepository.GetByIdAsync(orderId);
-			if (order == null || order.UserId != userId)
-				return new ErrorResult("Sipariş bulunamadı.");
-
-			if (order.Status >= OrderStatus.Shipped)
-				return new ErrorResult("Kargoya verilen sipariş iptal edilemez.");
-
-			order.Status = OrderStatus.Cancelled;
-			await _orderRepository.UpdateAsync(order);
-			return new SuccessResult("Sipariş iptal edildi.");
-		}
-
-		// 6. Siparişi Merchant Onaylar
+		// 4. Siparişi Merchant Onaylar
 		public async Task<IResult> ConfirmOrderAsync(int orderId, string merchantId)
 		{
 			var order = await _orderRepository.GetByIdWithItemsAsync(orderId);
@@ -195,52 +161,109 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			if (order.Status != OrderStatus.Pending)
 				return new ErrorResult("Sadece bekleyen sipariş onaylanabilir.");
 
-			foreach (var item in order.OrderItems)
+			// Siparişte bu merchant’a ait ürün var mı? (Yani işlem yapma yetkisi var mı?)
+			bool hasAuthorizedItem = order.OrderItems.Any(item =>
+				item.ProductVariant?.Product?.AppUserId == merchantId);
+
+			if (!hasAuthorizedItem)
+				return new ErrorResult("Bu siparişte size ait ürün bulunmamaktadır.");
+
+			// İlgili MerchantOrder'ı bul
+			var merchantOrder = order.MerchantOrders.FirstOrDefault(mo => mo.MerchantId == merchantId);
+			if (merchantOrder == null)
+				return new ErrorResult("Bu sipariş size ait değil.");
+
+			if (merchantOrder.IsConfirmedByMerchant)
+				return new ErrorResult("Bu sipariş zaten onaylanmış.");
+
+			// MerchantOrder'ı onayla
+			merchantOrder.IsConfirmedByMerchant = true;
+			merchantOrder.ConfirmedAt = DateTime.UtcNow;
+
+			await _orderRepository.UpdateAsync(order);
+
+			// Tüm merchantlar onayladıysa
+			bool allConfirmed = order.MerchantOrders.All(mo => mo.IsConfirmedByMerchant);
+
+			// Kaç farklı merchant var (AppUserId olarak)
+			int distinctMerchantCount = order.MerchantOrders
+				.Select(mo => mo.MerchantId)
+				.Distinct()
+				.Count();
+
+			bool isSingleMerchant = distinctMerchantCount == 1;
+
+			if (allConfirmed)
 			{
-				if (item.ProductVariant?.Product?.MerchantId.ToString() != merchantId)
-					return new ErrorResult("Bu siparişi onaylama yetkiniz yok.");
+				order.ConfirmedAt = DateTime.UtcNow;
+
+				if (isSingleMerchant)
+				{
+					order.Status = OrderStatus.Delivered;
+					order.DeliveredAt = DateTime.UtcNow;
+				}
+				else
+				{
+					order.Status = OrderStatus.Delivered;
+					order.DeliveredAt = DateTime.UtcNow;
+				}
+
+				await _orderRepository.UpdateAsync(order);
 			}
 
-			order.Status = OrderStatus.Confirmed;
-			await _orderRepository.UpdateAsync(order);
 			return new SuccessResult("Sipariş onaylandı.");
 		}
 
-		// 7. Kullanıcı: Siparişi bir ileri duruma taşır
-		public async Task<IResult> AdvanceOrderStatusAsync(int orderId, string userId)
+		public async Task<IResult> UpdateAsync(int orderId, UpdateOrderDto dto)
+		{
+			var order = await _orderRepository.GetByIdAsync(orderId);
+			if (order == null)
+				return new ErrorResult("Sipariş bulunamadı.");
+
+
+			order.Status = dto.Status;
+			order.PaymentStatus = dto.PaymentStatus;
+			order.Note = dto.Note;
+
+
+			await _orderRepository.UpdateAsync(order);
+			return new SuccessResult("Sipariş güncellendi.");
+		}
+
+		public async Task<IResult> CancelMyOrderAsync(int orderId, string userId)
 		{
 			var order = await _orderRepository.GetByIdAsync(orderId);
 			if (order == null || order.UserId != userId)
 				return new ErrorResult("Sipariş bulunamadı.");
 
-			if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Returned)
-				return new ErrorResult("İptal edilen sipariş ilerletilemez.");
+			if (order.Status != OrderStatus.Pending)
+				return new ErrorResult("Yalnızca bekleyen siparişler iptal edilebilir.");
 
-			OrderStatus next = order.Status switch
-			{
-				OrderStatus.Pending => OrderStatus.Confirmed,
-				OrderStatus.Confirmed => OrderStatus.Processing,
-				OrderStatus.Processing => OrderStatus.Shipped,
-				OrderStatus.Shipped => OrderStatus.Delivered,
-				_ => order.Status
-			};
-
-			if (next == order.Status)
-				return new ErrorResult("Sipariş daha fazla ilerletilemez.");
-
-			if (next == OrderStatus.Shipped)
-				order.ShippedAt = DateTime.UtcNow;
-
-			order.Status = next;
+			order.Status = OrderStatus.Cancelled;
+			order.CancelledAt = DateTime.UtcNow;
 			await _orderRepository.UpdateAsync(order);
 
-			return new SuccessResult($"Sipariş durumu '{next}' olarak güncellendi.");
+			return new SuccessResult("Sipariş iptal edildi.");
 		}
 
-		// Yardımcı metot
-		private static string GenerateOrderNumber()
+		public async Task<IResult> CancelOrderByMerchantAsync(int orderId, string merchantId)
 		{
-			return $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+			var order = await _orderRepository.GetByIdWithItemsAsync(orderId);
+			if (order == null)
+				return new ErrorResult("Sipariş bulunamadı.");
+
+			if (order.Status == OrderStatus.Cancelled)
+				return new ErrorResult("Bu sipariş zaten iptal edilmiş.");
+
+			var merchantOrder = order.MerchantOrders.FirstOrDefault(mo => mo.MerchantId == merchantId);
+			if (merchantOrder == null)
+				return new ErrorResult("Bu sipariş size ait değil.");
+
+			order.Status = OrderStatus.Cancelled;
+			order.CancelledAt = DateTime.UtcNow;
+			await _orderRepository.UpdateAsync(order);
+
+			return new SuccessResult("Sipariş iptal edildi.");
 		}
 	}
 }

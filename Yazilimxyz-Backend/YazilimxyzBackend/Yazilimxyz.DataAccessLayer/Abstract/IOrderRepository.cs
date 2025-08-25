@@ -11,5 +11,6 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
     public interface IOrderRepository : IGenericRepository<Order>
     {
 		Task<Order?> GetByIdWithItemsAsync(int orderId);
+		Task<List<Order>> GetOrdersByMerchantAppUserIdAsync(string merchantAppUserId);
 	}
 }

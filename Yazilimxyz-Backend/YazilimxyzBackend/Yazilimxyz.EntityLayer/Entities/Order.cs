@@ -21,8 +21,9 @@ namespace Yazilimxyz.EntityLayer.Entities
 
 		public OrderStatus Status { get; set; }
 		public PaymentStatus PaymentStatus { get; set; }
-		public DateTime? ShippedAt { get; set; }
-
+		public DateTime? DeliveredAt { get; set; }
+		public DateTime? ConfirmedAt { get; set; }
+		public DateTime? CancelledAt { get; set; }
 		public string Note { get; set; }
 
 		public int ShippingAddressId { get; set; }

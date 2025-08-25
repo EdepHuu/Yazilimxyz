@@ -6,14 +6,11 @@ using System.Threading.Tasks;
 
 namespace Yazilimxyz.EntityLayer.Enums
 {
-    public enum OrderStatus
-    {
-        Pending = 1,
-        Confirmed = 2,
-        Processing = 3,
-        Shipped = 4,
-        Delivered = 5,
-        Cancelled = 6,
-        Returned = 7
-    }
+	public enum OrderStatus 
+	{	
+		Pending = 1, 
+		Confirmed = 2, 
+		Delivered = 3, 
+		Cancelled = 4 
+	}
 }

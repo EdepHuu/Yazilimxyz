@@ -29,7 +29,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 		// JWT'den MerchantId alma
 		private string GetMerchantId()
 		{
-			return _httpContextAccessor.HttpContext?.User?.FindFirst("MerchantId")?.Value;
+			return _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 		}
 
 		// 1. Sepetten Sipariş Oluştur
@@ -77,6 +77,18 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(result);
 		}
 
+		[HttpGet("merchant-orders")]
+		[Authorize(Roles = "Merchant")]
+		public async Task<IActionResult> GetMyMerchantOrders()
+		{
+			var merchantAppUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var result = await _orderService.GetMyMerchantOrdersAsync(merchantAppUserId);
+			if (!result.Success)
+				return BadRequest(result.Message);
+
+			return Ok(result.Data);
+		}
+
 		// 4. Admin/Operasyon: Sipariş Güncelleme
 		[HttpPut("{orderId}")]
 		[Authorize(Roles = "Admin,Operator")]
@@ -121,20 +133,21 @@ namespace Yazilimxyz.WebAPI.Controllers
 			return Ok(result);
 		}
 
-		// 7. Kullanıcı: Sipariş Durumu İlerletme (Kargoya verildi, Teslim edildi vs.)
-		[HttpPut("advance/{orderId}")]
-		[Authorize(Roles = "Customer")]
-		public async Task<IActionResult> AdvanceOrderStatus(int orderId)
+		// 7. Satıcı: Sipariş İptal Etme
+		[HttpPut("merchant/cancel/{orderId}")]
+		[Authorize(Roles = "Merchant")]
+		public async Task<IActionResult> CancelOrderByMerchant(int orderId)
 		{
-			var userId = GetUserId();
-			if (string.IsNullOrEmpty(userId))
+			var merchantId = GetUserId();
+			if (string.IsNullOrEmpty(merchantId))
 				return Unauthorized("Kullanıcı doğrulanamadı.");
 
-			var result = await _orderService.AdvanceOrderStatusAsync(orderId, userId);
+			var result = await _orderService.CancelOrderByMerchantAsync(orderId, merchantId);
 			if (!result.Success)
 				return BadRequest(result.Message);
 
 			return Ok(result);
 		}
+
 	}
 }
