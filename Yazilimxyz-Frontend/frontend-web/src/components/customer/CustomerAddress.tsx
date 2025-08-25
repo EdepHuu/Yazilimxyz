@@ -17,56 +17,57 @@ export type CustomerAddress = {
 };
 
 export type CreateAddressDto = Omit<CustomerAddress, "id">;
-
 export type ApiEnvelope<T> = { data: T; success?: boolean; message?: string };
 
 /* ============ UI helpers ============ */
-function clsx(...p: Array<string | false | undefined>) {
-  return p.filter(Boolean).join(" ");
+function maskPhone(p: string): string {
+  const d = p.replace(/\D/g, "");
+  if (d.length < 7) return p;
+  return `${d.slice(0, 3)}${"*".repeat(Math.max(0, d.length - 5))}${d.slice(
+    -2
+  )}`;
 }
-export const sectionCard =
-  "rounded-2xl border border-gray-200 bg-white shadow-sm";
 const labelCls = "text-xs font-medium text-gray-600 mb-1";
 const inputCls =
-  "w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20";
+  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20";
 
-/* ============ Address Card ============ */
+/* ============ Address Card (tasarım güncel) ============ */
 export function AddressCard(props: {
   item: CustomerAddress;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const { item, onEdit, onDelete } = props;
+
   return (
-    <div className={clsx(sectionCard, "p-4")}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="text-sm font-semibold">{item.title}</div>
-          <div className="text-sm text-gray-800">
-            <div>{item.fullName}</div>
-            <div>
-              {item.address}
-              {item.addressLine2 ? `, ${item.addressLine2}` : ""}
-            </div>
-            <div>
-              {item.district} / {item.city}
-            </div>
-            <div>
-              {item.postalCode} · {item.country}
-            </div>
-            <div className="text-gray-500">{maskPhone(item.phone)}</div>
+    <div className="rounded-xl border border-gray-200 bg-gray-50 shadow-sm p-5">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1 text-sm text-gray-800">
+          <div className="font-semibold text-gray-900">{item.title}</div>
+          <div className="font-medium">{item.fullName}</div>
+          <div>
+            {item.address}
+            {item.addressLine2 ? `, ${item.addressLine2}` : ""}
           </div>
+          <div>
+            {item.district} / {item.city}
+          </div>
+          <div>
+            {item.postalCode} · {item.country}
+          </div>
+          <div className="text-gray-500">{maskPhone(item.phone)}</div>
         </div>
+
         <div className="flex gap-2">
           <button
             onClick={onEdit}
-            className="text-xs rounded-lg border border-gray-300 px-3 py-1 hover:bg-gray-50"
+            className="text-xs rounded-md border border-gray-300 px-3 py-1 bg-white hover:bg-gray-100"
           >
             Düzenle
           </button>
           <button
             onClick={onDelete}
-            className="text-xs rounded-lg border border-red-300 text-red-600 px-3 py-1 hover:bg-red-50"
+            className="text-xs rounded-md border border-red-300 text-red-600 px-3 py-1 bg-white hover:bg-red-50"
           >
             Sil
           </button>
@@ -74,14 +75,6 @@ export function AddressCard(props: {
       </div>
     </div>
   );
-}
-
-function maskPhone(p: string): string {
-  const d = p.replace(/\D/g, "");
-  if (d.length < 7) return p;
-  return `${d.slice(0, 3)}${"*".repeat(Math.max(0, d.length - 5))}${d.slice(
-    -2
-  )}`;
 }
 
 /* ============ Address Form ============ */
@@ -114,7 +107,7 @@ export function AddressForm(props: {
     country.trim();
 
   return (
-    <div className={clsx(sectionCard, "p-4")}>
+    <div className="rounded-xl border border-gray-200 bg-gray-50 shadow-sm p-5">
       <div className="grid grid-cols-2 gap-4">
         <FormItem label="Başlık">
           <input
@@ -123,7 +116,6 @@ export function AddressForm(props: {
             onChange={(e) => setTitle(e.target.value)}
           />
         </FormItem>
-
         <FormItem label="Ad Soyad">
           <input
             className={inputCls}
@@ -131,7 +123,6 @@ export function AddressForm(props: {
             onChange={(e) => setFullName(e.target.value)}
           />
         </FormItem>
-
         <FormItem label="Telefon">
           <input
             className={inputCls}
@@ -139,7 +130,6 @@ export function AddressForm(props: {
             onChange={(e) => setPhone(e.target.value)}
           />
         </FormItem>
-
         <FormItem label="Posta Kodu">
           <input
             className={inputCls}
@@ -147,7 +137,6 @@ export function AddressForm(props: {
             onChange={(e) => setPostalCode(e.target.value)}
           />
         </FormItem>
-
         <FormItem label="İl">
           <input
             className={inputCls}
@@ -155,7 +144,6 @@ export function AddressForm(props: {
             onChange={(e) => setCity(e.target.value)}
           />
         </FormItem>
-
         <FormItem label="İlçe">
           <input
             className={inputCls}
@@ -163,7 +151,6 @@ export function AddressForm(props: {
             onChange={(e) => setDistrict(e.target.value)}
           />
         </FormItem>
-
         <FormItem label="Ülke">
           <input
             className={inputCls}
@@ -171,22 +158,20 @@ export function AddressForm(props: {
             onChange={(e) => setCountry(e.target.value)}
           />
         </FormItem>
-
-        <FormItem label="Adres Satırı 2 (opsiyonel)">
+        <FormItem label="Cad. Sk. ap">
           <input
             className={inputCls}
             value={addressLine2 ?? ""}
             onChange={(e) => setAddressLine2(e.target.value)}
           />
         </FormItem>
-
         <div className="col-span-2">
-          <div className={labelCls}>Adres</div>
-          <textarea
-            className={`${inputCls} min-h-[80px]`}
+        <div className={labelCls}>Adres</div>
+        <textarea
+            className={`${inputCls} min-h-[80px] bg-white`}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-          />
+        />
         </div>
       </div>
 
@@ -206,13 +191,13 @@ export function AddressForm(props: {
               country: country.trim(),
             })
           }
-          className="rounded-xl px-5 py-2 text-sm font-medium bg-black text-white hover:bg-black/90 disabled:bg-gray-200 disabled:text-gray-500"
+          className="rounded-md px-5 py-2 text-sm font-medium bg-black text-white hover:bg-black/90 disabled:bg-gray-200 disabled:text-gray-500"
         >
           {submitting ? "Kaydediliyor…" : "Kaydet"}
         </button>
         <button
           onClick={onCancel}
-          className="rounded-xl border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+          className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
         >
           Vazgeç
         </button>
