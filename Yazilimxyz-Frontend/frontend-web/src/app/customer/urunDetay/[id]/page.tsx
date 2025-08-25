@@ -2,124 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { API_BASE, fetchListProductDetail } from "@/lib/customerApi";
-// const products = [
-//   {
-//     id: 1,
-//     title: "Loose Straight Jean",
-//     price: 1000,
-//     colors: ["#ADD8E6", "#00008B"],
-//     sizes: ["XS", "S", "M", "L", "XL"],
-//     description: {
-//       features: "Denim koleksiyonundan Jane Classic Denim Puslu Açık Mavi Jean Pantolon. Normal bel, düz kesim, düz paça...",
-//       fabric: "%100 Pamuk",
-//       model: "Boy: 176 cm / Bel: 59 cm / Göğüs: 84 cm / Kalça: 90 cm",
-//       code: "8670669685566-05",
-//     },
-//     image: "/product-img-1.jpg",
-//   },
-//   {
-//     id: 2,
-//     title: "Loose Straight Jean",
-//     price: 1050,
-//     colors: ["#00008B"],
-//     sizes: ["S", "M", "L", "XL"],
-//     description: {
-//       features: "Farklı özellikler, Koyu mavi denim.",
-//       fabric: "%98 Pamuk, %2 Elastan",
-//       model: "Boy: 176 cm / Bel: 59 cm / Göğüs: 84 cm / Kalça: 90 cm",
-//       code: "8670669685566-06",
-//     },
-//     image: "/product-img-2.jpg",
-//   },
-//   {
-//     id: 3,
-//     title: "Siyah Deri Kol Çantası",
-//     price: 980,
-//     colors: ["#000000"],
-//     sizes: ["Tek Beden"],
-//     description: {
-//       features: "Siyah, şık deri kol çantası.",
-//       fabric: "%100 Deri",
-//       model: "Model boy bilgisi yok.",
-//       code: "ÇNT-SYH-01",
-//     },
-//     image: "/product-img-3.jpg",
-//   },
-//   {
-//     id: 4,
-//     title: "Kırmızı Güneş Gözlüğü",
-//     price: 1100,
-//     colors: ["#FF0000"],
-//     sizes: ["Tek Beden"],
-//     description: {
-//       features: "Kırmızı çerçeveli, modern güneş gözlüğü.",
-//       fabric: "Plastik, UV korumalı cam.",
-//       model: "Model boy bilgisi yok.",
-//       code: "GZL-KRM-02",
-//     },
-//     image: "/product-img-4.jpg",
-//   },
-//   {
-//     id: 5,
-//     title: "Turuncu Sweatshirt",
-//     price: 950,
-//     colors: ["#FFA500"],
-//     sizes: ["S", "M", "L"],
-//     description: {
-//       features: "Rahat kesim, turuncu sweatshirt.",
-//       fabric: "%80 Pamuk, %20 Polyester",
-//       model: "Model boy bilgisi yok.",
-//       code: "SWT-TRN-03",
-//     },
-//     image: "/product-img-5.jpg",
-//   },
-//   {
-//     id: 6,
-//     title: "Lacivert Pileli Uzun Etek",
-//     price: 1020,
-//     colors: ["#000080"],
-//     sizes: ["36", "38", "40"],
-//     description: {
-//       features: "Pileli, lacivert uzun etek.",
-//       fabric: "%100 Polyester",
-//       model: "Model boy bilgisi yok.",
-//       code: "ETK-LVR-04",
-//     },
-//     image: "/product-img-6.jpg",
-//   },
-//   {
-//     id: 7,
-//     title: "Beyaz Spor Ayakkabı",
-//     price: 1080,
-//     colors: ["#FFFFFF"],
-//     sizes: ["37", "38", "39", "40"],
-//     description: {
-//       features: "Beyaz, rahat spor ayakkabı.",
-//       fabric: "Deri, Kauçuk taban.",
-//       model: "Model boy bilgisi yok.",
-//       code: "AYK-BYZ-05",
-//     },
-//     image: "/product-img-7.jpg",
-//   },
-//   {
-//     id: 8,
-//     title: "Oversize Bej Kaban",
-//     price: 990,
-//     colors: ["#F5F5DC"],
-//     sizes: ["S", "M", "L"],
-//     description: {
-//       features: "Oversize kesim, bej kaban.",
-//       fabric: "%70 Yün, %30 Polyester",
-//       model: "Model boy bilgisi yok.",
-//       code: "KBN-BEJ-06",
-//     },
-//     image: "/product-img-8.jpg",
-//   },
-// ];
 
+/* ================= Types ================= */
 interface ProductDetail {
   id: number;
   name: string;
@@ -129,159 +15,221 @@ interface ProductDetail {
   price: number;
   isActive: boolean;
   images: string[];
-  availableSizes: string[];
+  availableSizes: string[];     // tutuluyor ama kullanılmıyor (isteğin gereği)
   availableColors: string[];
   sizeColorMatrix: {
     size: string;
     sizeTotalStock: number;
-    colors: {
-      color: string;
-      stock: number;
-    }[];
+    colors: { color: string; stock: number }[];
   }[];
 }
 
+/* ============== Helpers: Color mapping ============== */
+// Türkçe/İngilizce renk isimlerini güvenli CSS rengine çevirir. Hex/rgba/hsl zaten geçer.
+const COLOR_MAP: Record<string, string> = {
+  // Turkish
+  "siyah": "#000000",
+  "beyaz": "#FFFFFF",
+  "lacivert": "#000080",
+  "mavi": "#1E90FF",
+  "açık mavi": "#ADD8E6",
+  "koyu mavi": "#00008B",
+  "kırmızı": "#FF0000",
+  "bordo": "#800020",
+  "yeşil": "#008000",
+  "zümrüt": "#50C878",
+  "mint": "#98FF98",
+  "gri": "#808080",
+  "açık gri": "#D1D5DB",
+  "füme": "#4B5563",
+  "antrasit": "#374151",
+  "bej": "#F5F5DC",
+  "kahverengi": "#8B4513",
+  "krem": "#FFFDD0",
+  "mor": "#800080",
+  "lila": "#C8A2C8",
+  "pembe": "#FFC0CB",
+  "turuncu": "#FFA500",
+  "sarı": "#FFD200",
+  "altın": "#D4AF37",
+  "gümüş": "#C0C0C0",
+  "çok renkli": "#e5e7eb",
+  "şeffaf": "transparent",
+  // English fallbacks
+  "black": "#000000",
+  "white": "#FFFFFF",
+  "navy": "#000080",
+  "blue": "#1E90FF",
+  "dark blue": "#00008B",
+  "red": "#FF0000",
+  "green": "#008000",
+  "gray": "#808080",
+  "light gray": "#D1D5DB",
+  "beige": "#F5F5DC",
+  "brown": "#8B4513",
+  "purple": "#800080",
+  "pink": "#FFC0CB",
+  "orange": "#FFA500",
+  "gold": "#D4AF37",
+  "silver": "#C0C0C0",
+};
+
+function isHex(v: string): boolean {
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim());
+}
+function isFunctionalColor(v: string): boolean {
+  return /^(rgba?|hsla?)\(/i.test(v.trim());
+}
+function toCssColor(raw: string): string {
+  if (!raw) return "#e5e7eb";
+  const k = raw.trim().toLowerCase();
+  if (isHex(k) || isFunctionalColor(k)) return k;
+  if (COLOR_MAP[k]) return COLOR_MAP[k];
+  return /^[a-z\s]+$/.test(k) ? k : "#e5e7eb";
+}
+function needsDarkBorder(cssColor: string): boolean {
+  const hex = isHex(cssColor) ? cssColor : "#ffffff";
+  const c = hex.replace("#", "");
+  if (!isHex(`#${c}`)) return false;
+  const r = parseInt(c.length === 3 ? c[0] + c[0] : c.slice(0, 2), 16);
+  const g = parseInt(c.length === 3 ? c[1] + c[1] : c.slice(2, 4), 16);
+  const b = parseInt(c.length === 3 ? c[2] + c[2] : c.slice(4, 6), 16);
+  const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return y > 200; // çok açık renklerde koyu kenarlık
+}
+
+/* ================= Page ================= */
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-
   const productId = Number(params.id);
 
-  const [selectedColor, setSelectedColor] = React.useState("");
-  const [selectedSize, setSelectedSize] = React.useState("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [qty, setQty] = useState<number>(1);
   const [productDetail, setProductDetail] = useState<ProductDetail[]>([]);
 
-  const { addToCart } = useCart();
+  const { addToCart } = useCart(); // entegrasyon hazır olunca kullan
 
   useEffect(() => {
-    async function getProductDetail() {
+    (async () => {
       try {
-        const fetchedProductDetail = await fetchListProductDetail(productId);
-        const fetchData = fetchedProductDetail;
-        console.log("detail", fetchedProductDetail);
-        setProductDetail([fetchData]);
+        const fetched = await fetchListProductDetail(productId);
+        setProductDetail([fetched]);
       } catch (err) {
-        console.log(err);
+        console.error(err);
       }
-    }
-    getProductDetail();
+    })();
   }, [productId]);
 
   if (!productDetail || productDetail.length === 0) {
     return <div>Yükleniyor...</div>;
   }
 
-  const product = productDetail?.find((p) => p.id === productId);
+  const product = productDetail.find((p) => p.id === productId);
+  if (!product) return <div>Ürün bulunamadı.</div>;
 
-  if (!product) {
-    return <div>Ürün bulunamadı.</div>;
-  }
+  // Renkleri stoktan düşürmek istersen buraya bağlayabilirsin; şimdilik hepsi aktif.
+  const outOfStockColors: Set<string> = new Set<string>();
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      alert("Lütfen beden seçiniz.");
-      return;
-    }
-
     // addToCart({
     //   id: product.id,
-    //   title: product.title,
+    //   title: product.name,
     //   price: product.price,
-    //   image: product.image,
+    //   image: product.images?.[0] ? `${API_BASE}${product.images[0]}` : "",
     //   color: selectedColor,
-    //   size: selectedSize,
+    //   size: "", // beden kullanılmıyor
+    //   quantity: qty,
     // });
-
     router.push("/customer/sepetim");
   };
-  
+
   return (
     <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8">
+      {/* Images */}
       <div className="flex-1">
-        <div className="grid  gap-4">
-           {product.images.map((img, index) => (
+        <div className="grid gap-4">
+          {product.images.map((img, index) => (
             <img
               key={index}
               src={img ? `${API_BASE}${img}` : "/placeholder-image.jpg"}
               alt={product.description}
               width={500}
               height={600}
-             className={`rounded object-cover ${index === 0 ? "w-full h-[500px]" : "w-50 h-52"}`}
+              className={`rounded object-cover ${index === 0 ? "w-full h-[500px]" : "w-50 h-52"}`}
             />
-          ))} 
+          ))}
         </div>
       </div>
+
+      {/* Info */}
       <div className="flex-1 flex flex-col gap-4">
         <h1 className="text-3xl font-bold">{product.name}</h1>
         <p className="text-xl font-semibold text-green-700">
-          {product.price.toLocaleString("tr-TR", {
-            style: "currency",
-            currency: "TRY",
-          })}
+          {product.price.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
         </p>
 
+        {/* Renkler */}
         <div>
           <h2 className="font-semibold mb-1">Renk Seçenekleri</h2>
           <div className="flex gap-3">
-            {product.availableColors.map((color) => (
-              <button
-                key={color}
-                onClick={() => setSelectedColor(color)}
-                className={`w-8 h-8 rounded-full border-2 cursor-pointer ${
-                  selectedColor === color ? "border-black" : "border-gray-300"
-                }`}
-                style={{ backgroundColor: color }}
-                aria-label={`Renk seçimi ${color}`}
-              />
-            ))}
+            {product.availableColors.map((rawColor) => {
+              const cssColor = toCssColor(rawColor);
+              const isSelected = selectedColor === rawColor;
+              const disabled = outOfStockColors.has(rawColor);
+              const darkBorder = needsDarkBorder(cssColor);
+
+              return (
+                <button
+                  key={rawColor}
+                  onClick={() => !disabled && setSelectedColor(rawColor)}
+                  className={[
+                    "w-8 h-8 rounded-full border-2 cursor-pointer transition",
+                    isSelected ? "ring-2 ring-offset-2 ring-black" : "",
+                    disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105",
+                  ].join(" ")}
+                  style={{
+                    backgroundColor: cssColor,
+                    borderColor: isSelected ? "#111827" : darkBorder ? "#374151" : "#D1D5DB",
+                  }}
+                  aria-label={`Renk ${rawColor}`}
+                  title={rawColor}
+                />
+              );
+            })}
           </div>
         </div>
 
+        {/* Adet */}
         <div>
-          <h2 className="font-semibold mb-1 mt-4">Beden Seçimi</h2>
+          <h2 className="font-semibold mb-1 mt-4">Adet</h2>
           <select
-            value={selectedSize}
-            onChange={(e) => setSelectedSize(e.target.value)}
+            value={qty}
+            onChange={(e) => setQty(Number(e.target.value))}
             className="border border-gray-300 rounded px-4 py-2 w-full max-w-xs"
           >
-            <option value="">Beden Seç</option>
-            {product.availableSizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
               </option>
             ))}
           </select>
         </div>
 
+        {/* Sepete ekle */}
         <button
           onClick={handleAddToCart}
-          disabled={!selectedSize}
-          className={`mt-6 bg-black text-white py-3 rounded font-semibold max-w-xs ${
-            selectedSize
-              ? "hover:bg-gray-800 cursor-pointer"
-              : "opacity-50 cursor-not-allowed"
-          }`}
+          className="mt-6 bg-black text-white py-3 rounded font-semibold max-w-xs hover:bg-gray-800 cursor-pointer"
         >
           Sepete Ekle
         </button>
 
+        {/* Açıklama */}
         <div className="mt-8 text-sm text-gray-700 space-y-4 max-w-lg">
           <div>
             <h3 className="font-semibold">Ürün Özellikleri</h3>
             <p>{product.description}</p>
           </div>
-          {/* <div>
-            <h3 className="font-semibold">Kumaş Bilgileri</h3>
-            <p>{product.fabricInfo}</p>
-          </div>
-          <div>
-            <h3 className="font-semibold">Model Bilgileri</h3>
-            <p>{product.modelMeasurements}</p>
-          </div>
-          <div>
-            <h3 className="font-semibold">Ürün Kodu</h3>
-            <p>{product.productCode}</p>
-          </div> */}
         </div>
       </div>
     </div>
