@@ -77,7 +77,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
 				var merchantOrder = new MerchantOrder
 				{
-					MerchantId = merchantAppUserId, // burası artık string olacak
+					MerchantAppUserId = merchantAppUserId,
 					IsConfirmedByMerchant = false,
 					ConfirmedAt = null,
 					MerchantOrderItems = new List<MerchantOrderItem>(),
@@ -87,6 +87,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				foreach (var ci in group)
 				{
 					var unitPrice = ci.Variant.Product.BasePrice;
+
 					var orderItem = new OrderItem
 					{
 						ProductId = ci.Variant.ProductId,
@@ -98,8 +99,26 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 						Size = ci.Variant.Size,
 						Color = ci.Variant.Color
 					};
+
+					// OrderItem ilişkileri
 					order.OrderItems.Add(orderItem);
 					merchantOrder.Items.Add(orderItem);
+
+					// MerchantOrderItem snapshot
+					var merchantOrderItem = new MerchantOrderItem
+					{
+						ProductId = ci.Variant.ProductId,
+						ProductVariantId = ci.ProductVariantId,
+						Quantity = ci.Quantity,
+						UnitPrice = unitPrice,
+						TotalPrice = unitPrice * ci.Quantity,
+						ProductName = ci.Variant.Product.Name,
+						Size = ci.Variant.Size,
+						Color = ci.Variant.Color
+						// MerchantOrderId EF tarafından setlenecek çünkü ilişkisel olarak MerchantOrder içinde ekleniyor
+					};
+
+					merchantOrder.MerchantOrderItems.Add(merchantOrderItem);
 				}
 
 				order.MerchantOrders.Add(merchantOrder);
@@ -169,7 +188,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 				return new ErrorResult("Bu siparişte size ait ürün bulunmamaktadır.");
 
 			// İlgili MerchantOrder'ı bul
-			var merchantOrder = order.MerchantOrders.FirstOrDefault(mo => mo.MerchantId == merchantId);
+			var merchantOrder = order.MerchantOrders.FirstOrDefault(mo => mo.MerchantAppUserId == merchantId);
 			if (merchantOrder == null)
 				return new ErrorResult("Bu sipariş size ait değil.");
 
@@ -187,7 +206,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 
 			// Kaç farklı merchant var (AppUserId olarak)
 			int distinctMerchantCount = order.MerchantOrders
-				.Select(mo => mo.MerchantId)
+				.Select(mo => mo.MerchantAppUserId)
 				.Distinct()
 				.Count();
 
@@ -255,7 +274,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 			if (order.Status == OrderStatus.Cancelled)
 				return new ErrorResult("Bu sipariş zaten iptal edilmiş.");
 
-			var merchantOrder = order.MerchantOrders.FirstOrDefault(mo => mo.MerchantId == merchantId);
+			var merchantOrder = order.MerchantOrders.FirstOrDefault(mo => mo.MerchantAppUserId == merchantId);
 			if (merchantOrder == null)
 				return new ErrorResult("Bu sipariş size ait değil.");
 

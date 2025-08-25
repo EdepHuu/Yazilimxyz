@@ -35,7 +35,7 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 					.ThenInclude(oi => oi.ProductVariant)
 						.ThenInclude(pv => pv.Product)
 				.Include(o => o.MerchantOrders)
-				.Where(o => o.MerchantOrders.Any(mo => mo.MerchantId == merchantAppUserId))
+				.Where(o => o.MerchantOrders.Any(mo => mo.MerchantAppUserId == merchantAppUserId))
 				.ToListAsync();
 		}
 	}
