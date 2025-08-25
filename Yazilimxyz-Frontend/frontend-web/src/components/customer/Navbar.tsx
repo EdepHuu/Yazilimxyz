@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchListCategory } from "@/lib/customerApi";
 import { SearchIcon, ShopIcon, UserIcon } from "@/components/customer/icons/icon";
 
 /* ================= Types ================= */
-type CategoryName = { id: number; name: string; description?: string; imageUrl?: string };
+// parentCategoryId ve sortOrder eklendi (opsiyonel)  // NEW
+type CategoryName = {
+  id: number;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  parentCategoryId?: number | null;   // NEW
+  sortOrder?: number;                  // NEW
+};
 type AuthState = { isLoggedIn: boolean; email?: string };
 
 /* ================= Auth Keys ================= */
@@ -113,7 +121,10 @@ export default function Navbar() {
       }
     };
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") setAccountOpen(false);
+      if (ev.key === "Escape") {
+        setAccountOpen(false);
+        setAllOpen(false); // NEW
+      }
     };
     document.addEventListener("mousedown", onClickOutside);
     document.addEventListener("keydown", onKey);
@@ -150,6 +161,42 @@ export default function Navbar() {
   const navBase = "fixed top-0 left-0 w-full z-50 bg-white border-b border-neutral-200/50";
   const navPremium =
     "bg-white/90 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.04)] border-neutral-200/40";
+
+  /* ==================== KATEGORİ MODELİ ==================== */
+  // Ana/alt kategorileri ayır  // NEW
+  const { roots, childMap } = useMemo(() => {
+    const roots = (categories ?? [])
+      .filter(c => !c.parentCategoryId)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
+    const map = new Map<number, CategoryName[]>();
+    for (const c of categories) {
+      if (c.parentCategoryId) {
+        const arr = map.get(c.parentCategoryId) ?? [];
+        arr.push(c);
+        map.set(c.parentCategoryId, arr);
+      }
+    }
+    for (const [k, arr] of map) {
+      arr.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
+      map.set(k, arr);
+    }
+    return { roots, childMap: map };
+  }, [categories]);
+
+  const toProducts = (categoryId: number) => {           // NEW
+    router.push(`/customer/urunler?categoryId=${categoryId}`);
+    setAllOpen(false);
+  };
+
+  /* ==================== Tüm Kategoriler Overlay ==================== */
+  const [allOpen, setAllOpen] = useState(false);               // NEW
+  const [activeRootId, setActiveRootId] = useState<number | null>(null); // NEW
+  const openAll = () => {                                      // NEW
+    const first = roots[0]?.id ?? null;
+    setActiveRootId(first);
+    setAllOpen(true);
+  };
+  const closeAll = () => setAllOpen(false);                    // NEW
 
   return (
     <>
@@ -268,18 +315,28 @@ export default function Navbar() {
           <div className="h-9 flex items-center">
             <div className="w-full overflow-x-auto whitespace-nowrap no-scrollbar">
               <div className="inline-flex gap-5 px-1">
-                {categories.map((c) => {
-                  const slug = (c.name || "").toLowerCase().replace(/\s+/g, "-");
-                  return (
-                    <Link
-                      key={c.id}
-                      href={`/customer/${slug}`}
-                      className="text-sm text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
-                    >
-                      {c.name}
-                    </Link>
-                  );
-                })}
+                {/* Tüm Kategoriler düğmesi */}
+                <button
+                  type="button"
+                  onClick={openAll}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-900 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition shadow-sm"
+                  aria-expanded={allOpen}
+                >
+                  <span className="i-accordion" aria-hidden>☰</span>
+                  Tüm Kategoriler
+                </button>
+
+                {/* Sadece ANA kategorileri göster, tıklayınca ürünlere yönlendir */} {/* NEW */}
+                {roots.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => toProducts(c.id)}
+                    className="text-sm text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
+                  >
+                    {c.name}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -289,7 +346,111 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Tek spacer: mobil 30px / desktop 40px */}
+      {/* ============ Tüm Kategoriler Overlay (Trendyol tarzı) ============ */} {/* NEW */}
+      {allOpen && (
+  <div className="fixed top-14 left-0 right-0 z-[80]">
+    <div className="container mx-auto px-3 md:px-6">
+      <div
+        className="
+          mt-1 bg-white rounded-xl border border-gray-200
+          shadow-[0_20px_40px_-20px_rgba(0,0,0,0.25)]
+          overflow-hidden
+        "
+      >
+        <div className="grid grid-cols-[240px_1fr] min-h-[340px]">
+          {/* Sol: ana kategoriler */}
+          <aside className="bg-gray-50/70 border-r border-gray-200 p-3">
+            <div className="flex flex-col gap-1">
+              {roots.map((root) => {
+                const isActive = activeRootId === root.id;
+                return (
+                  <button
+                    key={root.id}
+                    type="button"
+                    onMouseEnter={() => setActiveRootId(root.id)}
+                    onClick={() => setActiveRootId(root.id)}
+                    className={`
+                      group w-full text-left px-3 py-2 rounded-lg text-[13px]
+                      transition
+                      ${isActive
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-700 hover:bg-white hover:shadow-sm"}
+                    `}
+                  >
+                    <span className="inline-flex items-center justify-between w-full">
+                      <span className="truncate">{root.name}</span>
+                      <span className="ml-3 text-gray-400 group-hover:text-gray-500">›</span>
+                    </span>
+                  </button>
+                );
+              })}
+
+              {/* --- Aşağıya eklenen kalem --- */}
+              <div className="mt-2 pt-2 border-t border-gray-200" />
+              <button
+                type="button"
+                onClick={() => {
+                  router.push("/customer/urunler"); // kategori filtresi olmadan
+                  setAllOpen(false);
+                }}
+                className="
+                  w-full text-left px-3 py-2 rounded-lg text-[13px]
+                  bg-white text-gray-900 shadow-sm hover:shadow transition
+                "
+              >
+                Tüm Ürünleri Gör
+              </button>
+            </div>
+          </aside>
+
+          {/* Sağ: alt kategoriler */}
+          <section className="p-4 md:p-6">
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-3 md:mb-4">
+              {roots.find(r => r.id === activeRootId)?.name ?? "Kategoriler"}
+            </h3>
+
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4" />
+
+            {/* Çok kolonlu alt kategori ızgarası */}
+            <div
+              className="
+                grid gap-x-8 gap-y-2
+                sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5
+              "
+            >
+              {(activeRootId ? (childMap.get(activeRootId) ?? []) : []).map((sc) => (
+                <button
+                  key={sc.id}
+                  type="button"
+                  onClick={() => {
+                    router.push(`/customer/urunler?categoryId=${sc.id}`);
+                    setAllOpen(false);
+                  }}
+                  className="
+                    text-left text-[13px] md:text-sm text-gray-700 hover:text-black
+                    px-2 py-1 rounded-md transition hover:bg-gray-50
+                  "
+                >
+                  {sc.name}
+                </button>
+              ))}
+
+              {activeRootId && (childMap.get(activeRootId)?.length ?? 0) === 0 && (
+                <div className="text-sm text-gray-500 italic px-2 py-1">
+                  Bu kategori altında alt kategori bulunmuyor.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+      {/* spacer */}
       <div className="h-[30px] md:h-[40px]" aria-hidden="true" />
     </>
   );

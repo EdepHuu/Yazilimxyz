@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";            // <-- NEW
 import Accordion from "@/components/customer/Accordion";
 import ProductCard from "@/components/customer/ProductCard";
 import { fetchListFilter } from "@/lib/customerApi";
@@ -10,7 +11,7 @@ interface Product {
   id: number;
   name: string;
   description: string;
-  basePrice: number;     // fiyat NaN olmasın diye güvenli set edeceğiz
+  basePrice: number;
   gender: number;        // 1: Erkek, 2: Kadın, 3: Unisex
   isActive: boolean;
   mainPhoto: string | null;
@@ -19,7 +20,7 @@ interface Brand { id: number; name: string; }
 interface FilteredProps {
   brands: Brand[];
   colors: string[];
-  genders: string[];     // sadece UI
+  genders: string[];
   sizes: string[];
   priceRange: { min: number; max: number };
 }
@@ -32,7 +33,6 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null;
 const isString = (v: unknown): v is string => typeof v === "string";
 
-// NaN fiyatı önlemek için güvenli sayı parse
 const toNumber = (v: unknown): number =>
   typeof v === "number" && Number.isFinite(v) ? v :
   typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : NaN;
@@ -44,7 +44,6 @@ const getSafePrice = (obj: unknown): number => {
   return typeof n === "number" ? n : 0;
 };
 
-// renk görsellemesi
 const COLOR_HEX: Record<string, string> = {
   kırmızı: "red", kirmizi: "red", mavi: "blue", lacivert: "navy",
   siyah: "black", beyaz: "white", yeşil: "green", yesil: "green",
@@ -53,7 +52,6 @@ const COLOR_HEX: Record<string, string> = {
 };
 const toCssColor = (c: string) => COLOR_HEX[c.trim().toLowerCase()] ?? c;
 
-// API çeşitli zarf şekilleri döndürebilir: dizi, {data:[]}, {items:[]}, vs.
 function normalizeProducts(json: unknown): Product[] {
   if (Array.isArray(json)) return (json as unknown[]).map((x) => sanitizeProduct(x));
   if (isRecord(json)) {
@@ -68,8 +66,6 @@ function normalizeProducts(json: unknown): Product[] {
   }
   return [];
 }
-
-// Ürünü güvenli hale getir (fiyat ve görsel null guard)
 function sanitizeProduct(raw: unknown): Product {
   const r = isRecord(raw) ? raw : {};
   return {
@@ -83,14 +79,11 @@ function sanitizeProduct(raw: unknown): Product {
   };
 }
 
-// data: T[] olan yapıları tanımak için guard
 type WithArrayData<T> = { data: T[] };
 const hasArrayData = <T,>(v: unknown): v is WithArrayData<T> =>
   isRecord(v) && Array.isArray((v as { data?: unknown }).data);
 
-/** Bir ürünün ana görselini getir (main endpoint, yoksa tüm görsellerden ilkini al) */
 async function fetchMainImageUrl(productId: number): Promise<string | null> {
-  // 1) main image endpoint
   try {
     const r1 = await fetch(`${API_BASE}/api/ProductImage/product/${productId}/main`, { cache: "no-store" });
     if (r1.ok) {
@@ -104,9 +97,7 @@ async function fetchMainImageUrl(productId: number): Promise<string | null> {
         }
       }
     }
-  } catch { /* ignore */ }
-
-  // 2) tüm görseller
+  } catch {}
   try {
     const r2 = await fetch(`${API_BASE}/api/Product/${productId}/images`, { cache: "no-store" });
     if (r2.ok) {
@@ -118,11 +109,9 @@ async function fetchMainImageUrl(productId: number): Promise<string | null> {
       const main = arr.find((x) => x.isMain) ?? arr[0];
       return main?.imageUrl ?? null;
     }
-  } catch { /* ignore */ }
+  } catch {}
   return null;
 }
-
-/** Listedeki ürünleri ana görsel ile zenginleştir */
 async function enrichWithMainImages(list: Product[]): Promise<Product[]> {
   const enriched = await Promise.all(
     list.map(async (p) => {
@@ -135,6 +124,9 @@ async function enrichWithMainImages(list: Product[]): Promise<Product[]> {
 
 /* ================== Sayfa ================== */
 export default function UrunlerPage() {
+  const searchParams = useSearchParams();                    // <-- NEW
+  const initialCategoryId = Number(searchParams.get("categoryId")) || null; // <-- NEW
+
   // UI seçimleri
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -150,23 +142,40 @@ export default function UrunlerPage() {
   const [searchColor, setSearchColor] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // İlk yüklemede filtreler + tüm ürünler
+  // İlk yüklemede filtreler + (varsa) kategoriye göre ürünler
   useEffect(() => {
     (async () => {
       try {
         const f = await fetchListFilter();
         setFiltered(f);
 
-        const r = await fetch(`${API_BASE}/api/Product/get-all`, { cache: "no-store" });
-        const j: unknown = await r.json();
-        const list = normalizeProducts(j);
-        const withImages = await enrichWithMainImages(list);
-        setProducts(withImages);
+        // NEW: URL'de categoryId varsa Filter endpointine gidiyoruz
+        if (initialCategoryId && Number.isFinite(initialCategoryId)) {
+          const qs = new URLSearchParams();
+          qs.set("CategoryId", String(initialCategoryId));
+          qs.set("IncludeSubCategories", "true");
+          qs.set("Page", "1");
+          qs.set("PageSize", "24");
+
+          const r = await fetch(`${API_BASE}/api/Product/Filter?${qs.toString()}`, { method: "POST" });
+          const j: unknown = await r.json();
+          const list = normalizeProducts(j);
+          const withImages = await enrichWithMainImages(list);
+          setProducts(withImages);
+        } else {
+          // kategori yoksa tüm ürünler
+          const r = await fetch(`${API_BASE}/api/Product/get-all`, { cache: "no-store" });
+          const j: unknown = await r.json();
+          const list = normalizeProducts(j);
+          const withImages = await enrichWithMainImages(list);
+          setProducts(withImages);
+        }
       } catch {
         setProducts([]);
       }
     })();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCategoryId]); // NEW: URL değişirse tekrar uygula
 
   // Arama ile filtrelenmiş seçenekler
   const brandList = useMemo(() => {
@@ -194,20 +203,23 @@ export default function UrunlerPage() {
     try {
       setIsLoading(true);
 
-      // Seçili cinsiyetleri sayısal koda çevir
-      const GENDER_MAP: Record<string, number> = { "Erkek": 1, "Kadın": 2, "Unisex": 3 };
-      const selectedGenderCodes = selectedGenders
-        .map((g) => GENDER_MAP[g])
-        .filter((n): n is number => typeof n === "number");
-
       const qs = new URLSearchParams();
-      selectedBrandIds.forEach((id) => qs.append("MerchantIds", String(id))); // mevcut backend sözleşmesine uyduk
+      selectedBrandIds.forEach((id) => qs.append("MerchantIds", String(id)));
       selectedSizes.forEach((s) => qs.append("Sizes", s));
       selectedColors.forEach((c) => qs.append("Colors", c));
-      // ✅ Cinsiyetleri backend'e gönder (adı farklıysa burada değiştirilebilir)
-      selectedGenderCodes.forEach((code) => qs.append("Genders", String(code)));
+
+      // NEW: Genders'ı string gönderiyoruz (backend kadin/erkek/unisex anlıyor)
+      selectedGenders.forEach((g) => qs.append("Genders", g.toLowerCase()));
+
       if (minPrice) qs.set("MinPrice", minPrice);
       if (maxPrice) qs.set("MaxPrice", maxPrice);
+
+      // NEW: URL'den gelen kategori varsa onu da koru
+      if (initialCategoryId && Number.isFinite(initialCategoryId)) {
+        qs.set("CategoryId", String(initialCategoryId));
+        qs.set("IncludeSubCategories", "true");
+      }
+
       qs.set("Page", "1");
       qs.set("PageSize", "24");
 
@@ -218,12 +230,7 @@ export default function UrunlerPage() {
       const json: unknown = await resp.json();
       let list = normalizeProducts(json);
 
-      // ✅ Backend süzmezse diye frontend fallback
-      if (selectedGenderCodes.length > 0) {
-        list = list.filter((p) => selectedGenderCodes.includes(p.gender));
-      }
-
-      // ✅ NaN fiyatları engelle
+      // NaN fiyatları engelle
       list = list.map((p) => ({ ...p, basePrice: getSafePrice(p) }));
 
       const withImages = await enrichWithMainImages(list);
@@ -268,7 +275,6 @@ export default function UrunlerPage() {
           <Accordion title="Beden">
             <div className="flex flex-col gap-2">
               {(filtered?.sizes ?? [])
-                // ✅ özel sıralama
                 .sort((a, b) => {
                   const order = ["S", "M", "L", "XL"];
                   return order.indexOf(a.toUpperCase()) - order.indexOf(b.toUpperCase());
@@ -407,7 +413,7 @@ export default function UrunlerPage() {
             ))}
             {Array.isArray(products) && products.length === 0 && !isLoading && (
               <div className="col-span-full text-sm text-gray-500 p-4">
-
+                Seçtiğiniz filtrelere uygun ürün bulunamadı.
               </div>
             )}
           </div>
