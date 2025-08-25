@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import axios, { AxiosError, AxiosInstance } from "axios";
 
-/* --- Tipler --- */
+/* ---- Tipler ---- */
 type Address = {
   id: number;
   title: string;
@@ -20,7 +20,7 @@ type Address = {
 };
 type ApiEnvelope<T> = { data: T; success?: boolean; message?: string };
 
-/* --- API yardımcıları (adresler için) --- */
+/* ---- API yardımcıları (adresler için) ---- */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://localhost:7206";
 const ENDPOINT = { listMy: "/api/CustomerAddresses/my" };
 
@@ -40,24 +40,27 @@ function createClient(): AxiosInstance {
   });
 }
 
-/* --- Sayfa --- */
+/* ---- Sayfa ---- */
 export default function OdemePage() {
   const [client] = useState(createClient);
+
+  // Adresler
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [addrError, setAddrError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  // Dummy kart state (prefilled)
-  const [cardName, setCardName] = useState("Gani");
-  const [cardNumber, setCardNumber] = useState("0101 0101 0101 010"); // dummy
-  const [expiry, setExpiry] = useState("01/01");
+  // Kart bilgileri (dummy, düzenlenebilir)
+  const [cardName, setCardName] = useState("Mehmet Zahit Uyanık");
+  const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242"); // dummy
+  const [expiry, setExpiry] = useState("12/29");
   const [cvc, setCvc] = useState("123");
+  const [use3DS, setUse3DS] = useState(false); // ✅ opsiyonel 3D Secure
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      setError(null);
+      setAddrError(null);
       try {
         const res = await client.get<ApiEnvelope<Address[]>>(ENDPOINT.listMy);
         const list = res.data.data ?? [];
@@ -66,14 +69,17 @@ export default function OdemePage() {
         setSelectedId(def ? def.id : null);
       } catch (e) {
         const ae = e as AxiosError<{ message?: string }>;
-        setError(ae.response?.data?.message ?? "Adresler alınamadı.");
+        setAddrError(ae.response?.data?.message ?? "Adresler alınamadı.");
       } finally {
         setLoading(false);
       }
     })();
   }, [client]);
 
-  const selectedAddress = useMemo(() => addresses.find((a) => a.id === selectedId) ?? null, [addresses, selectedId]);
+  const selectedAddress = useMemo(
+    () => addresses.find((a) => a.id === selectedId) ?? null,
+    [addresses, selectedId]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +87,6 @@ export default function OdemePage() {
       alert("Lütfen bir teslimat adresi seçin.");
       return;
     }
-    // DUMMY ödeme sonucu
     const payload = {
       card: {
         name: cardName.trim(),
@@ -90,12 +95,13 @@ export default function OdemePage() {
         cvc: "***",
       },
       shippingAddressId: selectedAddress.id,
+      use3DS, // ✅ 3D Secure tercihi
     };
     console.log("Ödeme (dummy) gönderildi:", payload);
     alert("Ödeme başarılı ✅");
   };
 
-  const boxCls = "rounded-xl border border-gray-200 bg-white shadow-sm";
+  const box = "rounded-xl border border-gray-200 bg-white shadow-sm";
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -120,11 +126,11 @@ export default function OdemePage() {
         </ol>
       </nav>
 
-      {/* 2 kolon: Sol kart kutusu, sağ adres seçimi */}
+      {/* 2 kolon layout */}
       <form onSubmit={handleSubmit} className="grid grid-cols-12 gap-8">
-        {/* SOL: Kart bilgileri */}
+        {/* SOL: Kart bilgileri kutusu */}
         <div className="col-span-12 lg:col-span-7">
-          <div className={`${boxCls} p-6`}>
+          <div className={`${box} p-6`}>
             <h2 className="text-lg font-semibold mb-4">Kart Bilgileri</h2>
 
             <div className="space-y-5">
@@ -168,27 +174,49 @@ export default function OdemePage() {
                   />
                 </div>
               </div>
+
+              {/* ✅ Opsiyonel 3D Secure */}
+              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={use3DS}
+                    onChange={(e) => setUse3DS(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  3D Secure ile ödemek istiyorum.
+                </label>
+
+              </div>
             </div>
           </div>
         </div>
 
-        {/* SAĞ: Adres seçim + satın al */}
+        {/* SAĞ: Adres seçimi ve satın al */}
         <div className="col-span-12 lg:col-span-5">
-          <div className={`${boxCls} p-6`}>
+          <div className={`${box} p-6`}>
             <h2 className="text-lg font-semibold mb-4">Teslimat Adresi</h2>
 
             {loading ? (
               <div className="text-sm text-gray-500">Adresler yükleniyor…</div>
-            ) : error ? (
-              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            ) : addrError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {addrError}
+              </div>
             ) : addresses.length === 0 ? (
               <div className="text-sm text-gray-600">
-                Kayıtlı adresin yok. <Link className="underline" href="/customer/adreslerim">Adres ekle</Link>
+                Kayıtlı adresin yok.{" "}
+                <Link className="underline" href="/customer/adreslerim">
+                  Adres ekle
+                </Link>
               </div>
             ) : (
               <div className="space-y-4">
                 {addresses.map((a) => (
-                  <label key={a.id} className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 cursor-pointer">
+                  <label
+                    key={a.id}
+                    className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 cursor-pointer"
+                  >
                     <input
                       type="radio"
                       name="address"
@@ -215,10 +243,9 @@ export default function OdemePage() {
               </div>
             )}
 
-            {/* Satın al butonu */}
             <button
               type="submit"
-              className="mt-6 w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+              className="mt-6 w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-60"
               disabled={!selectedAddress}
             >
               Satın Al
