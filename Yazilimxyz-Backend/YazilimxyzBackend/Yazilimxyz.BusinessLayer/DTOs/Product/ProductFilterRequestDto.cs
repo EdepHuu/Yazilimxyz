@@ -11,7 +11,16 @@
 		public bool SortDesc { get; set; } = false;
 		public int Page { get; set; } = 1;
 		public int PageSize { get; set; } = 24;
-	}
+
+        public string[]? Genders { get; set; }
+
+        // Tek kategoriyi veya birden fazla kategoriyi kabul etsin:
+        public int? CategoryId { get; set; }
+        public int[]? CategoryIds { get; set; }
+
+        // Varsayılan: true → verilen kategori(ler)in tüm altlarını da kapsa
+        public bool IncludeSubCategories { get; set; } = true;
+    }
 
 	public class ProductListItemDto
 	{

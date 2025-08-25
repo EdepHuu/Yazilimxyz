@@ -13,6 +13,7 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
         Task<bool> AnyAsync(Expression<Func<Category, bool>> predicate);
         Task<int> CountAsync();
 		Task<IEnumerable<Category>> GetAllWithRelationsAsync(); 
-		Task<Category?> GetByIdWithRelationsAsync(int id);   
-	}
+		Task<Category?> GetByIdWithRelationsAsync(int id);
+        Task<List<Category>> GetAllAsync();
+    }
 }

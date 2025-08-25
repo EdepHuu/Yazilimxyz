@@ -86,5 +86,13 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 				.OrderBy(c => c.SortOrder)
 				.ToListAsync();
 		}
-	}
+
+        public async Task<List<Category>> GetAllAsync() // <-- İSMİ BURADA BÖYLE OLSUN
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+    }
 }
