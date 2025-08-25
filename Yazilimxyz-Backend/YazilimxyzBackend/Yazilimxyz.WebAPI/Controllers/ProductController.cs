@@ -147,23 +147,47 @@ namespace Yazilimxyz.WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> SearchAsync([FromQuery] ProductFilterRequestDto req)
         {
+            // Guard
             if (req.Page <= 0) req.Page = 1;
             if (req.PageSize <= 0 || req.PageSize > 100) req.PageSize = 24;
             if (req.MinPrice.HasValue && req.MaxPrice.HasValue && req.MinPrice > req.MaxPrice)
                 return BadRequest("MinPrice, MaxPrice'tan büyük olamaz.");
 
-            // normalize
-            req.MerchantIds = req.MerchantIds?.Distinct().ToArray();
+            // Mevcut normalizasyonlar
+            req.MerchantIds = req.MerchantIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToArray();
+
             req.Sizes = req.Sizes?
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => s.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+
             req.Colors = req.Colors?
                 .Where(c => !string.IsNullOrWhiteSpace(c))
                 .Select(c => c.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+
+            // NEW: Cinsiyet normalizasyonu (kadin/erkek/unisex + enum adları desteklenir)
+            req.Genders = req.Genders?
+                .Where(g => !string.IsNullOrWhiteSpace(g))
+                .Select(g => g.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            // NEW: Kategori normalizasyonu
+            if (req.CategoryId.HasValue && req.CategoryId.Value <= 0)
+                req.CategoryId = null; // geçersiz tekil id'yi temizle
+
+            req.CategoryIds = req.CategoryIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToArray();
+
+            // (IncludeSubCategories default'u DTO'da true; burada ekstra işleme gerek yok)
 
             var result = await _productService.FilterAsync(req);
             return Ok(result);
