@@ -12,8 +12,8 @@ using Yazilimxyz.DataAccessLayer.Context;
 namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250825164343_Orderentityupdates")]
-    partial class Orderentityupdates
+    [Migration("20250825184251_CreateOrderStructureClean")]
+    partial class CreateOrderStructureClean
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -327,11 +327,11 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<bool>("IsConfirmedByMerchant")
                         .HasColumnType("bit");
 
-                    b.Property<string>("MerchantId")
+                    b.Property<string>("MerchantAppUserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("MerchantId1")
+                    b.Property<int?>("MerchantId")
                         .HasColumnType("int");
 
                     b.Property<int>("OrderId")
@@ -339,9 +339,9 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MerchantId");
+                    b.HasIndex("MerchantAppUserId");
 
-                    b.HasIndex("MerchantId1");
+                    b.HasIndex("MerchantId");
 
                     b.HasIndex("OrderId");
 
@@ -482,17 +482,11 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ProductId1")
-                        .HasColumnType("int");
-
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ProductVariantId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ProductVariantId1")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")
@@ -516,11 +510,7 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.HasIndex("ProductId1");
-
                     b.HasIndex("ProductVariantId");
-
-                    b.HasIndex("ProductVariantId1");
 
                     b.ToTable("OrderItems");
                 });
@@ -794,13 +784,13 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 {
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.AppUser", "Merchant")
                         .WithMany()
-                        .HasForeignKey("MerchantId")
+                        .HasForeignKey("MerchantAppUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.Merchant", null)
                         .WithMany("MerchantOrders")
-                        .HasForeignKey("MerchantId1");
+                        .HasForeignKey("MerchantId");
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.Order", "Order")
                         .WithMany("MerchantOrders")
@@ -858,24 +848,16 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         .IsRequired();
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("Yazilimxyz.EntityLayer.Entities.Product", null)
                         .WithMany("OrderItems")
-                        .HasForeignKey("ProductId1");
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Yazilimxyz.EntityLayer.Entities.ProductVariant", "ProductVariant")
-                        .WithMany()
-                        .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("Yazilimxyz.EntityLayer.Entities.ProductVariant", null)
                         .WithMany("OrderItems")
-                        .HasForeignKey("ProductVariantId1");
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("MerchantOrder");
 

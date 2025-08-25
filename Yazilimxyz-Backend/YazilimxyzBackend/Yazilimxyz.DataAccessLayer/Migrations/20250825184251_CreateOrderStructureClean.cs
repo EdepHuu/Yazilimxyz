@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Yazilimxyz.DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class RecreateOrdersRelations : Migration
+    public partial class CreateOrderStructureClean : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -277,7 +277,9 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     PaymentStatus = table.Column<int>(type: "int", nullable: false),
-                    ShippedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeliveredAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ConfirmedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Note = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ShippingAddressId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -353,23 +355,24 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     OrderId = table.Column<int>(type: "int", nullable: false),
-                    MerchantId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    MerchantAppUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     IsConfirmedByMerchant = table.Column<bool>(type: "bit", nullable: false),
-                    MerchantId1 = table.Column<int>(type: "int", nullable: true),
+                    ConfirmedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    MerchantId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MerchantOrders", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MerchantOrders_AppUsers_MerchantId",
-                        column: x => x.MerchantId,
+                        name: "FK_MerchantOrders_AppUsers_MerchantAppUserId",
+                        column: x => x.MerchantAppUserId,
                         principalTable: "AppUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_MerchantOrders_Merchants_MerchantId1",
-                        column: x => x.MerchantId1,
+                        name: "FK_MerchantOrders_Merchants_MerchantId",
+                        column: x => x.MerchantId,
                         principalTable: "Merchants",
                         principalColumn: "Id");
                     table.ForeignKey(
@@ -452,8 +455,6 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                     ProductName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Size = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Color = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ProductId1 = table.Column<int>(type: "int", nullable: true),
-                    ProductVariantId1 = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -475,22 +476,14 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                         name: "FK_OrderItems_ProductVariants_ProductVariantId",
                         column: x => x.ProductVariantId,
                         principalTable: "ProductVariants",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OrderItems_ProductVariants_ProductVariantId1",
-                        column: x => x.ProductVariantId1,
-                        principalTable: "ProductVariants",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_OrderItems_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_OrderItems_Products_ProductId1",
-                        column: x => x.ProductId1,
-                        principalTable: "Products",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -532,14 +525,14 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 column: "MerchantOrderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MerchantOrders_MerchantAppUserId",
+                table: "MerchantOrders",
+                column: "MerchantAppUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MerchantOrders_MerchantId",
                 table: "MerchantOrders",
                 column: "MerchantId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MerchantOrders_MerchantId1",
-                table: "MerchantOrders",
-                column: "MerchantId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MerchantOrders_OrderId",
@@ -568,19 +561,9 @@ namespace Yazilimxyz.DataAccessLayer.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderItems_ProductId1",
-                table: "OrderItems",
-                column: "ProductId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_ProductVariantId",
                 table: "OrderItems",
                 column: "ProductVariantId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrderItems_ProductVariantId1",
-                table: "OrderItems",
-                column: "ProductVariantId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_ShippingAddressId",

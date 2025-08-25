@@ -43,16 +43,15 @@ namespace Yazilimxyz.DataAccessLayer.Context
 			// OrderItem → ProductVariant
 			modelBuilder.Entity<OrderItem>()
 	            .HasOne(x => x.Product)
-	            .WithMany()
+	            .WithMany(p => p.OrderItems) // varsa
 	            .HasForeignKey(x => x.ProductId)
-	            .OnDelete(DeleteBehavior.NoAction);
+	            .OnDelete(DeleteBehavior.Restrict);
 
 			modelBuilder.Entity<OrderItem>()
 				.HasOne(x => x.ProductVariant)
-				.WithMany()
+				.WithMany(pv => pv.OrderItems) // varsa
 				.HasForeignKey(x => x.ProductVariantId)
-				.OnDelete(DeleteBehavior.NoAction);
-
+				.OnDelete(DeleteBehavior.Restrict);
 
 			modelBuilder.Entity<OrderItem>()
                 .HasOne(oi => oi.Order)
@@ -178,26 +177,12 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasFilter("[IsDefault] = 1")
                 .IsUnique();
 
-			// Merchant - MerchantOrder (One to Many)
-			modelBuilder.Entity<MerchantOrder>()
-				.HasOne(mo => mo.Merchant)
-				.WithMany() // AppUser veya Merchant içinde listeyi kullanmıyorsan boş bırak
-				.HasForeignKey(mo => mo.MerchantId)
-				.OnDelete(DeleteBehavior.Cascade);
-
 			// Order - MerchantOrder (One to Many)
 			modelBuilder.Entity<MerchantOrder>()
 				.HasOne(mo => mo.Order)
 				.WithMany(o => o.MerchantOrders)
 				.HasForeignKey(mo => mo.OrderId)
 				.OnDelete(DeleteBehavior.Cascade);
-
-			// MerchantOrder - OrderItem (One to Many)
-			modelBuilder.Entity<OrderItem>()
-                .HasOne(x => x.Order)
-                .WithMany(x => x.OrderItems)
-                .HasForeignKey(x => x.OrderId)
-                .OnDelete(DeleteBehavior.NoAction);
 
 			// Order - OrderItem (One to Many)
 			modelBuilder.Entity<OrderItem>()
@@ -216,9 +201,9 @@ namespace Yazilimxyz.DataAccessLayer.Context
 			modelBuilder.Entity<MerchantOrder>()
 	            .HasOne(mo => mo.Merchant)
 	            .WithMany()
-	            .HasForeignKey(mo => mo.MerchantId)
-	            .HasPrincipalKey(u => u.Id)
-	            .OnDelete(DeleteBehavior.Restrict); // optional
+	            .HasForeignKey(mo => mo.MerchantAppUserId)
+	            .HasPrincipalKey(u => u.Id) // AppUser üzerinden bağlandığın için bu gerekli
+	            .OnDelete(DeleteBehavior.Restrict); // Cascade değil, Restrict daha mantıklı
 
 		}
 	}

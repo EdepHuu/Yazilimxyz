@@ -153,7 +153,7 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			// MerchantOrder Mappings
 			// ---------------------
 			CreateMap<CreateMerchantOrderDto, MerchantOrder>()
-				.ForMember(dest => dest.MerchantId, opt => opt.MapFrom(src => src.MerchantId))
+				.ForMember(dest => dest.MerchantAppUserId, opt => opt.MapFrom(src => src.MerchantId))
 				.ForMember(dest => dest.MerchantOrderItems, opt => opt.Ignore());
 
 			// ---------------------

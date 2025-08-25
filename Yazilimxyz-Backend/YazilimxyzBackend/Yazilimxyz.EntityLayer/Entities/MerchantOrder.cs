@@ -11,7 +11,7 @@ namespace Yazilimxyz.EntityLayer.Entities
 	{
 		public int OrderId { get; set; }
 		public Order Order { get; set; }
-		public string MerchantId { get; set; }
+		public string MerchantAppUserId { get; set; }
 		public AppUser Merchant { get; set; }
 		public bool IsConfirmedByMerchant { get; set; }
 		public DateTime? ConfirmedAt { get; set; }
