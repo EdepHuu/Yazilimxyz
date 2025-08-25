@@ -75,102 +75,118 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessDataResult<ResultCustomerAddressDto?>(mapped);
         }
 
-		[CacheRemoveAspect("ICustomerAddressService.Get")]
-		public async Task<IResult> CreateAsync(CreateCustomerAddressDto dto)
-		{
-			if (dto == null) return new ErrorResult("Geçersiz istek.");
-			if (dto.CustomerId <= 0) return new ErrorResult(Messages.InvalidCustomerId);
-			if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
-			if (string.IsNullOrWhiteSpace(dto.Phone)) return new ErrorResult("Telefon numarası zorunludur.");
-			if (string.IsNullOrWhiteSpace(dto.Address)) return new ErrorResult("Adres bilgisi zorunludur.");
+        [CacheRemoveAspect("ICustomerAddressService.Get")]
+        public async Task<IResult> CreateAsync(CreateCustomerAddressDto dto)
+        {
+            if (dto == null) return new ErrorResult("Geçersiz istek.");
+            if (dto.CustomerId <= 0) return new ErrorResult(Messages.InvalidCustomerId);
+            if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.Phone)) return new ErrorResult("Telefon numarası zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.Address)) return new ErrorResult("Adres bilgisi zorunludur.");
+            
+            // Posta kodu kontrolü
+            if (string.IsNullOrWhiteSpace(dto.PostalCode) ||
+                dto.PostalCode.Length != 5 ||
+                !dto.PostalCode.All(char.IsDigit))
+            {
+                return new ErrorResult("Posta kodu 5 rakamdan oluşmalıdır.");
+            }
 
-			// 1) Insert sırasında indexe takılmamak için her zaman false kaydediyoruz
-			var wantDefault = dto.IsDefault;
-			var address = _mapper.Map<CustomerAddress>(dto);
-			address.IsDefault = false;
+            // 1) Insert sırasında indexe takılmamak için her zaman false kaydediyoruz
+            var wantDefault = dto.IsDefault;
+            var address = _mapper.Map<CustomerAddress>(dto);
+            address.IsDefault = false;
 
-			await _customerAddressRepository.AddAsync(address); // EF return sonrası address.Id dolu olur
+            await _customerAddressRepository.AddAsync(address); // EF return sonrası address.Id dolu olur
 
-			// 2) Default isteniyorsa şimdi ayarla (eski default'u otomatik false yapacak)
-			if (wantDefault)
-			{
-				await _customerAddressRepository.SetDefaultAddressAsync(address.CustomerId, address.Id);
-			}
-			else
-			{
-				// İsteğe bağlı: hiç default yoksa bunu default yap
-				var currentDefault = await _customerAddressRepository.GetDefaultAddressAsync(address.CustomerId);
-				if (currentDefault is null)
-					await _customerAddressRepository.SetDefaultAddressAsync(address.CustomerId, address.Id);
-			}
+            // 2) Default isteniyorsa şimdi ayarla (eski default'u otomatik false yapacak)
+            if (wantDefault)
+            {
+                await _customerAddressRepository.SetDefaultAddressAsync(address.CustomerId, address.Id);
+            }
+            else
+            {
+                // İsteğe bağlı: hiç default yoksa bunu default yap
+                var currentDefault = await _customerAddressRepository.GetDefaultAddressAsync(address.CustomerId);
+                if (currentDefault is null)
+                    await _customerAddressRepository.SetDefaultAddressAsync(address.CustomerId, address.Id);
+            }
 
-			return new SuccessResult(Messages.CustomerAddressAdded);
-		}
+            return new SuccessResult(Messages.CustomerAddressAdded);
+        }
 
-		[CacheRemoveAspect("ICustomerAddressService.Get")]
-		public async Task<IResult> UpdateAsync(int id, UpdateCustomerAddressDto dto)
-		{
-			if (dto == null) return new ErrorResult("Geçersiz istek.");
-			if (id <= 0) return new ErrorResult(Messages.InvalidAddressId);
+        [CacheRemoveAspect("ICustomerAddressService.Get")]
+        public async Task<IResult> UpdateAsync(int id, UpdateCustomerAddressDto dto)
+        {
+            if (dto == null) return new ErrorResult("Geçersiz istek.");
+            if (id <= 0) return new ErrorResult(Messages.InvalidAddressId);
 
-			var existing = await _customerAddressRepository.GetByIdAsync(id);
-			if (existing == null) return new ErrorResult(Messages.CustomerAddressNotFound);
+            var existing = await _customerAddressRepository.GetByIdAsync(id);
+            if (existing == null) return new ErrorResult(Messages.CustomerAddressNotFound);
 
-			if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
-			if (string.IsNullOrWhiteSpace(dto.Phone)) return new ErrorResult("Telefon numarası zorunludur.");
-			if (string.IsNullOrWhiteSpace(dto.Address)) return new ErrorResult("Adres bilgisi zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.FullName)) return new ErrorResult("Ad Soyad zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.Phone)) return new ErrorResult("Telefon numarası zorunludur.");
+            if (string.IsNullOrWhiteSpace(dto.Address)) return new ErrorResult("Adres bilgisi zorunludur.");
 
-			// 1) Default'u şimdilik elleme, diğer alanları güncelle
-			var wantDefault = dto.IsDefault;
+            // Posta kodu kontrolü
+            if (string.IsNullOrWhiteSpace(dto.PostalCode) ||
+                dto.PostalCode.Length != 5 ||
+                !dto.PostalCode.All(char.IsDigit))
+            {
+                return new ErrorResult("Posta kodu 5 rakamdan oluşmalıdır.");
+            }
 
-			existing.Title = dto.Title;
-			existing.FullName = dto.FullName;
-			existing.Phone = dto.Phone;
-			existing.Address = dto.Address;
-			existing.AddressLine2 = dto.AddressLine2;
-			existing.City = dto.City;
-			existing.District = dto.District;
-			existing.PostalCode = dto.PostalCode;
-			existing.Country = dto.Country;
+            // 1) Default'u şimdilik elleme, diğer alanları güncelle
+            var wantDefault = dto.IsDefault;
 
-			await _customerAddressRepository.UpdateAsync(existing);
+            existing.Title = dto.Title;
+            existing.FullName = dto.FullName;
+            existing.Phone = dto.Phone;
+            existing.Address = dto.Address;
+            existing.AddressLine2 = dto.AddressLine2;
+            existing.City = dto.City;
+            existing.District = dto.District;
+            existing.PostalCode = dto.PostalCode;
+            existing.Country = dto.Country;
 
-			// 2) Default yapılması isteniyorsa şimdi ayarla (indexe takılmadan)
-			if (wantDefault && !existing.IsDefault)
-			{
-				await _customerAddressRepository.SetDefaultAddressAsync(existing.CustomerId, existing.Id);
-			}
+            await _customerAddressRepository.UpdateAsync(existing);
 
-			return new SuccessResult(Messages.CustomerAddressUpdated);
-		}
+            // 2) Default yapılması isteniyorsa şimdi ayarla (indexe takılmadan)
+            if (wantDefault && !existing.IsDefault)
+            {
+                await _customerAddressRepository.SetDefaultAddressAsync(existing.CustomerId, existing.Id);
+            }
 
-		[CacheRemoveAspect("ICustomerAddressService.Get")]
-		public async Task<IResult> DeleteAsync(int id)
-		{
-			if (id <= 0)
-				return new ErrorResult("Geçersiz adres ID.");
+            return new SuccessResult(Messages.CustomerAddressUpdated);
+        }
 
-			var address = await _customerAddressRepository.GetByIdAsync(id);
-			if (address == null)
-				return new ErrorResult("Adres bulunamadı.");
+        [CacheRemoveAspect("ICustomerAddressService.Get")]
+        public async Task<IResult> DeleteAsync(int id)
+        {
+            if (id <= 0)
+                return new ErrorResult("Geçersiz adres ID.");
 
-			bool wasDefault = address.IsDefault;
-			int customerId = address.CustomerId;
+            var address = await _customerAddressRepository.GetByIdAsync(id);
+            if (address == null)
+                return new ErrorResult("Adres bulunamadı.");
 
-			await _customerAddressRepository.DeleteAsync(id);
+            bool wasDefault = address.IsDefault;
+            int customerId = address.CustomerId;
 
-			if (wasDefault)
-			{
-				var latestAddress = await _customerAddressRepository.GetLatestByCustomerIdAsync(customerId);
+            await _customerAddressRepository.DeleteAsync(id);
 
-				if (latestAddress != null)
-				{
-					latestAddress.IsDefault = true;
-					await _customerAddressRepository.UpdateAsync(latestAddress);
-				}
-			}
+            if (wasDefault)
+            {
+                var latestAddress = await _customerAddressRepository.GetLatestByCustomerIdAsync(customerId);
 
-			return new SuccessResult("Adres başarıyla silindi.");
-		}
-	}
+                if (latestAddress != null)
+                {
+                    latestAddress.IsDefault = true;
+                    await _customerAddressRepository.UpdateAsync(latestAddress);
+                }
+            }
+
+            return new SuccessResult("Adres başarıyla silindi.");
+        }
+    }
 }
