@@ -9,7 +9,6 @@ import {
   ApiEnvelope,
   CreateAddressDto,
   CustomerAddress,
-  sectionCard,
 } from "@/components/customer/CustomerAddress";
 
 /* ========== API ========== */
@@ -118,11 +117,11 @@ export default function CustomerAddressesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-12 gap-6">
         {/* Sol Menü */}
         <aside className="col-span-3">
-          <div className={clsx(sectionCard, "p-4 sticky top-4")}>
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 sticky top-4">
             <div className="text-sm font-semibold mb-3">Hesabım</div>
             <nav className="space-y-2 text-sm">
               <Link className="block hover:text-black" href="/customer">
@@ -147,7 +146,7 @@ export default function CustomerAddressesPage() {
 
         {/* İçerik */}
         <main className="col-span-9">
-          <div className={clsx(sectionCard, "p-5")}>
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-5">
             <div className="flex items-center justify-between">
               <h1 className="text-lg font-semibold">Adres Bilgilerim</h1>
               <button
@@ -155,14 +154,14 @@ export default function CustomerAddressesPage() {
                   setEditing(null);
                   setShowNew((v) => !v);
                 }}
-                className="rounded-xl border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
               >
                 {showNew ? "Kapat" : "Yeni Adres Ekle"}
               </button>
             </div>
 
             {error && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
@@ -196,7 +195,7 @@ export default function CustomerAddressesPage() {
             )}
 
             {/* Liste */}
-            <div className="mt-6 grid grid-cols-1 gap-4">
+            <div className="mt-6 space-y-4">
               {loading ? (
                 <div className="text-sm text-gray-500">Yükleniyor…</div>
               ) : items.length === 0 ? (
