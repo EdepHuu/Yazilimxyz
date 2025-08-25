@@ -17,15 +17,26 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
         {
         }
 
-		public async Task<Order?> GetByIdWithItemsAsync(int orderId)
+		public async Task<Order?> GetByIdWithItemsAsync(int id)
 		{
 			return await _appDbContext.Orders
 				.Include(o => o.OrderItems)
 					.ThenInclude(oi => oi.ProductVariant)
 						.ThenInclude(pv => pv.Product)
-							.ThenInclude(p => p.ProductImages)
-				.Include(o => o.ShippingAddress)
-				.FirstOrDefaultAsync(o => o.Id == orderId);
+							.ThenInclude(p => p.Merchant)
+				.Include(o => o.MerchantOrders)
+				.FirstOrDefaultAsync(o => o.Id == id);
+		}
+
+		public async Task<List<Order>> GetOrdersByMerchantAppUserIdAsync(string merchantAppUserId)
+		{
+			return await _appDbContext.Orders
+				.Include(o => o.OrderItems)
+					.ThenInclude(oi => oi.ProductVariant)
+						.ThenInclude(pv => pv.Product)
+				.Include(o => o.MerchantOrders)
+				.Where(o => o.MerchantOrders.Any(mo => mo.MerchantId == merchantAppUserId))
+				.ToListAsync();
 		}
 	}
 }
