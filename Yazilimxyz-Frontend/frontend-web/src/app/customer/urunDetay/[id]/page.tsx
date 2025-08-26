@@ -23,162 +23,98 @@ interface ProductDetail {
   sizeColorMatrix: SizeRow[];
 }
 
-/* ============== Helpers ============== */
-const isHex = (v: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim());
-const isFn = (v: string) => /^(rgba?|hsla?)\(/i.test(v.trim());
-const norm = (s: string) => s.trim().toLowerCase();
-
-const COLOR_MAP: Record<string, string> = {
-  siyah: "#000000",
-  beyaz: "#FFFFFF",
-  lacivert: "#000080",
-  mavi: "#1E90FF",
-  "açık mavi": "#ADD8E6",
-  "koyu mavi": "#00008B",
-  kırmızı: "#FF0000",
-  bordo: "#800020",
-  yeşil: "#008000",
-  zümrüt: "#50C878",
-  mint: "#98FF98",
-  gri: "#808080",
-  "açık gri": "#D1D5DB",
-  füme: "#4B5563",
-  antrasit: "#374151",
-  bej: "#F5F5DC",
-  kahverengi: "#8B4513",
-  krem: "#FFFDD0",
-  mor: "#800080",
-  lila: "#C8A2C8",
-  pembe: "#FFC0CB",
-  turuncu: "#FFA500",
-  sarı: "#FFD200",
-  altın: "#D4AF37",
-  gümüş: "#C0C0C0",
-  "çok renkli": "#e5e7eb",
-  şeffaf: "transparent",
-  black: "#000000",
-  white: "#FFFFFF",
-  navy: "#000080",
-  blue: "#1E90FF",
-  "dark blue": "#00008B",
-  red: "#FF0000",
-  green: "#008000",
-  gray: "#808080",
-  "light gray": "#D1D5DB",
-  beige: "#F5F5DC",
-  brown: "#8B4513",
-  purple: "#800080",
-  pink: "#FFC0CB",
-  orange: "#FFA500",
-  gold: "#D4AF37",
-  silver: "#C0C0C0",
-};
-
-function toCssColor(raw: string): string {
-  if (!raw) return "#e5e7eb";
-  const k = raw.trim().toLowerCase();
-  if (isHex(k) || isFn(k)) return k;
-  return COLOR_MAP[k] ?? (/^[a-z\s]+$/.test(k) ? k : "#e5e7eb");
+interface ProductVariantRow {
+  id: number;          // ProductVariants.Id
+  productId: number;
+  size: string;
+  color: string;
+  stock?: number | null;
 }
 
+/* ============== Helpers ============== */
+const trLower = (s: string) => s.trim().toLocaleLowerCase("tr-TR");
+const sameStr = (a: string, b: string) => trLower(a) === trLower(b);
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+function isVariantRow(v: unknown): v is ProductVariantRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "number" &&
+    typeof v.productId === "number" &&
+    typeof v.size === "string" &&
+    typeof v.color === "string"
+  );
+}
+function parseVariantList(json: unknown): ProductVariantRow[] {
+  if (Array.isArray(json)) return json.filter(isVariantRow);
+  if (isRecord(json) && Array.isArray((json as { data?: unknown }).data)) {
+    return ((json as { data: unknown }).data as unknown[]).filter(isVariantRow);
+  }
+  return [];
+}
+
+const COLOR_MAP: Record<string, string> = {
+  siyah:"#000", beyaz:"#fff", lacivert:"#000080", mavi:"#1E90FF", "açık mavi":"#ADD8E6",
+  "koyu mavi":"#00008B", kırmızı:"#f00", bordo:"#800020", yeşil:"#008000", zümrüt:"#50C878",
+  mint:"#98FF98", gri:"#808080", "açık gri":"#D1D5DB", füme:"#4B5563", antrasit:"#374151",
+  bej:"#F5F5DC", kahverengi:"#8B4513", krem:"#FFFDD0", mor:"#800080", lila:"#C8A2C8",
+  pembe:"#FFC0CB", turuncu:"#FFA500", sarı:"#FFD200", altın:"#D4AF37", gümüş:"#C0C0C0",
+  black:"#000", white:"#fff", navy:"#000080", blue:"#1E90FF", red:"#f00", green:"#008000",
+  gray:"#808080", "light gray":"#D1D5DB", beige:"#F5F5DC", brown:"#8B4513", purple:"#800080",
+  pink:"#FFC0CB", orange:"#FFA500", gold:"#D4AF37", silver:"#C0C0C0",
+};
+const isHex = (v: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim());
+const isFn = (v: string) => /^(rgba?|hsla?)\(/i.test(v.trim());
+function toCssColor(raw: string): string {
+  const k = trLower(raw);
+  if (isHex(k) || isFn(k)) return k;
+  return COLOR_MAP[k] ?? "#e5e7eb";
+}
 function needsDarkBorder(cssColor: string): boolean {
   const hex = isHex(cssColor) ? cssColor : "#ffffff";
   const c = hex.replace("#", "");
   if (!isHex(`#${c}`)) return false;
-  const r = parseInt(c.length === 3 ? c[0] + c[0] : c.slice(0, 2), 16);
-  const g = parseInt(c.length === 3 ? c[1] + c[1] : c.slice(2, 4), 16);
-  const b = parseInt(c.length === 3 ? c[2] + c[2] : c.slice(4, 6), 16);
-  const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const r = parseInt(c.length===3 ? c[0]+c[0] : c.slice(0,2),16);
+  const g = parseInt(c.length===3 ? c[1]+c[1] : c.slice(2,4),16);
+  const b = parseInt(c.length===3 ? c[2]+c[2] : c.slice(4,6),16);
+  const y = 0.2126*r + 0.7152*g + 0.0722*b;
   return y > 200;
 }
 
 /* Beden sıralama */
 const SIZE_ORDER: Record<string, number> = {
-  xxs: 0,
-  xs: 1,
-  s: 2,
-  m: 3,
-  l: 4,
-  xl: 5,
-  xxl: 6,
-  "3xl": 7,
-  "4xl": 8,
-  "tek beden": 1000,
+  xxs:0, xs:1, s:2, m:3, l:4, xl:5, xxl:6, "3xl":7, "4xl":8, "tek beden":1000
 };
 function sizeRank(s: string): number {
-  const k = s.trim().toLowerCase();
+  const k = trLower(s);
   const num = parseInt(k, 10);
   if (!Number.isNaN(num)) return 200 + num;
   if (SIZE_ORDER[k] !== undefined) return SIZE_ORDER[k];
   if (k.includes("/")) {
-    const parts = k.split("/").map((p) => sizeRank(p));
-    return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
+    const parts = k.split("/").map(p => sizeRank(p));
+    return Math.round(parts.reduce((a,b)=>a+b,0)/parts.length);
   }
   return 9999;
 }
 
-/* Matriste seçime göre variantId bul (en hızlı) */
-function resolveVariantIdFromMatrix(
-  product: ProductDetail | null,
-  size: string,
-  color: string
-): number | null {
-  if (!product) return null;
-  const row = product.sizeColorMatrix.find((x) => norm(x.size) === norm(size));
+/* Matriste (size+color) → variantId (varsa en hızlı) */
+function variantIdFromMatrix(matrix: SizeRow[], size: string, color: string): number | null {
+  const row = matrix.find(x => sameStr(x.size, size));
   if (!row) return null;
-  const hit = row.colors.find((c) => norm(c.color) === norm(color));
-  const vId = hit?.variantId;
+  const cell = row.colors.find(c => sameStr(c.color ?? "", color ?? ""));
+  const vId = cell?.variantId;
   return typeof vId === "number" ? vId : null;
 }
 
-/* Backend’den muhtemel uçlarla çöz (case-insensitive) */
-type VariantInfo = { id?: number; variantId?: number; size?: string; color?: string };
-async function resolveVariantIdFromServer(
-  productId: number,
-  size: string,
-  color: string
-): Promise<number | null> {
-  const qs = new URLSearchParams({ productId: String(productId), size, color });
-  const fast = [
-    `${API_BASE}/api/ProductVariant/resolve?${qs}`,
-    `${API_BASE}/api/ProductVariant/by?${qs}`,
-  ];
-  for (const url of fast) {
-    try {
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) continue;
-      const j = (await r.json()) as { data?: unknown };
-      const d = j?.data;
-      if (typeof d === "number") return d;
-      if (d && typeof (d as { variantId?: number }).variantId === "number")
-        return (d as { variantId: number }).variantId;
-      if (d && typeof (d as { id?: number }).id === "number")
-        return (d as { id: number }).id;
-    } catch {
-      /* ignore */
-    }
-  }
-  // Hepsini çekip client’ta eşle
-  try {
-    const listUrl = `${API_BASE}/api/ProductVariant/product/${productId}`;
-    const r = await fetch(listUrl, { cache: "no-store" });
-    if (r.ok) {
-      const j = (await r.json()) as { data?: unknown } | VariantInfo[];
-      const arr: VariantInfo[] = Array.isArray(j)
-        ? j
-        : Array.isArray((j as { data?: unknown }).data)
-        ? ((j as { data?: unknown }).data as VariantInfo[])
-        : [];
-      const hit = arr.find(
-        (v) => norm(String(v.size ?? "")) === norm(size) && norm(String(v.color ?? "")) === norm(color)
-      );
-      if (hit?.id) return hit.id;
-      if (hit?.variantId) return hit.variantId;
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
+/* Swagger’a göre: /api/ProductVariants/by-product/{productId} */
+async function fetchVariantsByProduct(productId: number): Promise<ProductVariantRow[]> {
+  const url = `${API_BASE}/api/ProductVariants/by-product/${productId}`;
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) return [];
+  const j: unknown = await r.json();
+  return parseVariantList(j);
 }
 
 /* ============== Page ============== */
@@ -193,7 +129,6 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState<number>(1);
   const [adding, setAdding] = useState<boolean>(false);
 
-  /* Veriyi çek */
   useEffect(() => {
     (async () => {
       try {
@@ -206,15 +141,12 @@ export default function ProductDetailPage() {
     })();
   }, [productId]);
 
-  /* Hooks koşulsuz: rule-of-hooks hatasını engeller */
   const outOfStockColors = useMemo(() => {
     if (!product || !selectedSize) return new Set<string>();
     const row = product.sizeColorMatrix.find((x) => x.size === selectedSize);
     const s = new Set<string>();
     if (!row) return s;
-    row.colors.forEach((c) => {
-      if (c.stock <= 0) s.add(c.color);
-    });
+    row.colors.forEach((c) => { if (c.stock <= 0) s.add(c.color); });
     return s;
   }, [product, selectedSize]);
 
@@ -223,15 +155,17 @@ export default function ProductDetailPage() {
     [product?.availableSizes]
   );
 
-  /* Sepete ekle */
+  /* Sepete Ekle */
   const handleAddToCart = async () => {
-    if (!product) return; // guard
-    // Beden zorunlu
+    if (!product) return;
+
+    // 1) beden zorunlu
     if (!selectedSize) {
       alert("Lütfen beden seçiniz.");
       return;
     }
-    // Renk: 1 renk varsa otomatik seç, birden fazlaysa seçtir
+
+    // 2) renk – tek renkse otomatik, çoksa seçtir
     const colors = product.availableColors ?? [];
     let colorToUse = selectedColor;
     if (!colorToUse) {
@@ -244,21 +178,20 @@ export default function ProductDetailPage() {
       }
     }
 
-    // 1) Matriste id var mı?
-    let variantId = resolveVariantIdFromMatrix(product, selectedSize, colorToUse || "");
-    // 2) Backend’den çöz
+    // 3) variantId: önce matrix, yoksa by-product listesi
+    let variantId = variantIdFromMatrix(product.sizeColorMatrix, selectedSize, colorToUse || "");
     if (!variantId) {
-      try {
-        variantId = await resolveVariantIdFromServer(product.id, selectedSize, colorToUse || "");
-      } catch {
-        /* ignore */
-      }
+      const list = await fetchVariantsByProduct(product.id);
+      const hit = list.find(v => sameStr(v.size, selectedSize) && sameStr(v.color, colorToUse || ""));
+      variantId = hit?.id ?? null;
     }
+
     if (!variantId) {
       alert("Varyant bulunamadı. Lütfen beden/renk seçiminizi kontrol edin.");
       return;
     }
 
+    // 4) sepete gönder
     setAdding(true);
     try {
       await addCartItem({ productVariantId: variantId, quantity: qty });
@@ -271,10 +204,7 @@ export default function ProductDetailPage() {
     }
   };
 
-  /* Yükleniyor / bulunamadı render */
-  if (!product) {
-    return <div className="max-w-5xl mx-auto p-6">Yükleniyor…</div>;
-  }
+  if (!product) return <div className="max-w-5xl mx-auto p-6">Yükleniyor…</div>;
 
   return (
     <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8">
@@ -314,10 +244,7 @@ export default function ProductDetailPage() {
               return (
                 <button
                   key={rawColor}
-                  onClick={() => {
-                    if (disabled) return;
-                    setSelectedColor(isSelected ? "" : rawColor);
-                  }}
+                  onClick={() => { if (!disabled) setSelectedColor(isSelected ? "" : rawColor); }}
                   className={[
                     "w-8 h-8 rounded-full border-2 cursor-pointer transition",
                     isSelected ? "ring-2 ring-offset-2 ring-black" : "",
@@ -325,7 +252,7 @@ export default function ProductDetailPage() {
                   ].join(" ")}
                   style={{
                     backgroundColor: cssColor,
-                    borderColor: isSelected ? "#111827" : darkBorder ? "#374151" : "#D1D5DB",
+                    borderColor: isSelected ? "#111827" : (darkBorder ? "#374151" : "#D1D5DB"),
                   }}
                   aria-label={`Renk ${rawColor}`}
                   title={rawColor}
@@ -345,9 +272,7 @@ export default function ProductDetailPage() {
           >
             <option value="">Beden Seç</option>
             {sortedSizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
+              <option key={size} value={size}>{size}</option>
             ))}
           </select>
         </div>
@@ -361,9 +286,7 @@ export default function ProductDetailPage() {
             className="border border-gray-300 rounded px-4 py-2 w-full max-w-xs"
           >
             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
+              <option key={n} value={n}>{n}</option>
             ))}
           </select>
         </div>

@@ -51,7 +51,7 @@ export default function OdemePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   // Kart bilgileri (dummy, düzenlenebilir)
-  const [cardName, setCardName] = useState("Mehmet Zahit Gani");
+  const [cardName, setCardName] = useState("Mehmet Gani");
   const [cardNumber, setCardNumber] = useState("TR76 0009 9012 3456 7800 1000 01"); // dummy
   const [expiry, setExpiry] = useState("01/01");
   const [cvc, setCvc] = useState("123");
