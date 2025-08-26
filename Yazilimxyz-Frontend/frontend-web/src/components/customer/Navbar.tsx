@@ -270,36 +270,33 @@ export default function Navbar() {
           </div>
 
           {/* Kategori şeridi */}
-          <div className="h-9 flex items-center">
-            <div className="w-full overflow-x-auto whitespace-nowrap no-scrollbar">
-              <div className="inline-flex gap-5 px-1">
-                {/* Tüm Kategoriler düğmesi */}
-                <button
-                  id="allCategoriesBtn"
-                  onClick={() => {
-                    setActiveRootId(roots[0]?.id ?? null);
-                    setAllOpen((v) => !v);
-                  }}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-900 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition shadow-sm"
-                >
-                  ☰ Tüm Kategoriler
-                </button>
+         <div className="h-9 flex items-center w-full">
+  <div className="flex justify-between w-full overflow-x-auto whitespace-nowrap no-scrollbar">
+    {/* Tüm Kategoriler düğmesi */}
+    <button
+      id="allCategoriesBtn"
+      onClick={() => {
+        setActiveRootId(roots[0]?.id ?? null);
+        setAllOpen((v) => !v);
+      }}
+      className="inline-flex items-center gap-2 text-lg font-medium text-gray-900 px-3 py-1"
+    >
+      Tüm Kategoriler
+    </button>
 
-                {/* Ana kategoriler */}
-                {roots.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => router.push(`/customer/urunler?categoryId=${c.id}`)}
-                    className="text-sm text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
-                  >
-                    {c.name}
-                  </button>
-                ))}
+    {/* Ana kategoriler */}
+    {roots.map((c) => (
+      <button
+        key={c.id}
+        onClick={() => router.push(`/customer/urunler?categoryId=${c.id}`)}
+        className="text-lg text-gray-700 hover:text-gray-900 hover:underline underline-offset-4"
+      >
+        {c.name}
+      </button>
+    ))}
+  </div>
+</div>
 
-                {/* NOT: “Tüm Ürünleri Gör” navbar’dan KALDIRILDI */}
-              </div>
-            </div>
-          </div>
         </div>
       </nav>
 
