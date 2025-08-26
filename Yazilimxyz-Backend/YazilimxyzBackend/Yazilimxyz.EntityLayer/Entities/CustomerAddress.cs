@@ -10,7 +10,6 @@ namespace Yazilimxyz.EntityLayer.Entities
 	{
 		public int CustomerId { get; set; }
 		public Customer Customer { get; set; }
-
 		public string Title { get; set; }          // "Ev", "İş" vb.
 		public string FullName { get; set; }
 		public string Phone { get; set; }          // E.164 normalize edeceğiz

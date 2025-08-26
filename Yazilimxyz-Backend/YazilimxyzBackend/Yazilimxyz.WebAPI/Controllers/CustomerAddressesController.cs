@@ -208,7 +208,7 @@ namespace Yazilimxyz.WebAPI.Controllers
 			var res = await _addressService.SetDefaultAddressAsync(addr.Data.CustomerId, id);
 			if (!res.Success) return Bad(res.Message);
 
-			return OkResp(Messages.DefaultAddressNotFound);
+			return OkResp(Messages.CustomerAddressUpdated);
 		}
 
 		[HttpDelete("{id:int}")]
