@@ -9,7 +9,9 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
 {
 	public interface ICartItemRepository : IGenericRepository<CartItem>
 	{
-		Task DeleteRangeAsync(IEnumerable<CartItem> items);
-		Task<List<CartItem>> GetUserCartWithDetailsAsync(string userId);
-	}
+        Task<List<CartItem>> GetUserCartWithDetailsAsync(string userId);
+        Task DeleteRangeAsync(IEnumerable<CartItem> items);
+
+
+    }
 }

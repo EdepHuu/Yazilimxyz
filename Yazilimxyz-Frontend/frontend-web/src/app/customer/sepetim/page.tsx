@@ -12,6 +12,9 @@ import {
   CartItemDto,
 } from "@/lib/cartApi";
 
+/* === ENV === */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
 /* Yardımcı: para formatı (TRY) */
 function fmtTRY(v: number): string {
   return v.toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
@@ -21,8 +24,23 @@ function fmtTRY(v: number): string {
 function safeNumber(n: unknown, fallback = 0): number {
   return typeof n === "number" && Number.isFinite(n) ? n : fallback;
 }
-function imgOrPlaceholder(src?: string | null): string {
-  return src && src.trim() ? src : "/placeholder-image.jpg";
+
+/* Sadece CART görseli için güvenli URL oluşturucu
+   - productImageUrl varsa onu, yoksa imageUrl’i kullanır
+   - relatif yolları API_BASE ile birleştirir
+   - boşsa placeholder döner
+*/
+function buildCartImageUrl(it: CartItemDto): string {
+  const rec = it as unknown as Record<string, unknown>;
+  const raw =
+    (typeof rec.productImageUrl === "string" && rec.productImageUrl) ||
+    (typeof rec.imageUrl === "string" && rec.imageUrl) ||
+    "";
+  const val = raw.trim();
+  if (!val) return "/placeholder-image.jpg";
+  if (/^https?:\/\//i.test(val)) return val; // absolute URL
+  const path = val.startsWith("/") ? val : `/${val}`;
+  return `${API_BASE}${path}`;
 }
 
 export default function SepetimPage() {
@@ -36,7 +54,6 @@ export default function SepetimPage() {
     (async () => {
       try {
         const res = await getMyCart();
-        // Backend başarıyla dönüyorsa res.data bir liste olmalı
         setItems(Array.isArray(res.data) ? res.data : []);
       } catch (e) {
         console.error(e);
@@ -151,11 +168,12 @@ export default function SepetimPage() {
                     >
                       <div className="col-span-2 flex items-center gap-4">
                         <Image
-                          src={imgOrPlaceholder(it.imageUrl ?? null)}
+                          src={buildCartImageUrl(it)}
                           alt={it.productName ?? "Ürün"}
                           width={80}
                           height={100}
                           className="object-cover rounded"
+                          unoptimized  
                         />
                         <div>
                           <h2 className="font-semibold">{it.productName ?? `Ürün #${it.productVariantId}`}</h2>
