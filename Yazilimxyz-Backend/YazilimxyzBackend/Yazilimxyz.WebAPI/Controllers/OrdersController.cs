@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Yazilimxyz.BusinessLayer.Abstract;
 using Yazilimxyz.BusinessLayer.DTOs.Order;
+using Yazilimxyz.DataAccessLayer.Abstract;
 
 namespace Yazilimxyz.WebAPI.Controllers
 {
@@ -13,11 +14,15 @@ namespace Yazilimxyz.WebAPI.Controllers
 	{
 		private readonly IOrderService _orderService;
 		private readonly IHttpContextAccessor _httpContextAccessor;
+		private readonly ICustomerAddressService _customerAddressService;
+		private readonly ICustomerAddressRepository _customerAddressRepository;
 
-		public OrdersController(IOrderService orderService, IHttpContextAccessor httpContextAccessor)
+		public OrdersController(IOrderService orderService, IHttpContextAccessor httpContextAccessor, ICustomerAddressService customerAddressService, ICustomerAddressRepository customerAddressRepository)
 		{
 			_orderService = orderService;
 			_httpContextAccessor = httpContextAccessor;
+			_customerAddressService = customerAddressService;
+			_customerAddressRepository = customerAddressRepository;
 		}
 
 		// JWT'den UserId alma
@@ -41,6 +46,12 @@ namespace Yazilimxyz.WebAPI.Controllers
 			if (string.IsNullOrEmpty(userId))
 				return Unauthorized("Kullanıcı doğrulanamadı.");
 
+			// Adres kontrolü
+			var addressEntity = await _customerAddressRepository.GetWithCustomerAsync(dto.ShippingAddressId);
+			if (addressEntity == null || addressEntity.Customer.AppUserId != userId)
+				return BadRequest("Geçersiz veya size ait olmayan bir adres seçtiniz.");
+
+			// Sipariş oluşturma
 			var result = await _orderService.CreateFromCartAsync(dto, userId);
 			if (!result.Success)
 				return BadRequest(result.Message);

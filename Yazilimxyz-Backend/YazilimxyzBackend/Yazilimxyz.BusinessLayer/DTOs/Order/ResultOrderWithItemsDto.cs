@@ -17,7 +17,8 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Order
 		public PaymentStatus PaymentStatus { get; set; }
 
 		public DateTime CreatedAt { get; set; }
-		public DateTime? ShippedAt { get; set; }
+		public DateTime? DeliveredAt { get; set; }
+		public string? productImageUrl { get; set; } // Yeni alan
 
 		// Adres tek satır string (CustomerAddress’tan derlenecek)
 		public string ShippingAddressLine { get; set; } // "Ev - Selamiçeşme Cd. No:10, Kadıköy/İstanbul"

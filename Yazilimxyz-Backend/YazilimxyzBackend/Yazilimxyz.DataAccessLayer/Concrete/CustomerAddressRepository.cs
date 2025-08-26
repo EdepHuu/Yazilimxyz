@@ -54,5 +54,13 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 				.OrderByDescending(a => a.CreatedAt)
 				.FirstOrDefaultAsync();
 		}
+
+		public async Task<CustomerAddress?> GetWithCustomerAsync(int id)
+		{
+			return await _appDbContext.CustomerAddresses
+				.Include(ca => ca.Customer)
+				.ThenInclude(c => c.AppUser)
+				.FirstOrDefaultAsync(ca => ca.Id == id);
+		}
 	}
 }

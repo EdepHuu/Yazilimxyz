@@ -136,7 +136,9 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 			CreateMap<Order, ResultOrderWithItemsDto>()
 				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems))
 				.ForMember(dest => dest.ShippingAddressLine, opt => opt.MapFrom(src =>
-					$"{src.ShippingAddress.Title} - {src.ShippingAddress.Address}, {src.ShippingAddress.District}/{src.ShippingAddress.City}"));
+					src.ShippingAddress != null
+						? $"{src.ShippingAddress.Address} {src.ShippingAddress.AddressLine2}, {src.ShippingAddress.District} / {src.ShippingAddress.City} {src.ShippingAddress.PostalCode}, {src.ShippingAddress.Country}"
+						: string.Empty));
 
 			// ---------------------
 			// OrderItem Mappings
