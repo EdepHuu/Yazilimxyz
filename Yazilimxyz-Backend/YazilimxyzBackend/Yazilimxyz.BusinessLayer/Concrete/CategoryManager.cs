@@ -124,12 +124,13 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             if (existing == null)
                 return new ErrorResult(Messages.CategoryNotFound);
 
-            // 2) Asenkron kurallar
-            var asyncRuleResult = await BusinessRunAsync(
-                CheckIfParentExistsAsync(dto.ParentCategoryId),
-                CheckIfCategoryNameExistsForAnotherAsync(dto.Name!, dto.Id)
+			// 2) Asenkron kurallar
+			var asyncRuleResult = await BusinessRunAsync(
+	            () => CheckIfParentExistsAsync(dto.ParentCategoryId),
+	            () => CheckIfCategoryNameExistsForAnotherAsync(dto.Name!, dto.Id)
             );
-            if (asyncRuleResult != null)
+
+			if (asyncRuleResult != null)
                 return asyncRuleResult;
 
             _mapper.Map(dto, existing);
@@ -212,17 +213,17 @@ namespace Yazilimxyz.BusinessLayer.Concrete
             return new SuccessResult();
         }
 
-        // 1. sınıftaki BusinessRules.Run akışına benzer şekilde
-        // asenkron kurallar için ilk hatayı döndüren küçük yardımcı.
-        private static async Task<IResult?> BusinessRunAsync(params Task<IResult>[] rules)
-        {
-            foreach (var rule in rules)
-            {
-                var result = await rule;
-                if (!result.Success)
-                    return result;
-            }
-            return null;
-        }
-    }
+		// 1. sınıftaki BusinessRules.Run akışına benzer şekilde
+		// asenkron kurallar için ilk hatayı döndüren küçük yardımcı.
+		private static async Task<IResult?> BusinessRunAsync(params Func<Task<IResult>>[] rules)
+		{
+			foreach (var rule in rules)
+			{
+				var result = await rule();
+				if (!result.Success)
+					return result;
+			}
+			return null;
+		}
+	}
 }

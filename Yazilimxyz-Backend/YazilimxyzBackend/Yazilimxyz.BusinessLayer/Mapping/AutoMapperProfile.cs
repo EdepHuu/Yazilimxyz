@@ -33,6 +33,7 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 				.ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src => src.Products.Count));
 
 			CreateMap<CreateCategoryDto, Category>();
+			CreateMap<UpdateCategoryDto, Category>();
 
 			// AutoMapper, Category'nin SubCategories ve ParentCategory özelliklerini 
 			// ResultCategoryHierarchyDto'nun aynı isimli özelliklerine otomatik olarak eşleştirecektir.
