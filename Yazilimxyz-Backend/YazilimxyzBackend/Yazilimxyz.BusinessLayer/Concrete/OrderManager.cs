@@ -147,7 +147,7 @@ namespace Yazilimxyz.BusinessLayer.Concrete
 		// 2. Sipariş Listesi
 		public async Task<IDataResult<List<ResultOrderDto>>> GetMyOrdersAsync(string userId)
 		{
-			var orders = await _orderRepository.FindAsync(o => o.UserId == userId);
+			var orders = await _orderRepository.GetOrdersByUserIdAsync(userId); // yeni metod
 			var mapped = _mapper.Map<List<ResultOrderDto>>(orders);
 			return new SuccessDataResult<List<ResultOrderDto>>(mapped);
 		}

@@ -11,11 +11,11 @@ using Yazilimxyz.EntityLayer.Enums;
 
 namespace Yazilimxyz.DataAccessLayer.Concrete
 {
-    public class OrderRepository : Repository<Order>, IOrderRepository
-    {
-        public OrderRepository(AppDbContext context) : base(context)
-        {
-        }
+	public class OrderRepository : Repository<Order>, IOrderRepository
+	{
+		public OrderRepository(AppDbContext context) : base(context)
+		{
+		}
 
 		public async Task<Order?> GetByIdWithItemsAsync(int id)
 		{
@@ -39,6 +39,17 @@ namespace Yazilimxyz.DataAccessLayer.Concrete
 							.ThenInclude(p => p.ProductImages)
 				.Include(o => o.MerchantOrders)
 				.Where(o => o.MerchantOrders.Any(mo => mo.MerchantAppUserId == merchantAppUserId))
+				.ToListAsync();
+		}
+
+		public async Task<List<Order>> GetOrdersByUserIdAsync(string userId)
+		{
+			return await _appDbContext.Orders
+				.Include(o => o.OrderItems)
+					.ThenInclude(oi => oi.ProductVariant)
+						.ThenInclude(pv => pv.Product)
+							.ThenInclude(p => p.ProductImages)
+				.Where(o => o.UserId == userId)
 				.ToListAsync();
 		}
 	}

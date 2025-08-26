@@ -11,7 +11,7 @@ namespace Yazilimxyz.BusinessLayer.DTOs.Order
 		public decimal ShippingFee { get; set; }
 		public decimal DiscountAmount { get; set; }
 		public decimal TotalAmount { get; set; }
-
+		public string? productImageUrl { get; set; } // Yeni alan
 		public OrderStatus Status { get; set; }
 		public PaymentStatus PaymentStatus { get; set; }
 

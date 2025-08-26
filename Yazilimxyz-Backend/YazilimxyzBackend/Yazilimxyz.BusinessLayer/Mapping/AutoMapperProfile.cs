@@ -132,14 +132,30 @@ namespace Yazilimxyz.BusinessLayer.Mapping
 
 			CreateMap<UpdateOrderDto, Order>().ReverseMap();
 			CreateMap<GetByIdOrderDto, Order>().ReverseMap();
-			CreateMap<Order, ResultOrderDto>();
+			CreateMap<Order, ResultOrderDto>()
+				.ForMember(dest => dest.productImageUrl, opt => opt.Ignore())
+				.AfterMap((src, dest) =>
+				{
+					dest.productImageUrl = src.OrderItems != null
+						? src.OrderItems
+							.Select(oi => oi.ProductVariant?.Product?.ProductImages?.FirstOrDefault()?.ImageUrl)
+							.FirstOrDefault(url => !string.IsNullOrEmpty(url))
+						: null;
+				});
 
 			CreateMap<Order, ResultOrderWithItemsDto>()
 				.ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderItems))
 				.ForMember(dest => dest.ShippingAddressLine, opt => opt.MapFrom(src =>
 					src.ShippingAddress != null
 						? $"{src.ShippingAddress.Address} {src.ShippingAddress.AddressLine2}, {src.ShippingAddress.District} / {src.ShippingAddress.City} {src.ShippingAddress.PostalCode}, {src.ShippingAddress.Country}"
-						: string.Empty));
+						: string.Empty))
+				.ForMember(dest => dest.productImageUrl, opt => opt.Ignore()) // Şimdilik Ignore
+					.AfterMap((src, dest) =>
+					{
+						dest.productImageUrl = src.OrderItems
+							.Select(oi => oi.ProductVariant?.Product?.ProductImages?.FirstOrDefault()?.ImageUrl)
+							.FirstOrDefault(url => !string.IsNullOrEmpty(url));
+					});
 
 			// ---------------------
 			// OrderItem Mappings

@@ -12,5 +12,6 @@ namespace Yazilimxyz.DataAccessLayer.Abstract
     {
 		Task<Order?> GetByIdWithItemsAsync(int orderId);
 		Task<List<Order>> GetOrdersByMerchantAppUserIdAsync(string merchantAppUserId);
+		Task<List<Order>> GetOrdersByUserIdAsync(string userId);
 	}
 }
