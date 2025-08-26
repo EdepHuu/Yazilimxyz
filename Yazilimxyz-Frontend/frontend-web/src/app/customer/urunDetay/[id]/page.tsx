@@ -24,7 +24,7 @@ interface ProductDetail {
 }
 
 interface ProductVariantRow {
-  id: number;          // ProductVariants.Id
+  id: number; // ProductVariants.Id
   productId: number;
   size: string;
   color: string;
@@ -56,14 +56,46 @@ function parseVariantList(json: unknown): ProductVariantRow[] {
 }
 
 const COLOR_MAP: Record<string, string> = {
-  siyah:"#000", beyaz:"#fff", lacivert:"#000080", mavi:"#1E90FF", "açık mavi":"#ADD8E6",
-  "koyu mavi":"#00008B", kırmızı:"#f00", bordo:"#800020", yeşil:"#008000", zümrüt:"#50C878",
-  mint:"#98FF98", gri:"#808080", "açık gri":"#D1D5DB", füme:"#4B5563", antrasit:"#374151",
-  bej:"#F5F5DC", kahverengi:"#8B4513", krem:"#FFFDD0", mor:"#800080", lila:"#C8A2C8",
-  pembe:"#FFC0CB", turuncu:"#FFA500", sarı:"#FFD200", altın:"#D4AF37", gümüş:"#C0C0C0",
-  black:"#000", white:"#fff", navy:"#000080", blue:"#1E90FF", red:"#f00", green:"#008000",
-  gray:"#808080", "light gray":"#D1D5DB", beige:"#F5F5DC", brown:"#8B4513", purple:"#800080",
-  pink:"#FFC0CB", orange:"#FFA500", gold:"#D4AF37", silver:"#C0C0C0",
+  siyah: "#000",
+  beyaz: "#fff",
+  lacivert: "#000080",
+  mavi: "#1E90FF",
+  "açık mavi": "#ADD8E6",
+  "koyu mavi": "#00008B",
+  kırmızı: "#f00",
+  bordo: "#800020",
+  yeşil: "#008000",
+  zümrüt: "#50C878",
+  mint: "#98FF98",
+  gri: "#808080",
+  "açık gri": "#D1D5DB",
+  füme: "#4B5563",
+  antrasit: "#374151",
+  bej: "#F5F5DC",
+  kahverengi: "#8B4513",
+  krem: "#FFFDD0",
+  mor: "#800080",
+  lila: "#C8A2C8",
+  pembe: "#FFC0CB",
+  turuncu: "#FFA500",
+  sarı: "#FFD200",
+  altın: "#D4AF37",
+  gümüş: "#C0C0C0",
+  black: "#000",
+  white: "#fff",
+  navy: "#000080",
+  blue: "#1E90FF",
+  red: "#f00",
+  green: "#008000",
+  gray: "#808080",
+  "light gray": "#D1D5DB",
+  beige: "#F5F5DC",
+  brown: "#8B4513",
+  purple: "#800080",
+  pink: "#FFC0CB",
+  orange: "#FFA500",
+  gold: "#D4AF37",
+  silver: "#C0C0C0",
 };
 const isHex = (v: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim());
 const isFn = (v: string) => /^(rgba?|hsla?)\(/i.test(v.trim());
@@ -76,16 +108,25 @@ function needsDarkBorder(cssColor: string): boolean {
   const hex = isHex(cssColor) ? cssColor : "#ffffff";
   const c = hex.replace("#", "");
   if (!isHex(`#${c}`)) return false;
-  const r = parseInt(c.length===3 ? c[0]+c[0] : c.slice(0,2),16);
-  const g = parseInt(c.length===3 ? c[1]+c[1] : c.slice(2,4),16);
-  const b = parseInt(c.length===3 ? c[2]+c[2] : c.slice(4,6),16);
-  const y = 0.2126*r + 0.7152*g + 0.0722*b;
+  const r = parseInt(c.length === 3 ? c[0] + c[0] : c.slice(0, 2), 16);
+  const g = parseInt(c.length === 3 ? c[1] + c[1] : c.slice(2, 4), 16);
+  const b = parseInt(c.length === 3 ? c[2] + c[2] : c.slice(4, 6), 16);
+  const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return y > 200;
 }
 
 /* Beden sıralama */
 const SIZE_ORDER: Record<string, number> = {
-  xxs:0, xs:1, s:2, m:3, l:4, xl:5, xxl:6, "3xl":7, "4xl":8, "tek beden":1000
+  xxs: 0,
+  xs: 1,
+  s: 2,
+  m: 3,
+  l: 4,
+  xl: 5,
+  xxl: 6,
+  "3xl": 7,
+  "4xl": 8,
+  "tek beden": 1000,
 };
 function sizeRank(s: string): number {
   const k = trLower(s);
@@ -93,23 +134,29 @@ function sizeRank(s: string): number {
   if (!Number.isNaN(num)) return 200 + num;
   if (SIZE_ORDER[k] !== undefined) return SIZE_ORDER[k];
   if (k.includes("/")) {
-    const parts = k.split("/").map(p => sizeRank(p));
-    return Math.round(parts.reduce((a,b)=>a+b,0)/parts.length);
+    const parts = k.split("/").map((p) => sizeRank(p));
+    return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
   }
   return 9999;
 }
 
 /* Matriste (size+color) → variantId (varsa en hızlı) */
-function variantIdFromMatrix(matrix: SizeRow[], size: string, color: string): number | null {
-  const row = matrix.find(x => sameStr(x.size, size));
+function variantIdFromMatrix(
+  matrix: SizeRow[],
+  size: string,
+  color: string
+): number | null {
+  const row = matrix.find((x) => sameStr(x.size, size));
   if (!row) return null;
-  const cell = row.colors.find(c => sameStr(c.color ?? "", color ?? ""));
+  const cell = row.colors.find((c) => sameStr(c.color ?? "", color ?? ""));
   const vId = cell?.variantId;
   return typeof vId === "number" ? vId : null;
 }
 
 /* Swagger’a göre: /api/ProductVariants/by-product/{productId} */
-async function fetchVariantsByProduct(productId: number): Promise<ProductVariantRow[]> {
+async function fetchVariantsByProduct(
+  productId: number
+): Promise<ProductVariantRow[]> {
   const url = `${API_BASE}/api/ProductVariants/by-product/${productId}`;
   const r = await fetch(url, { cache: "no-store" });
   if (!r.ok) return [];
@@ -146,12 +193,17 @@ export default function ProductDetailPage() {
     const row = product.sizeColorMatrix.find((x) => x.size === selectedSize);
     const s = new Set<string>();
     if (!row) return s;
-    row.colors.forEach((c) => { if (c.stock <= 0) s.add(c.color); });
+    row.colors.forEach((c) => {
+      if (c.stock <= 0) s.add(c.color);
+    });
     return s;
   }, [product, selectedSize]);
 
   const sortedSizes = useMemo(
-    () => [...(product?.availableSizes ?? [])].sort((a, b) => sizeRank(a) - sizeRank(b)),
+    () =>
+      [...(product?.availableSizes ?? [])].sort(
+        (a, b) => sizeRank(a) - sizeRank(b)
+      ),
     [product?.availableSizes]
   );
 
@@ -179,10 +231,17 @@ export default function ProductDetailPage() {
     }
 
     // 3) variantId: önce matrix, yoksa by-product listesi
-    let variantId = variantIdFromMatrix(product.sizeColorMatrix, selectedSize, colorToUse || "");
+    let variantId = variantIdFromMatrix(
+      product.sizeColorMatrix,
+      selectedSize,
+      colorToUse || ""
+    );
     if (!variantId) {
       const list = await fetchVariantsByProduct(product.id);
-      const hit = list.find(v => sameStr(v.size, selectedSize) && sameStr(v.color, colorToUse || ""));
+      const hit = list.find(
+        (v) =>
+          sameStr(v.size, selectedSize) && sameStr(v.color, colorToUse || "")
+      );
       variantId = hit?.id ?? null;
     }
 
@@ -209,40 +268,59 @@ export default function ProductDetailPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8">
       {/* Images */}
-  <div className="flex-1">
-  <div className="grid gap-4">
-    {product.images?.[0] && (
-      <img
-        src={`${API_BASE}${product.images[0]}`}
-        alt={product.description}
-        width={500}
-        height={600}
-        className="rounded object-cover h-[500px]"
-      />
-    )}
-    {product.images?.length > 1 && (
-      <div className="flex gap-4">
-        {product.images.slice(1).map((img, index) => (
-          <img
-            key={index}
-            src={img ? `${API_BASE}${img}` : "/placeholder-image.jpg"}
-            alt={product.description}
-            width={100}
-            height={100}
-            className="rounded object-cover w-36 h-40  "
-          />
-        ))}
+      <div className="flex-1">
+        <div className="grid gap-4">
+          {product.images?.[0] && (
+            <img
+              src={`${API_BASE}${product.images[0]}`}
+              alt={product.description}
+              width={500}
+              height={600}
+              className="rounded object-cover h-[500px]"
+            />
+          )}
+          {product.images?.length > 1 && (
+            <div className="flex gap-4">
+              {product.images.slice(1).map((img, index) => (
+                <img
+                  key={index}
+                  src={img ? `${API_BASE}${img}` : "/placeholder-image.jpg"}
+                  alt={product.description}
+                  width={100}
+                  height={100}
+                  className="rounded object-cover w-36 h-40  "
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-</div>
-
 
       {/* Info */}
       <div className="flex-1 flex flex-col gap-4">
         <h1 className="text-3xl font-bold">{product.name}</h1>
+
+        {/* Açıklama */}
+        <div className="text-sm text-gray-700 space-y-4 max-w-lg">
+          {product.description && (
+            <div>
+              <h3 className="font-semibold">Ürün Özellikleri</h3>
+              <ul className="list-disc list-inside space-y-1">
+                {product.description
+                  .split("\n")
+                  .map(
+                    (line, index) => line.trim() && <li key={index}>{line}</li>
+                  )}
+              </ul>
+            </div>
+          )}
+        </div>
+
         <p className="text-xl font-semibold text-green-700">
-          {product.price.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+          {product.price.toLocaleString("tr-TR", {
+            style: "currency",
+            currency: "TRY",
+          })}
         </p>
 
         {/* Renk */}
@@ -258,15 +336,23 @@ export default function ProductDetailPage() {
               return (
                 <button
                   key={rawColor}
-                  onClick={() => { if (!disabled) setSelectedColor(isSelected ? "" : rawColor); }}
+                  onClick={() => {
+                    if (!disabled) setSelectedColor(isSelected ? "" : rawColor);
+                  }}
                   className={[
                     "w-8 h-8 rounded-full border-2 cursor-pointer transition",
                     isSelected ? "ring-2 ring-offset-2 ring-black" : "",
-                    disabled ? "opacity-40 cursor-not-allowed" : "hover:scale-105",
+                    disabled
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:scale-105",
                   ].join(" ")}
                   style={{
                     backgroundColor: cssColor,
-                    borderColor: isSelected ? "#111827" : (darkBorder ? "#374151" : "#D1D5DB"),
+                    borderColor: isSelected
+                      ? "#111827"
+                      : darkBorder
+                      ? "#374151"
+                      : "#D1D5DB",
                   }}
                   aria-label={`Renk ${rawColor}`}
                   title={rawColor}
@@ -286,7 +372,9 @@ export default function ProductDetailPage() {
           >
             <option value="">Beden Seç</option>
             {sortedSizes.map((size) => (
-              <option key={size} value={size}>{size}</option>
+              <option key={size} value={size}>
+                {size}
+              </option>
             ))}
           </select>
         </div>
@@ -300,7 +388,9 @@ export default function ProductDetailPage() {
             className="border border-gray-300 rounded px-4 py-2 w-full max-w-xs"
           >
             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>{n}</option>
+              <option key={n} value={n}>
+                {n}
+              </option>
             ))}
           </select>
         </div>
@@ -314,14 +404,6 @@ export default function ProductDetailPage() {
           >
             {adding ? "Ekleniyor…" : "Sepete Ekle"}
           </button>
-        </div>
-
-        {/* Açıklama */}
-        <div className="mt-8 text-sm text-gray-700 space-y-4 max-w-lg">
-          <div>
-            <h3 className="font-semibold">Ürün Özellikleri</h3>
-            <p>{product.description}</p>
-          </div>
         </div>
       </div>
     </div>

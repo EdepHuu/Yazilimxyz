@@ -162,65 +162,67 @@ export default function SepetimPage() {
                   const qty = safeNumber(it.quantity, 1);
                   const lineTotal = unit * qty;
                   return (
-                    <div
-                      key={it.id}
-                      className="grid grid-cols-5 items-center mb-6 border-b pb-6 last:border-b-0 last:pb-0"
-                    >
-                      <div className="col-span-2 flex items-center gap-4">
-                        <Image
-                          src={buildCartImageUrl(it)}
-                          alt={it.productName ?? "Ürün"}
-                          width={80}
-                          height={100}
-                          className="object-cover rounded"
-                          unoptimized   
-                        />
-                        <div>
-                          <h2 className="font-semibold">{it.productName ?? `Ürün #${it.productVariantId}`}</h2>
-                          <p className="text-sm text-gray-500">Varyant: {it.size ?? "-"} {it.color ? `/ ${it.color}` : ""}</p>
-                        </div>
-                      </div>
+                   <div
+  key={it.id}
+  className="relative grid grid-cols-5 items-center mb-6 border-b pb-6 last:border-b-0 last:pb-0"
+>
+  {/* X butonu */}
+  <button
+    onClick={() => removeLine(it)}
+    disabled={workingId === it.id}
+    className="absolute  top-0 right-0 text-gray-400 hover:text-red-500 disabled:opacity-50"
+    aria-label="Kaldır"
+    title="Kaldır"
+  >
+    X
+  </button>
 
-                      <div>
-                        <p className="font-semibold">{fmtTRY(unit)}</p>
-                      </div>
+  <div className="col-span-2 flex items-center gap-4">
+    <Image
+      src={buildCartImageUrl(it)}
+      alt={it.productName ?? "Ürün"}
+      width={80}
+      height={100}
+      className="object-cover rounded"
+      unoptimized
+    />
+    <div>
+      <h2 className="font-semibold">{it.productName ?? `Ürün #${it.productVariantId}`}</h2>
+      <p className="text-sm text-gray-500">
+        Varyant: {it.size ?? "-"} {it.color ? `/ ${it.color}` : ""}
+      </p>
+    </div>
+  </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => changeQty(it, -1)}
-                          disabled={workingId === it.id}
-                          className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
-                          aria-label="Azalt"
-                        >
-                          -
-                        </button>
-                        <span className="min-w-[2ch] text-center">{qty}</span>
-                        <button
-                          onClick={() => changeQty(it, +1)}
-                          disabled={workingId === it.id}
-                          className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
-                          aria-label="Arttır"
-                        >
-                          +
-                        </button>
-                      </div>
+  <div>
+    <p className="font-semibold">{fmtTRY(unit)}</p>
+  </div>
 
-                      <div>
-                        <p className="font-semibold">{fmtTRY(lineTotal)}</p>
-                      </div>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => changeQty(it, -1)}
+      disabled={workingId === it.id}
+      className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+      aria-label="Azalt"
+    >
+      -
+    </button>
+    <span className="min-w-[2ch] text-center">{qty}</span>
+    <button
+      onClick={() => changeQty(it, +1)}
+      disabled={workingId === it.id}
+      className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
+      aria-label="Arttır"
+    >
+      +
+    </button>
+  </div>
 
-                      <div>
-                        <button
-                          onClick={() => removeLine(it)}
-                          disabled={workingId === it.id}
-                          className="text-gray-400 hover:text-red-500 disabled:opacity-50"
-                          aria-label="Kaldır"
-                          title="Kaldır"
-                        >
-                          X
-                        </button>
-                      </div>
-                    </div>
+  <div>
+    <p className="font-semibold">{fmtTRY(lineTotal)}</p>
+  </div>
+</div>
+
                   );
                 })}
 
