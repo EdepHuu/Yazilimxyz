@@ -51,9 +51,9 @@ export default function OdemePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   // Kart bilgileri (dummy, düzenlenebilir)
-  const [cardName, setCardName] = useState("Mehmet Zahit Uyanık");
-  const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242"); // dummy
-  const [expiry, setExpiry] = useState("12/29");
+  const [cardName, setCardName] = useState("Mehmet Zahit Gani");
+  const [cardNumber, setCardNumber] = useState("TR76 0009 9012 3456 7800 1000 01"); // dummy
+  const [expiry, setExpiry] = useState("01/01");
   const [cvc, setCvc] = useState("123");
   const [use3DS, setUse3DS] = useState(false); // ✅ opsiyonel 3D Secure
 
