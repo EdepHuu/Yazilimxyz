@@ -229,7 +229,7 @@ export default function ProductDetailPage() {
             alt={product.description}
             width={100}
             height={100}
-            className="rounded object-cover w-36 h-40"
+            className="rounded object-cover w-36 h-40  "
           />
         ))}
       </div>
