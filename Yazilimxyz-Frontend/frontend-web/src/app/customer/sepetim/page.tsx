@@ -131,7 +131,7 @@ export default function SepetimPage() {
       <nav className="text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
         <ol className="list-reset flex gap-2">
           <li>
-            <Link href="/" className="hover:underline cursor-pointer">Anasayfa</Link>
+            <Link href="/customer/urunler" className="hover:underline cursor-pointer">Anasayfa</Link>
             <span> &gt; </span>
           </li>
           <li className="text-black font-semibold">Sepetim</li>
@@ -173,7 +173,7 @@ export default function SepetimPage() {
                           width={80}
                           height={100}
                           className="object-cover rounded"
-                          unoptimized  
+                          unoptimized   
                         />
                         <div>
                           <h2 className="font-semibold">{it.productName ?? `Ürün #${it.productVariantId}`}</h2>
