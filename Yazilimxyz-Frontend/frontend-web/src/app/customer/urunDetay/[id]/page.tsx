@@ -209,20 +209,34 @@ export default function ProductDetailPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8">
       {/* Images */}
-      <div className="flex-1">
-        <div className="grid gap-4">
-          {(product.images ?? []).map((img, index) => (
-            <img
-              key={index}
-              src={img ? `${API_BASE}${img}` : "/placeholder-image.jpg"}
-              alt={product.description}
-              width={500}
-              height={600}
-              className={`rounded object-cover ${index === 0 ? "w-full h-[500px]" : "w-50 h-52"}`}
-            />
-          ))}
-        </div>
+  <div className="flex-1">
+  <div className="grid gap-4">
+    {product.images?.[0] && (
+      <img
+        src={`${API_BASE}${product.images[0]}`}
+        alt={product.description}
+        width={500}
+        height={600}
+        className="rounded object-cover h-[500px]"
+      />
+    )}
+    {product.images?.length > 1 && (
+      <div className="flex gap-4">
+        {product.images.slice(1).map((img, index) => (
+          <img
+            key={index}
+            src={img ? `${API_BASE}${img}` : "/placeholder-image.jpg"}
+            alt={product.description}
+            width={100}
+            height={100}
+            className="rounded object-cover w-36 h-40"
+          />
+        ))}
       </div>
+    )}
+  </div>
+</div>
+
 
       {/* Info */}
       <div className="flex-1 flex flex-col gap-4">
