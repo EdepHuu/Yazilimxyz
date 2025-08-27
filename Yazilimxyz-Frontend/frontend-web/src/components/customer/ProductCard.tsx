@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { FavoriteGrayIcon } from "@/components/customer/icons/icon";
 import { API_BASE, fetchListProductDetail } from "@/lib/customerApi";
 import { addCartItem } from "@/lib/cartApi";
+import { useLanguage } from "@/app/customer/context/LanguageContext";
+
 
 /* ================= Types ================= */
 interface Product {
@@ -124,6 +126,8 @@ function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+   const { t } = useLanguage(); 
+
   return (
     <div className="group flex flex-col p-2">
       <Link href={`/customer/urunDetay/${product.id}`}>
@@ -160,7 +164,7 @@ function ProductCard({ product }: ProductCardProps) {
           disabled={adding}
           className="w-full bg-black text-white text-sm py-2 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-60"
         >
-          {adding ? "Ekleniyor…" : "Sepete Ekle"}
+           {adding ? t("adding") : t("add_basket")}
         </button>
       </div>
     </div>

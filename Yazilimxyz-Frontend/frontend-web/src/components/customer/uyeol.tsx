@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/app/customer/context/LanguageContext";
 import axios, { AxiosError } from "axios";
 import { useState } from "react";
 
@@ -9,6 +10,8 @@ type ApiError = { message?: string };
 type ResultUserResponse = { success?: boolean; message?: string };
 
 export default function UyeOl() {
+  const { t } = useLanguage();
+
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,57 +22,43 @@ export default function UyeOl() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!accept) {
-      setMessage("❌ Lütfen kullanıcı sözleşmesini onaylayın.");
+      setMessage(t("register_accept_error"));
       return;
     }
 
     try {
       setLoading(true);
 
-      // Sadece gerekli alanlar dolu, kalan hepsi boş string gönderilir.
       const payload = {
-        // Customer için zorunlu olmayanlar boş string
         name: "",
         lastName: "",
         companyName: "",
         iban: "",
         taxNumber: "",
         companyAddress: "",
-
-        // zorunlular
         email: email.trim(),
         password,
         role: ROLE_CUSTOMER,
-
-        // opsiyonel: boşsa "" gönder
         phone: (phone || "").trim(),
       };
 
       const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}${process.env.NEXT_PUBLIC_REGISTER_ENDPOINT}`;
-      console.log("REGISTER URL =>", url);
-
       const res = await axios.post<ResultUserResponse>(url, payload, {
         headers: { "Content-Type": "application/json" },
       });
 
       const data = res.data;
       if (data?.success) {
-        setMessage("✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyor…");
+        setMessage(t("register_success"));
         setTimeout(() => (window.location.href = "/customer/giris"), 800);
       } else {
-        setMessage(`❌ ${data?.message ?? "Kayıt başarısız."}`);
+        setMessage(`❌ ${data?.message ?? t("register_failure")}`);
       }
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const err = error as AxiosError<ApiError>;
-        console.log("REGISTER ERROR =>", {
-          status: err.response?.status,
-          data: err.response?.data,
-          message: err.message,
-        });
         setMessage(`❌ ${err.response?.data?.message || err.message}`);
       } else {
-        console.error(error);
         setMessage("❌ Sunucuya bağlanılamadı.");
       }
     } finally {
@@ -79,34 +68,32 @@ export default function UyeOl() {
 
   return (
     <div className="w-full max-w-md mx-auto my-12">
-      <div className="text-center mb-6">
-        ShopEase’a giriş yap veya hesap oluştur, indirimleri kaçırma!
-      </div>
+      <div className="text-center mb-6">{t("login_message_info")}</div>
 
       <div className="flex bg-gray-100 rounded-lg p-1">
         <button
           onClick={() => (window.location.href = "/customer/giris")}
           className="flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200 text-gray-500 hover:text-black"
         >
-          Giriş Yap
+          {t("tabs_login")}
         </button>
         <button
           disabled
           className="flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200 bg-white text-black shadow"
         >
-          Üye Ol
+          {t("tabs_register")}
         </button>
         <button
           onClick={() => (window.location.href = "/merchant/giris")}
           className="flex-1 py-2 heading-sm-1 rounded-lg transition-all duration-200 text-gray-500 hover:text-black"
         >
-          Bizimle Çalış
+          {t("tabs_work_with_us")}
         </button>
       </div>
 
       <form onSubmit={handleRegister} className="mt-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Telefon Numarası</label>
+          <label className="block text-sm font-medium mb-1">{t("phone")}</label>
           <input
             type="tel"
             placeholder="+90 5xx xxx xx xx"
@@ -117,7 +104,7 @@ export default function UyeOl() {
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium mb-1">E-posta Adresi</label>
+          <label className="block text-sm font-medium mb-1">{t("email")}</label>
           <input
             type="email"
             placeholder="ornek@mail.com"
@@ -129,7 +116,7 @@ export default function UyeOl() {
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium mb-1">Şifre</label>
+          <label className="block text-sm font-medium mb-1">{t("password")}</label>
           <input
             type="password"
             placeholder="*****"
@@ -147,9 +134,7 @@ export default function UyeOl() {
             checked={accept}
             onChange={(e) => setAccept(e.target.checked)}
           />
-          <span>
-            <span className="font-medium">Kullanıcı Sözleşmesi’ni</span> okudum ve kabul ediyorum.
-          </span>
+          {t("accept_terms")}
         </label>
 
         <button
@@ -157,7 +142,7 @@ export default function UyeOl() {
           type="submit"
           disabled={loading}
         >
-          {loading ? "Gönderiliyor…" : "Üye Ol"}
+          {loading ? t("register_loading") : t("register_button")}
         </button>
 
         {message && <p className="mt-2 text-sm">{message}</p>}
@@ -167,7 +152,7 @@ export default function UyeOl() {
           onClick={() => (window.location.href = "/customer/giris")}
           className="w-full heading-sm-2 rounded-lg mt-2 px-4 py-2 border border-gray-300"
         >
-          Giriş sayfasına dön
+          {t("back_to_login")}
         </button>
       </form>
     </div>
