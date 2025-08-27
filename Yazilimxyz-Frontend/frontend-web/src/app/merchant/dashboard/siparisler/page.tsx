@@ -1,3 +1,4 @@
+// src/app/merchant/dashboard/siparisler/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -9,9 +10,32 @@ import {
   statusInfo,
   confirmOrder,
   merchantCancelOrder,
+  formatDateTime,
+  isAwaiting,
+  resolveImageUrl,
 } from "@/lib/orderApi";
 
-/* ---- Durum rozetleri ---- */
+/* Görsel */
+function OrderImage({ src, alt }: { src?: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src) return <div className="h-full w-full bg-slate-100" />;
+  if (!failed) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="48px"
+        className="object-cover"
+        unoptimized
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return <img src={src} alt={alt} className="object-cover h-full w-full" />;
+}
+
+/* Durum rozeti */
 function StatusBadge({ dto }: { dto: Pick<OrderDto, "status" | "paymentStatus"> }) {
   const { text, tone } = statusInfo(dto);
   const color =
@@ -25,50 +49,41 @@ function StatusBadge({ dto }: { dto: Pick<OrderDto, "status" | "paymentStatus"> 
   return <span className={`px-2.5 py-1 rounded-xl text-xs border ${color}`}>{text}</span>;
 }
 
-/* ---- Bekleme/Onay gerektiren durum mu? (string veya number destekli) ---- */
-function isPending(dto: Pick<OrderDto, "status" | "paymentStatus">): boolean {
-  const raw = dto.paymentStatus ?? dto.status;
-  const s = typeof raw === "string" ? raw.toLowerCase() : "";
-  const n = typeof raw === "number" ? raw : NaN;
-  // string varyantlar + olası sayısal enumlar
-  return s.includes("pending") || s.includes("await") || s.includes("confirm") || s.includes("onay") || [0, 1].includes(n);
-}
-
 export default function MerchantOrdersPage() {
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(25);
+
+  async function load() {
+    try {
+      const data = await getMerchantOrders();
+      setOrders(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMerchantOrders();
-        setOrders(Array.isArray(data) ? data : []);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    load();
   }, []);
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const list = !term
+  const list = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    const filtered = !t
       ? orders
-      : orders.filter((o) => {
-          const inNumber = (o.orderNumber ?? "").toLowerCase().includes(term);
-          const inItems = (o.items ?? []).some((i) => (i.productName ?? "").toLowerCase().includes(term));
-          return inNumber || inItems;
-        });
-    return list.slice(0, pageSize);
+      : orders.filter(
+          (o) =>
+            (o.orderNumber ?? "").toLowerCase().includes(t) ||
+            (o.items ?? []).some((i) => (i.productName ?? "").toLowerCase().includes(t))
+        );
+    return filtered.slice(0, pageSize);
   }, [orders, q, pageSize]);
 
   async function onConfirm(id: number) {
     try {
-      await confirmOrder(id);
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, paymentStatus: "Confirmed", status: "Confirmed" } : o))
-      );
+      await confirmOrder(id); // PUT /api/Orders/confirm/{id}
+      await load(); // ✅ backend’den güncel listeyi çek
     } catch (e) {
       alert("Onaylama sırasında bir hata oluştu.");
       console.error(e);
@@ -78,10 +93,8 @@ export default function MerchantOrdersPage() {
   async function onCancel(id: number) {
     if (!confirm("Bu siparişi iptal etmek istiyor musun?")) return;
     try {
-      await merchantCancelOrder(id);
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, paymentStatus: "Canceled", status: "Canceled" } : o))
-      );
+      await merchantCancelOrder(id); // PUT /api/Orders/merchant/cancel/{id}
+      await load(); // ✅ backend’den güncel listeyi çek
     } catch (e) {
       alert("İptal sırasında bir hata oluştu.");
       console.error(e);
@@ -91,10 +104,7 @@ export default function MerchantOrdersPage() {
   return (
     <div className="px-6 py-6">
       <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Siparişler</h1>
-          <p className="text-sm text-slate-500">Mağazana gelen son siparişlerin listesi.</p>
-        </div>
+        <h1 className="text-xl font-semibold">Siparişler</h1>
         <div className="flex items-center gap-3">
           <input
             value={q}
@@ -107,7 +117,7 @@ export default function MerchantOrdersPage() {
             onChange={(e) => setPageSize(Number(e.target.value))}
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
           >
-            <option value={10}>Sayfa boyutu 10</option>
+            <option value={10}>10</option>
             <option value={25}>25</option>
             <option value={50}>50</option>
           </select>
@@ -116,40 +126,32 @@ export default function MerchantOrdersPage() {
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="grid grid-cols-12 px-5 py-3 text-sm text-slate-500 border-b">
-          <div className="col-span-4">Sipariş</div>
-          <div className="col-span-2">Tarih</div>
-          <div className="col-span-2 text-right">Tutar</div>
-          <div className="col-span-2">Durum</div>
-          <div className="col-span-2 text-right">İşlemler</div>
+          <div className="col-span-5">Sipariş</div>
+          <div className="col-span-3">Tarih</div>
+          <div className="col-span-2 text-right pr-4">Tutar</div>
+          <div className="col-span-2 pl-2">Durum / İşlemler</div>
         </div>
 
         {loading && <div className="p-6 text-sm text-slate-500">Yükleniyor…</div>}
-        {!loading && filtered.length === 0 && <div className="p-6 text-sm text-slate-500">Kayıt yok.</div>}
+        {!loading && list.length === 0 && <div className="p-6 text-sm text-slate-500">Kayıt yok.</div>}
 
-        {filtered.map((o) => {
+        {list.map((o) => {
           const first = o.items?.[0];
+          const rootImage = (o as { productImageUrl?: string | null }).productImageUrl;
+          const cover =
+            resolveImageUrl(first?.productImageUrl ?? rootImage ?? null, first?.productVariantId) ?? undefined;
+
           const productLine =
             (o.items ?? []).map((i) => `${i.productName} x${i.quantity}`).join(", ") || "—";
 
-          const pending = isPending({ status: o.status, paymentStatus: o.paymentStatus });
+          const showActions = isAwaiting({ status: o.status, paymentStatus: o.paymentStatus });
 
           return (
             <div key={o.id} className="grid grid-cols-12 gap-3 px-5 py-4 items-center border-t">
-              {/* Sipariş ve ürün özeti */}
-              <div className="col-span-4">
+              <div className="col-span-5">
                 <div className="flex items-start gap-3">
                   <div className="relative h-12 w-12 overflow-hidden rounded-lg border">
-                    {first?.productImageUrl ? (
-                      <Image
-                        src={first.productImageUrl}
-                        alt={first.productName ?? "Ürün"}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-slate-100" />
-                    )}
+                    <OrderImage src={cover} alt={first?.productName ?? "Ürün"} />
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium truncate">#{o.orderNumber}</div>
@@ -158,21 +160,14 @@ export default function MerchantOrdersPage() {
                 </div>
               </div>
 
-              <div className="col-span-2 text-sm text-slate-600">
-                {o.createdAt ? new Date(o.createdAt).toLocaleDateString("tr-TR") : "—"}
-              </div>
+              <div className="col-span-3 text-sm text-slate-600">{formatDateTime(o.createdAt)}</div>
 
-              <div className="col-span-2 text-right font-semibold">
-                {fmtTRY(Number(o.totalAmount ?? 0))}
-              </div>
+              <div className="col-span-2 text-right pr-4 font-semibold">{fmtTRY(Number(o.totalAmount ?? 0))}</div>
 
-              <div className="col-span-2">
+              <div className="col-span-2 flex items-center justify-between gap-2">
                 <StatusBadge dto={{ status: o.status, paymentStatus: o.paymentStatus }} />
-              </div>
-
-              <div className="col-span-2 text-right">
-                {pending && (
-                  <div className="flex justify-end gap-2">
+                {showActions && (
+                  <div className="flex gap-2" key={`actions-${o.id}`}>
                     <button
                       onClick={() => onConfirm(o.id)}
                       className="px-3 py-1.5 rounded-xl text-sm border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
