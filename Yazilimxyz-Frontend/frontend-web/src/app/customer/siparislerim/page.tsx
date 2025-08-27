@@ -202,7 +202,7 @@ export default function CustomerOrdersPage() {
       </section>
 
       <div className="mt-6 text-sm text-slate-500">
-        <Link href="/customer">← Alışverişe devam et</Link>
+        <Link href="/customer/urunler">← Alışverişe devam et</Link>
       </div>
     </main>
   );

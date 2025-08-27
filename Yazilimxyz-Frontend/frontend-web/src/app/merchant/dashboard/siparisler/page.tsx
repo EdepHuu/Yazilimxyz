@@ -82,8 +82,8 @@ export default function MerchantOrdersPage() {
 
   async function onConfirm(id: number) {
     try {
-      await confirmOrder(id); // PUT /api/Orders/confirm/{id}
-      await load(); // ✅ backend’den güncel listeyi çek
+      await confirmOrder(id);
+      await load();
     } catch (e) {
       alert("Onaylama sırasında bir hata oluştu.");
       console.error(e);
@@ -93,8 +93,8 @@ export default function MerchantOrdersPage() {
   async function onCancel(id: number) {
     if (!confirm("Bu siparişi iptal etmek istiyor musun?")) return;
     try {
-      await merchantCancelOrder(id); // PUT /api/Orders/merchant/cancel/{id}
-      await load(); // ✅ backend’den güncel listeyi çek
+      await merchantCancelOrder(id);
+      await load();
     } catch (e) {
       alert("İptal sırasında bir hata oluştu.");
       console.error(e);
@@ -125,11 +125,21 @@ export default function MerchantOrdersPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+        {/* Başlık satırı */}
         <div className="grid grid-cols-12 px-5 py-3 text-sm text-slate-500 border-b">
           <div className="col-span-5">Sipariş</div>
-          <div className="col-span-3">Tarih</div>
-          <div className="col-span-2 text-right pr-4">Tutar</div>
-          <div className="col-span-2 pl-2">Durum / İşlemler</div>
+
+          {/* Tarih üstte ve ortada */}
+          <div className="col-span-3 text-center">Tarih</div>
+
+          {/* Sağ tarafı ferahlat: Tutar / Durum / İşlemler ayır */}
+          <div className="col-span-4">
+            <div className="flex items-center justify-end gap-8 pr-1">
+              <span className="w-20 text-right">Tutar</span>
+              <span className="w-24 text-center">Durum</span>
+              <span className="w-28 text-right">İşlemler</span>
+            </div>
+          </div>
         </div>
 
         {loading && <div className="p-6 text-sm text-slate-500">Yükleniyor…</div>}
@@ -148,40 +158,59 @@ export default function MerchantOrdersPage() {
 
           return (
             <div key={o.id} className="grid grid-cols-12 gap-3 px-5 py-4 items-center border-t">
+              {/* Sipariş + görsel */}
               <div className="col-span-5">
-                <div className="flex items-start gap-3">
-                  <div className="relative h-12 w-12 overflow-hidden rounded-lg border">
+                <div className="flex items-start gap-4">
+                  <div className="relative h-12 w-12 overflow-hidden rounded-lg border shrink-0">
                     <OrderImage src={cover} alt={first?.productName ?? "Ürün"} />
                   </div>
+
+                  {/* Ürün kodu için başlık ve spacing */}
                   <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400 mb-0.5">
+                      Sipariş No
+                    </div>
                     <div className="font-medium truncate">#{o.orderNumber}</div>
-                    <div className="text-xs text-slate-500 truncate">{productLine}</div>
+                    <div className="text-xs text-slate-500 truncate mt-0.5">{productLine}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="col-span-3 text-sm text-slate-600">{formatDateTime(o.createdAt)}</div>
+              {/* Tarih — ortalı */}
+              <div className="col-span-3 text-sm text-slate-600 text-center">
+                {formatDateTime(o.createdAt)}
+              </div>
 
-              <div className="col-span-2 text-right pr-4 font-semibold">{fmtTRY(Number(o.totalAmount ?? 0))}</div>
-
-              <div className="col-span-2 flex items-center justify-between gap-2">
-                <StatusBadge dto={{ status: o.status, paymentStatus: o.paymentStatus }} />
-                {showActions && (
-                  <div className="flex gap-2" key={`actions-${o.id}`}>
-                    <button
-                      onClick={() => onConfirm(o.id)}
-                      className="px-3 py-1.5 rounded-xl text-sm border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                    >
-                      Onayla
-                    </button>
-                    <button
-                      onClick={() => onCancel(o.id)}
-                      className="px-3 py-1.5 rounded-xl text-sm border border-red-300 text-red-700 hover:bg-red-50"
-                    >
-                      İptal
-                    </button>
+              {/* Sağ alanlar: daha rahat hizalama */}
+              <div className="col-span-4">
+                <div className="flex items-center justify-end gap-8">
+                  <div className="w-20 text-right font-semibold">
+                    {fmtTRY(Number(o.totalAmount ?? 0))}
                   </div>
-                )}
+
+                  <div className="w-24 flex justify-center">
+                    <StatusBadge dto={{ status: o.status, paymentStatus: o.paymentStatus }} />
+                  </div>
+
+                  <div className="w-28 flex justify-end gap-2">
+                    {showActions && (
+                      <>
+                        <button
+                          onClick={() => onConfirm(o.id)}
+                          className="px-3 py-1.5 rounded-xl text-sm border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        >
+                          Onayla
+                        </button>
+                        <button
+                          onClick={() => onCancel(o.id)}
+                          className="px-3 py-1.5 rounded-xl text-sm border border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          İptal
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           );

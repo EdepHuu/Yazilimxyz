@@ -49,6 +49,10 @@ const COLOR_HEX: Record<string, string> = {
   siyah: "black", beyaz: "white", yeşil: "green", yesil: "green",
   sarı: "yellow", sari: "yellow", mor: "purple", turuncu: "orange",
   pembe: "pink", gri: "gray", kahverengi: "brown", bej: "beige", bordo: "maroon",
+  "açık gri": "#d3d3d3",
+  "acik gri": "#d3d3d3",
+  "açık mavi": "lightblue",
+  "acik mavi": "lightblue",
 };
 const toCssColor = (c: string) => COLOR_HEX[c.trim().toLowerCase()] ?? c;
 
@@ -275,9 +279,43 @@ export default function UrunlerPage() {
           <Accordion title="Beden">
             <div className="flex flex-col gap-2">
               {(filtered?.sizes ?? [])
+                .slice() // kopya
                 .sort((a, b) => {
-                  const order = ["S", "M", "L", "XL"];
-                  return order.indexOf(a.toUpperCase()) - order.indexOf(b.toUpperCase());
+                  const norm = (s: string) => s.trim().toUpperCase();
+
+                  // XS, S, M, L, XL, XXL, XXXL... gibi harf bedenler için öncelik
+                  const alphaOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"];
+
+                  const priority = (s: string): number => {
+                    const u = norm(s);
+
+                    // 2XL, 3XL gibi yazımlar → XXL, XXXL'e dönüştür
+                    const m = u.match(/^(\d+)XL$/);
+                    if (m) {
+                      const n = parseInt(m[1], 10);
+                      const asAlpha = "X".repeat(n) + "L"; // 2XL → XXL
+                      const idx = alphaOrder.indexOf(asAlpha);
+                      if (idx !== -1) return idx;
+                    }
+
+                    // Doğrudan alpha bedense
+                    const idx = alphaOrder.indexOf(u);
+                    if (idx !== -1) return idx;
+
+                    // Sayısal bedenler (1, 2, 34, 36, …) → harflerden sonra artan şekilde
+                    const num = parseInt(u, 10);
+                    if (!Number.isNaN(num)) return 100 + num;
+
+                    // Tanımsız olanlar en sona
+                    return 9999;
+                  };
+
+                  const pa = priority(a);
+                  const pb = priority(b);
+                  if (pa !== pb) return pa - pb;
+
+                  // Aynı öncelikteyse alfabetik fallback
+                  return norm(a).localeCompare(norm(b), "tr");
                 })
                 .map((s) => (
                   <label key={s} className="flex items-center gap-2">
@@ -411,11 +449,7 @@ export default function UrunlerPage() {
                 }}
               />
             ))}
-            {Array.isArray(products) && products.length === 0 && !isLoading && (
-              <div className="col-span-full text-sm text-gray-500 p-4">
-                Seçtiğiniz filtrelere uygun ürün bulunamadı.
-              </div>
-            )}
+
           </div>
         </div>
       </div>
