@@ -6,6 +6,7 @@ import Footer from "@/components/customer/Footer";
 import { CartProvider } from "@/context/CartContext";
 import { usePathname } from "next/navigation";
 import '../../../src/app/globals.css'
+import { LanguageProvider } from "./context/LanguageContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -29,12 +30,13 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`min-h-screen flex flex-col ${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      > <LanguageProvider>
         <CartProvider>
           {!isAdminRoute && <Navbar />}
           <main className="flex-1 pt-8">{children}</main>
           {!isAdminRoute && <Footer />}
         </CartProvider>
+          </LanguageProvider>
       </body>
     </html>
   );
