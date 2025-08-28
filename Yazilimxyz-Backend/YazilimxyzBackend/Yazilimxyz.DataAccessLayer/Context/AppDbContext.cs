@@ -29,9 +29,9 @@ namespace Yazilimxyz.DataAccessLayer.Context
         // Support Entities
         public DbSet<SupportMessage> SupportMessages { get; set; }
         public DbSet<SupportConversation> SupportConversations { get; set; }
-		public DbSet<MerchantOrder> MerchantOrders { get; set; }
-		public DbSet<MerchantOrderItem> MerchantOrderItems { get; set; }
-		public DbSet<Merchant> Merchants { get; set; }
+        public DbSet<MerchantOrder> MerchantOrders { get; set; }
+        public DbSet<MerchantOrderItem> MerchantOrderItems { get; set; }
+        public DbSet<Merchant> Merchants { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<CustomerAddress> CustomerAddresses { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
@@ -40,20 +40,20 @@ namespace Yazilimxyz.DataAccessLayer.Context
         {
             base.OnModelCreating(modelBuilder);
 
-			// OrderItem → ProductVariant
-			modelBuilder.Entity<OrderItem>()
-	            .HasOne(x => x.Product)
-	            .WithMany(p => p.OrderItems) // varsa
-	            .HasForeignKey(x => x.ProductId)
-	            .OnDelete(DeleteBehavior.Restrict);
+            // OrderItem → ProductVariant
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(x => x.Product)
+                .WithMany(p => p.OrderItems) // varsa
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-			modelBuilder.Entity<OrderItem>()
-				.HasOne(x => x.ProductVariant)
-				.WithMany(pv => pv.OrderItems) // varsa
-				.HasForeignKey(x => x.ProductVariantId)
-				.OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(x => x.ProductVariant)
+                .WithMany(pv => pv.OrderItems) // varsa
+                .HasForeignKey(x => x.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-			modelBuilder.Entity<OrderItem>()
+            modelBuilder.Entity<OrderItem>()
                 .HasOne(oi => oi.Order)
                 .WithMany(o => o.OrderItems)
                 .HasForeignKey(oi => oi.OrderId)
@@ -177,34 +177,34 @@ namespace Yazilimxyz.DataAccessLayer.Context
                 .HasFilter("[IsDefault] = 1")
                 .IsUnique();
 
-			// Order - MerchantOrder (One to Many)
-			modelBuilder.Entity<MerchantOrder>()
-				.HasOne(mo => mo.Order)
-				.WithMany(o => o.MerchantOrders)
-				.HasForeignKey(mo => mo.OrderId)
-				.OnDelete(DeleteBehavior.Cascade);
+            // Order - MerchantOrder (One to Many)
+            modelBuilder.Entity<MerchantOrder>()
+                .HasOne(mo => mo.Order)
+                .WithMany(o => o.MerchantOrders)
+                .HasForeignKey(mo => mo.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-			// Order - OrderItem (One to Many)
-			modelBuilder.Entity<OrderItem>()
-				.HasOne(oi => oi.Order)
-				.WithMany(o => o.OrderItems)
-				.HasForeignKey(oi => oi.OrderId)
-				.OnDelete(DeleteBehavior.Cascade);
+            // Order - OrderItem (One to Many)
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Order)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-			// MerchantOrder - MerchantOrderItem (One to Many)
-			modelBuilder.Entity<MerchantOrderItem>()
-				.HasOne(moi => moi.MerchantOrder)
-				.WithMany(mo => mo.MerchantOrderItems)
-				.HasForeignKey(moi => moi.MerchantOrderId)
-				.OnDelete(DeleteBehavior.Cascade);
+            // MerchantOrder - MerchantOrderItem (One to Many)
+            modelBuilder.Entity<MerchantOrderItem>()
+                .HasOne(moi => moi.MerchantOrder)
+                .WithMany(mo => mo.MerchantOrderItems)
+                .HasForeignKey(moi => moi.MerchantOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-			modelBuilder.Entity<MerchantOrder>()
-	            .HasOne(mo => mo.Merchant)
-	            .WithMany()
-	            .HasForeignKey(mo => mo.MerchantAppUserId)
-	            .HasPrincipalKey(u => u.Id) // AppUser üzerinden bağlandığın için bu gerekli
-	            .OnDelete(DeleteBehavior.Restrict); // Cascade değil, Restrict daha mantıklı
+            modelBuilder.Entity<MerchantOrder>()
+                .HasOne(mo => mo.Merchant)
+                .WithMany()
+                .HasForeignKey(mo => mo.MerchantAppUserId)
+                .HasPrincipalKey(u => u.Id) // AppUser üzerinden bağlandığın için bu gerekli
+                .OnDelete(DeleteBehavior.Restrict); // Cascade değil, Restrict daha mantıklı
 
-		}
-	}
+        }
+    }
 }

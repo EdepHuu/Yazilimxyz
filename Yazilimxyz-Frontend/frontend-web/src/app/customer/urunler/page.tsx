@@ -5,43 +5,6 @@ import { useSearchParams } from "next/navigation";            // <-- NEW
 import Accordion from "@/components/customer/Accordion";
 import ProductCard from "@/components/customer/ProductCard";
 import { fetchListFilter } from "@/lib/customerApi";
-import { useLanguage } from "../context/LanguageContext";
-
-export const translations = {
-  tr: {
-    brand_placeholder: "Marka ara...",
-    size: "Beden",
-    color: "Renk",
-    gender: "Cinsiyet",
-    price: "Fiyat",
-    apply_filters: "Filtrele",
-    applying: "Uygulanıyor...",
-    min: "En az",
-    max: "En çok",
-    new_products: "Yeni Ürünler",
-    male: "Erkek",
-    female: "Kadın",
-    unisex: "Unisex",
-  },
-  en: {
-    brand_placeholder: "Search Brand...",
-    size: "Size",
-    color: "Color",
-    gender: "Gender",
-    price: "Price",
-    apply_filters: "Apply Filters",
-    applying: "Applying...",
-    min: "Min",
-    max: "Max",
-    new_products: "New Products",
-    male: "Men",
-    female: "Women",
-    unisex: "Unisex",
-  },
-} as const;
-
-
- 
 
 /* ================== Tipler ================== */
 interface Product {
@@ -283,23 +246,22 @@ export default function UrunlerPage() {
     }
   };
 
-   const { lang, changeLang,t } = useLanguage();
-
   return (
-     <section className="container p-0 m-0">
+    <section className="container p-0 m-0">
       <div className="flex flex-col md:flex-row">
         {/* ================= Sol Filtre ================= */}
         <div className="w-full md:w-1/5">
-          <Accordion title={t("brand_placeholder")}>
+          {/* Marka */}
+          <Accordion title="Marka">
             <div className="flex flex-col gap-2">
               <input
                 type="text"
-                placeholder={t("brand_placeholder")}
+                placeholder="Marka ara..."
                 value={searchBrand}
                 onChange={(e) => setSearchBrand(e.target.value)}
                 className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
               />
-              {(filtered?.brands ?? []).map((b) => (
+              {brandList.map((b) => (
                 <label key={b.id} className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -313,63 +275,122 @@ export default function UrunlerPage() {
             </div>
           </Accordion>
 
-          <Accordion title={t("size")}>
+          {/* Beden */}
+          <Accordion title="Beden">
             <div className="flex flex-col gap-2">
-              {(filtered?.sizes ?? []).map((s) => (
-                <label key={s} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedSizes.includes(s)}
-                    onChange={() => toggleStr(selectedSizes, s, setSelectedSizes)}
-                    className="accent-gray-600 w-4 h-4"
-                  />
-                  <span className="text-sm text-gray-700">{s}</span>
-                </label>
-              ))}
-            </div>
-          </Accordion>
+              {(filtered?.sizes ?? [])
+                .slice() // kopya
+                .sort((a, b) => {
+                  const order = ["S", "M", "L", "XL"];
+                  return order.indexOf(a.toUpperCase()) - order.indexOf(b.toUpperCase());
+                  const norm = (s: string) => s.trim().toUpperCase();
 
-          <Accordion title={t("color")}>
-            <div className="flex flex-col gap-2">
-              {(filtered?.colors ?? []).map((c) => (
-                <label key={c} className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={selectedColors.includes(c)}
-                    onChange={() => toggleStr(selectedColors, c, setSelectedColors)}
-                    className="accent-gray-600 w-4 h-4"
-                  />
-                  <span className="text-sm text-gray-700">{c}</span>
-                </label>
-              ))}
-            </div>
-          </Accordion>
+                  // XS, S, M, L, XL, XXL, XXXL... gibi harf bedenler için öncelik
+                  const alphaOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"];
 
-          <Accordion title={t("gender")}>
-            <div className="flex flex-col gap-2">
-              {["Erkek", "Kadın", "Unisex"].map((g) => {
-                const label = g === "Erkek" ? t("male") : g === "Kadın" ? t("female") : t("unisex");
-                return (
-                  <label key={g} className="flex items-center gap-2">
+                  const priority = (s: string): number => {
+                    const u = norm(s);
+
+                    // 2XL, 3XL gibi yazımlar → XXL, XXXL'e dönüştür
+                    const m = u.match(/^(\d+)XL$/);
+                    if (m) {
+                      const n = parseInt(m[1], 10);
+                      const asAlpha = "X".repeat(n) + "L"; // 2XL → XXL
+                      const idx = alphaOrder.indexOf(asAlpha);
+                      if (idx !== -1) return idx;
+                    }
+
+                    // Doğrudan alpha bedense
+                    const idx = alphaOrder.indexOf(u);
+                    if (idx !== -1) return idx;
+
+                    // Sayısal bedenler (1, 2, 34, 36, …) → harflerden sonra artan şekilde
+                    const num = parseInt(u, 10);
+                    if (!Number.isNaN(num)) return 100 + num;
+
+                    // Tanımsız olanlar en sona
+                    return 9999;
+                  };
+
+                  const pa = priority(a);
+                  const pb = priority(b);
+                  if (pa !== pb) return pa - pb;
+
+                  // Aynı öncelikteyse alfabetik fallback
+                  return norm(a).localeCompare(norm(b), "tr");
+                })
+                .map((s) => (
+                  <label key={s} className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={selectedGenders.includes(g)}
-                      onChange={() => toggleStr(selectedGenders, g, setSelectedGenders)}
+                      checked={selectedSizes.includes(s)}
+                      onChange={() => toggleStr(selectedSizes, s, setSelectedSizes)}
                       className="accent-gray-600 w-4 h-4"
                     />
-                    <span className="text-sm text-gray-700">{label}</span>
+                    <span className="text-sm text-gray-700">{s}</span>
+                  </label>
+                ))}
+            </div>
+          </Accordion>
+
+          {/* Renk */}
+          <Accordion title="Renk">
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                placeholder="Renk ara..."
+                value={searchColor}
+                onChange={(e) => setSearchColor(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              {(colorList ?? []).map((c) => {
+                const selected = selectedColors.includes(c);
+                const bg = toCssColor(c);
+                const needsBorder = bg.toLowerCase() === "white" || bg === "#ffffff";
+                return (
+                  <label key={c} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleStr(selectedColors, c, setSelectedColors)}
+                      className="accent-gray-700 w-4 h-4"
+                    />
+                    <span
+                      className={`w-5 h-5 rounded border ${needsBorder ? "border-gray-300" : "border-transparent"}`}
+                      style={{ backgroundColor: bg }}
+                      title={c}
+                    />
+                    <span className="text-sm text-gray-700">{c}</span>
                   </label>
                 );
               })}
             </div>
           </Accordion>
 
-          <Accordion title={t("price")}>
+          {/* Cinsiyet */}
+          <Accordion title="Cinsiyet">
+            <div className="flex flex-col gap-2">
+              {["Erkek", "Kadın", "Unisex"].map((g) => (
+                <label key={g} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedGenders.includes(g)}
+                    onChange={() => toggleStr(selectedGenders, g, setSelectedGenders)}
+                    className="accent-gray-600 w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">{g}</span>
+                </label>
+              ))}
+            </div>
+          </Accordion>
+
+          {/* Fiyat */}
+          <Accordion title="Fiyat">
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2 mt-2">
                 <input
                   type="number"
-                  placeholder={t("min")}
+                  placeholder="En az"
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
                   className="w-full border border-gray-300 rounded-md p-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -377,43 +398,65 @@ export default function UrunlerPage() {
                 <span>-</span>
                 <input
                   type="number"
-                  placeholder={t("max")}
+                  placeholder="En çok"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                   className="w-full border border-gray-300 rounded-md p-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
                 />
               </div>
+              {filtered?.priceRange && (
+                <label className="flex items-center gap-3 cursor-pointer text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    name="priceRange"
+                    onChange={() => {
+                      setMinPrice(String(filtered.priceRange.min));
+                      setMaxPrice(String(filtered.priceRange.max));
+                    }}
+                    className="w-4 h-4 accent-gray-600"
+                  />
+                  <span>
+                    {filtered.priceRange.min}₺ - {filtered.priceRange.max}₺
+                  </span>
+                </label>
+              )}
             </div>
           </Accordion>
 
           <button
-            onClick={() => {}}
-            disabled={false}
+            onClick={handleApplyFilters}
+            disabled={isLoading}
             className="w-full bg-black text-white rounded-md py-2 mt-4 hover:bg-gray-700 disabled:opacity-60"
           >
-            {t("apply_filters")}
+            {isLoading ? "Uygulanıyor..." : "Filtrele"}
           </button>
         </div>
 
         {/* ================= Ürün Grid ================= */}
         <div className="w-4/5 mt-6 md:mt-0 ml-12">
-          <div className="heading-lg-3 mb-4">{t("new_products")}</div>
+          <div className="heading-lg-3 mb-4">Yeni Ürünler</div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0">
-            {(products ?? []).map((p) => (
+            {(Array.isArray(products) ? products : []).map((p) => (
               <ProductCard
                 key={p.id}
                 product={{
                   id: p.id,
                   name: p.name,
                   description: p.description,
-                  basePrice: p.basePrice,
+                  basePrice: Number.isFinite(p.basePrice) ? p.basePrice : getSafePrice(p),
                   gender: p.gender,
                   isActive: p.isActive,
                   mainPhoto: p.mainPhoto ?? "",
                 }}
               />
             ))}
+            {Array.isArray(products) && products.length === 0 && !isLoading && (
+              <div className="col-span-full text-sm text-gray-500 p-4">
+                Seçtiğiniz filtrelere uygun ürün bulunamadı.
+              </div>
+            )}
+
           </div>
         </div>
       </div>
