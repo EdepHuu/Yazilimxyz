@@ -17,7 +17,7 @@ The project was developed by a dedicated and well-structured team, each member c
 ---
 
 ## 📑 Project Presentation
-[Download the project presentation (PPTX)](./docs/XYZ_Sunum_2.pptx)
+[View the project presentation (Google Drive)](https://drive.google.com/drive/folders/1xjCqHNY2ODuYXdOjsQDh-dNvcaoWiorf?usp=sharing)
 
 ---
 
@@ -87,7 +87,7 @@ Proje, güçlü bir ekip yapısıyla geliştirilmiştir. Her ekip üyesi kendi u
 ---
 
 ## 📑 Proje Sunumu
-[Proje sunumunu indir (PPTX)](./docs/XYZ_Sunum_2.pptx)
+[Proje sunumunu görüntüle (Google Drive)](https://drive.google.com/drive/folders/1xjCqHNY2ODuYXdOjsQDh-dNvcaoWiorf?usp=sharing)
 
 ---
 
