@@ -16,6 +16,11 @@ The project was developed by a dedicated and well-structured team, each member c
 
 ---
 
+## 📑 Project Presentation
+[Download the project presentation (PPTX)](./docs/XYZ_Sunum_2.pptx)
+
+---
+
 ## 🛠️ Technologies Used
 - **Frontend:** React.js, Next.js (App Router, SSR), Tailwind CSS, Zustand  
 - **Backend:** .NET 8 Web API (running on port **7206**), RESTful architecture, Entity Framework Core  
@@ -78,6 +83,11 @@ Proje, güçlü bir ekip yapısıyla geliştirilmiştir. Her ekip üyesi kendi u
    İş mantığının uygulanması, veritabanı operasyonları ve API entegrasyonlarında görev aldı.  
 4. **Frontend Takım Üyeleri – Büşra Çoğul, Elif Yılmaz**  
    Modern ve duyarlı arayüz bileşenleri geliştirdi, React ve Next.js ile kullanıcı deneyimi özelliklerini hayata geçirdi.  
+
+---
+
+## 📑 Proje Sunumu
+[Proje sunumunu indir (PPTX)](./docs/XYZ_Sunum_2.pptx)
 
 ---
 
